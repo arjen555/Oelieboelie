@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Oelieboelie Editor v1.50</title>
+<title>Oelieboelie Editor v1.51</title>
 <style>
   :root{ --bg:#16202b; --panel:#1f2b38; --panel2:#263445; --rand:#334457; --text:#e8eef5; --muted:#93a4b6; --accent:#7fb2ff; }
   *{box-sizing:border-box}
@@ -83,11 +83,20 @@
   .kleurstaal.aan{border-color:var(--accent);box-shadow:0 0 0 2px rgba(127,178,255,.45)}
   .objoptie canvas{width:64px;height:40px;display:block}
   #objPaneel .tip{font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5}
+  /* (v1.51) duidelijk bordje na Opslaan, midden in beeld */
+  #opgeslagen{position:fixed;left:50%;top:42%;transform:translate(-50%,-50%) scale(.85);opacity:0;pointer-events:none;z-index:50;
+    background:#fff8e8;color:#3d2a12;border:4px solid #2aa36b;border-radius:22px;padding:22px 38px;text-align:center;
+    box-shadow:0 14px 40px rgba(0,0,0,.45);transition:opacity .25s ease,transform .25s ease;font-family:system-ui,sans-serif}
+  #opgeslagen.zichtbaar{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  #opgeslagen .vink{font-size:54px;line-height:1;color:#2aa36b;font-weight:800}
+  #opgeslagen .kop{font-size:26px;font-weight:800;margin-top:6px}
+  #opgeslagen .uitleg{font-size:15px;margin-top:6px;opacity:.85;max-width:380px}
 </style>
 </head>
 <body>
+<div id="opgeslagen" role="status" aria-live="polite"><div class="vink">✓</div><div class="kop">Opgeslagen!</div><div class="uitleg"></div></div>
 <header>
-  <h1>Oelieboelie Editor<span>v1.50</span><span id="stand"></span></h1>
+  <h1>Oelieboelie Editor<span>v1.51</span><span id="stand"></span></h1>
   <label class="veld">Levelnummer<input id="nummer" type="number" min="1" max="100" value="1"></label>
   <label class="veld">Naam<input id="naam" type="text" value="Mijn eerste level"></label>
   <label class="veld" id="klaarVeld" title="Alleen klare levels staan in het prentenboek van de spelers (onaffe levels altijd achteraan zetten)">Klaar<input id="klaar" type="checkbox"></label>
@@ -1663,6 +1672,7 @@ function opslaan(){
   if(!MAKER){   // (v1.47) spelersstand: bewaren in deze browser; je vindt je levels in het huisje aan de muur
     gewijzigd = false; bewaarConcept();
     meld(`Bewaard! Je ${boek.length === 1 ? 'level hangt' : boek.length + ' levels hangen'} in het huisje aan de muur (Mijn levels).`);
+    toonOpgeslagen('Je levels hangen in het huisje aan de muur.');
     return;
   }
   const fouten = [];
@@ -1671,6 +1681,7 @@ function opslaan(){
   const tekst = JSON.stringify({ soort: 'oelieboelie-levelboek', versie: 1, achtergronden, levels: boek }, null, 1);
   const klaar = waar => {
     gewijzigd = false; bewaarConcept();
+    toonOpgeslagen(waar.startsWith('in je map') ? `${boek.length} levels in je levelboek. Versturen gaat met GitHub Desktop.` : 'Het levelboek staat in je map Downloads.');
     meld(fouten.length ? 'Opgeslagen, maar let op: ' + fouten.join('; ') + '.'
                        : `Levelboek opgeslagen ${waar} (${boek.length} level${boek.length===1?'':'s'}).`);
   };
@@ -1727,7 +1738,11 @@ $('klaar').addEventListener('change', () => { bewaarHuidig(); vernieuwLijst(); m
   meld($('klaar').checked ? 'Dit level staat nu in het prentenboek (na Opslaan en versturen).' : 'Dit level is nu niet te zien in het prentenboek. Zet onaffe levels altijd achteraan.'); });
 ['aantal','teRedden', ...TYPEN.map(t => 'aantal_'+t)].forEach(id => $(id).addEventListener('change', () => { markeerGewijzigd(); }));
 
-let meldTimer;
+let meldTimer, bordTimer;
+function toonOpgeslagen(uitleg){   // (v1.51) Arjen: na Opslaan moet je duidelijk zien dat het gelukt is
+  const b = $('opgeslagen'); b.querySelector('.uitleg').textContent = uitleg || '';
+  b.classList.add('zichtbaar'); clearTimeout(bordTimer); bordTimer = setTimeout(() => b.classList.remove('zichtbaar'), 1800);
+}
 function meld(t, duur){ $('melding').textContent = t; clearTimeout(meldTimer); meldTimer = setTimeout(() => $('melding').textContent = '', duur || 7000); }
 
 // Tussentijds bewaren in de browser, zodat je werk niet weg is als je het venster per ongeluk sluit

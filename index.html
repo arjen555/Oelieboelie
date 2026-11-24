@@ -109,7 +109,7 @@
   <div><button id="naamNee">Toch niet</button><button id="naamOk">Klaar</button></div></div>
 <input type="range" id="volume" min="0" max="100" step="1" aria-label="Volume van de muziek">
 <button id="opnieuw" style="display:none" title="Speel het begin nog een keer af">↻ nog een keer</button>
-<div id="versie">openingsscherm v0.48</div>
+<div id="versie">openingsscherm v0.49</div>
 <script>
 // =====================================================================
 // OELIEBOELIE – OPENINGSSCHERM v0.46 (v0.46: mist op het kaartje verder dan 3 levels vooruit; startpagina van de website; v0.45: gekoppeld aan spel.html en editor.html)
@@ -157,7 +157,15 @@ const ROCKY_EERST = [2, 5];            // eerste keer: zoveel seconden nadat Bal
 const ROCKY_RUST = [15, 35];           // daarna zoveel seconden tussen twee keer
 
 // ---- plaatjes ----
-function laad(src){ const i = new Image(); i.src = src; return i; }
+// (v0.49) Sneller starten: de plaatjes worden in twee golven geladen. Eerst alleen wat je bij het begin ziet
+// (de wereld, het logo, de schommelende o, de wegwijzer ...), ca. 1,6 MB; daarna, terwijl je kijkt, de rest
+// (molen, huisje, boekenplek, prentenboek ...). laad() onthoudt het adres alleen; startLaden() haalt echt op.
+function laad(src){ const i = new Image(); i._bron = src; return i; }
+function startLaden(lijst){ return Promise.all(lijst.map(i => { if(!i.getAttribute('src')) i.src = i._bron; return i.decode ? i.decode().catch(() => {}) : null; })); }
+const GOLF1 = ['kleur', 'schets', 'logo', 'O', 'sch', 'los', 'bal', 'lach', 'wegwijzer', 'wieken', 'bordStart', 'vlinder', 'pluis'];
+const GOLF2_EERST = ['kruip', 'fungy', 'ooglid', 'kijk'];   // komen later in het begin in beeld (Rocky, Fungy)
+function golf1(){ return GOLF1.map(k => IMG[k]); }
+function golf2(){ return [...GOLF2_EERST.map(k => IMG[k]), ...Object.keys(IMG).filter(k => !GOLF1.includes(k) && !GOLF2_EERST.includes(k)).map(k => IMG[k]), ...PB.map(b => b.im)]; }
 const IMG = { kleur: laad(D.A.kleur), schets: laad(D.A.schets), logo: laad(D.A.logo), O: laad(D.A.O),
               sch: laad(D.A.sch), los: laad(D.A.los), bal: laad(D.A.bal), lach: laad(D.A.lach), kruip: laad(D.A.kruip), vlinder: laad(D.A.vlinder), wegwijzer: laad(D.A.wegwijzer), wieken: laad(D.A.wieken), kamer: laad(D.A.kamer), plek: laad(D.A.plek), hkPrik: laad(D.A.hk_prik), hkMaak: laad(D.A.hk_maak), hkMijn: laad(D.A.hk_mijn), hkSpeel: laad(D.A.hk_speel), hkBouw: laad(D.A.hk_bouw), hkEerst: laad(D.A.hk_eerst), okGA: laad(D.A.ok_geluidAan), okGU: laad(D.A.ok_geluidUit), okMA: laad(D.A.ok_muziekAan), okMU: laad(D.A.ok_muziekUit), okT: laad(D.A.ok_toeg), okBalk: laad(D.A.ok_balk), okKnop: laad(D.A.ok_knop), krijt: laad(D.A.krijt), huis: laad(D.A.huis), gum: laad(D.A.gum), kaart1: laad(D.A.kaart1), kaart2: laad(D.A.kaart2), kaart3: laad(D.A.kaart3), kaart4: laad(D.A.kaart4), knG: laad(D.A.knG), knV: laad(D.A.knV), knT: laad(D.A.knT), knS: laad(D.A.knS), belS: laad(D.A.belS), belP: laad(D.A.belP), pluis: laad(D.A.pluis), ooglid: laad(D.A.ooglid), kijk: laad(D.A.kijk), bordStart: laad(D.A.bord_start), fungy: laad(D.A.fungy) };
 
@@ -1871,7 +1879,9 @@ function verwerkUitkomst(){
   else if(u.nr === B.gehaald + 1){ B.gehaald = u.nr; uit.nieuw = true; }
   bewaarBoeken(); return uit;
 }
-Promise.all([laadLevels(), ...Object.values(IMG).map(i => i.decode ? i.decode().catch(()=>{}) : null)]).then(() => {
+const DIEP = location.search.length > 1;   // rechtstreeks naar het boek of het huisje: dan ook die plaatjes eerst
+Promise.all([laadLevels(), startLaden(golf1()), DIEP ? startLaden(golf2()) : null]).then(() => {
+  if(!DIEP) startLaden(golf2());
   start = performance.now();
   const q = new URLSearchParams(location.search), uit = verwerkUitkomst();
   const b = q.has('boek') ? +q.get('boek') : null, T0 = 60;
