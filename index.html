@@ -109,7 +109,7 @@
   <div><button id="naamNee">Toch niet</button><button id="naamOk">Klaar</button></div></div>
 <input type="range" id="volume" min="0" max="100" step="1" aria-label="Volume van de muziek">
 <button id="opnieuw" style="display:none" title="Speel het begin nog een keer af">↻ nog een keer</button>
-<div id="versie">openingsscherm v0.47</div>
+<div id="versie">openingsscherm v0.48</div>
 <script>
 // =====================================================================
 // OELIEBOELIE – OPENINGSSCHERM v0.46 (v0.46: mist op het kaartje verder dan 3 levels vooruit; startpagina van de website; v0.45: gekoppeld aan spel.html en editor.html)
@@ -1466,6 +1466,7 @@ async function laadLevels(){
     const r = await fetch('levels/levelboek.json', { cache: 'no-store' }); if(!r.ok) return;
     const d = await r.json(), A = d.achtergronden || {};
     for(const l of [...(d.levels || [])].sort((a, b) => a.nummer - b.nummer)){
+      if(l.klaar === false) break;   // (v0.48) het boek stopt bij het eerste level dat nog niet klaar is (onaffe levels staan altijd achteraan)
       LEVELS.push({ nr: l.nummer, naam: l.naam });
       if(l.achtergrond && A[l.achtergrond]) LEVEL_ACHTERGROND[l.nummer] = A[l.achtergrond];
     }

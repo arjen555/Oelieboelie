@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Oelieboelie Editor v1.48</title>
+<title>Oelieboelie Editor v1.50</title>
 <style>
   :root{ --bg:#16202b; --panel:#1f2b38; --panel2:#263445; --rand:#334457; --text:#e8eef5; --muted:#93a4b6; --accent:#7fb2ff; }
   *{box-sizing:border-box}
@@ -87,9 +87,10 @@
 </head>
 <body>
 <header>
-  <h1>Oelieboelie Editor<span>v1.48</span><span id="stand"></span></h1>
+  <h1>Oelieboelie Editor<span>v1.50</span><span id="stand"></span></h1>
   <label class="veld">Levelnummer<input id="nummer" type="number" min="1" max="100" value="1"></label>
   <label class="veld">Naam<input id="naam" type="text" value="Mijn eerste level"></label>
+  <label class="veld" id="klaarVeld" title="Alleen klare levels staan in het prentenboek van de spelers (onaffe levels altijd achteraan zetten)">Klaar<input id="klaar" type="checkbox"></label>
   <label class="veld">Breedte
     <select id="breedte">
       <option value="1">1 scherm</option><option value="1.5">1½ scherm</option>
@@ -1406,7 +1407,7 @@ function naarBestand(){
   for(let y=0;y<HOOGTE;y++){ let r = ''; for(let x=0;x<level.breed;x++) r += SOORTEN[level.raster[y*level.breed+x]].teken; rijen.push(r); }
   return {
     soort: 'oelieboelie-level', versie: 2,
-    nummer: +$('nummer').value, naam: $('naam').value,
+    nummer: +$('nummer').value, naam: $('naam').value, klaar: $('klaar').checked,   // (v1.49) klaar voor spelers
     oelieboelies: +$('aantal').value, moetenErIn: +$('teRedden').value,
     typen: leesTypen(),
     achtergrond: achtergrondNaam || null,
@@ -1428,7 +1429,7 @@ function vanBestand(d){
   level = { breed, raster:r, kleur: kl, schermen: d.schermen || breed/SCHERM_BREED, potlood: d.potlood, wolk: d.toverwolk,
     objecten: (d.objecten || []).map(o => ({...o})) };
   ruimLosseBlokjesOp();   // (v1.29)
-  $('nummer').value = d.nummer; $('naam').value = d.naam; $('aantal').value = d.oelieboelies; $('teRedden').value = d.moetenErIn;
+  $('nummer').value = d.nummer; $('naam').value = d.naam; $('klaar').checked = d.klaar !== false;   // (v1.49) oude levels zonder vinkje tellen als klaar $('aantal').value = d.oelieboelies; $('teRedden').value = d.moetenErIn;
   zetTypen(d.typen);
   achtergrondNaam = (d.achtergrond && achtergronden[d.achtergrond]) ? d.achtergrond : null;
   vulAchtergrondKeuze();
@@ -1460,7 +1461,7 @@ function vernieuwLijst(){
   const lijst = $('levellijst'); lijst.innerHTML = '';
   for(const l of boek){
     const b = document.createElement('button'); b.className = 'keuze' + (l.nummer === huidigNr ? ' aan' : '');
-    b.innerHTML = `<span><span class="nr">${l.nummer}</span>${(l.naam || '').replace(/</g,'&lt;')}</span>`;
+    b.innerHTML = `<span><span class="nr">${l.nummer}</span>${(l.naam || '').replace(/</g,'&lt;')}${MAKER && l.klaar === false ? ' <i style="opacity:.6">(niet klaar)</i>' : ''}</span>`;
     b.onclick = () => { if(l.nummer !== huidigNr) kiesLevel(l.nummer); };
     lijst.appendChild(b);
   }
@@ -1496,7 +1497,7 @@ function nieuwLevel(){
   bewaarHuidig();
   const n = vrijNummer();
   level = leegLevel(1);
-  $('nummer').value = n; $('naam').value = 'Level ' + n; $('aantal').value = 10; $('teRedden').value = 5;
+  $('nummer').value = n; $('naam').value = 'Level ' + n; $('aantal').value = 10; $('teRedden').value = 5; $('klaar').checked = false;   // (v1.49) nieuw = nog niet klaar
   $('breedte').value = '1'; zetTypen(null);
   // achtergrondNaam blijft staan: een nieuw level krijgt dezelfde achtergrond als het level waar je was
   huidigNr = n; bewaarHuidig();
@@ -1514,8 +1515,16 @@ function hernummer(){
   if(!(n >= 1 && n <= 100)){ $('nummer').value = huidigNr; meld('Kies een levelnummer van 1 tot en met 100.'); return; }
   if(n === huidigNr) return;
   if(boek.some(l => l.nummer === n)){
-    $('nummer').value = huidigNr;
-    meld(`Level ${n} bestaat al. Wil je dat level zien? Klik het aan in de lijst links.`); return;
+    // (v1.49) Arjens wens: een level naar een plek zetten die al bestaat = ertussen zetten; de rest schuift door
+    if(!confirm(`Level ${n} bestaat al.\n\nDit level op plek ${n} zetten? De levels daartussen schuiven één plek op.`)){ $('nummer').value = huidigNr; return; }
+    bewaarHuidig();
+    const oud = huidigNr, dit = boek.find(l => l.nummer === oud);
+    for(const l of boek){ if(l === dit) continue;
+      if(n < oud && l.nummer >= n && l.nummer < oud) l.nummer++;        // naar voren: tussenliggende levels één plek naar achteren
+      else if(n > oud && l.nummer > oud && l.nummer <= n) l.nummer--; }  // naar achteren: tussenliggende levels één plek naar voren
+    dit.nummer = n; huidigNr = n; $('nummer').value = n; sorteerBoek();
+    vernieuwLijst(); markeerGewijzigd();
+    meld(`Dit level is nu level ${n}. De levels ${Math.min(n, oud)} t/m ${Math.max(n, oud)} zijn een plek opgeschoven.`, 10000); return;
   }
   const oud = huidigNr;
   boek = boek.filter(l => l.nummer !== oud); huidigNr = n; bewaarHuidig();
@@ -1714,6 +1723,8 @@ $('nieuw').onclick = nieuwLevel;
 $('verwijder').onclick = verwijderLevel;
 $('nummer').addEventListener('change', hernummer);
 $('naam').addEventListener('change', () => { bewaarHuidig(); vernieuwLijst(); markeerGewijzigd(); });
+$('klaar').addEventListener('change', () => { bewaarHuidig(); vernieuwLijst(); markeerGewijzigd();
+  meld($('klaar').checked ? 'Dit level staat nu in het prentenboek (na Opslaan en versturen).' : 'Dit level is nu niet te zien in het prentenboek. Zet onaffe levels altijd achteraan.'); });
 ['aantal','teRedden', ...TYPEN.map(t => 'aantal_'+t)].forEach(id => $(id).addEventListener('change', () => { markeerGewijzigd(); }));
 
 let meldTimer;
@@ -1794,12 +1805,16 @@ async function boekUitMap(){
 }
 // (v1.47) stand tonen; in de spelersstand geen 'Opslaan' naar de map en meteen naar het gevraagde level (?level=3)
 $('stand').textContent = MAKER ? ' · makersstand' : '';
+if(!MAKER) $('klaarVeld').style.display = 'none';   // (v1.49) het vinkje Klaar is alleen voor het prentenboek (makersstand)
 if(!MAKER) $('opslaan').title = 'Bewaar je levels in deze browser (Ctrl+S)';
 (async () => {
   const concept = laadConcept();
   const oudePlaatjes = { ...achtergronden };   // werk uit een oudere versie had de plaatjes nog in het laatje
   await laadAchtergronden();
-  if(Object.keys(oudePlaatjes).length){ achtergronden = { ...achtergronden, ...oudePlaatjes }; bewaarAchtergronden(); bewaarConcept(); }
+  // (v1.50) FOUT HERSTELD: hier stond bewaarConcept(), dat het lege beginlevel (naam 'Mijn eerste level') over het
+  // laatst geopende level heen schreef, nog vóór dat level in beeld was. Nu alleen de levels opnieuw wegschrijven, zonder plaatjes.
+  if(Object.keys(oudePlaatjes).length){ achtergronden = { ...achtergronden, ...oudePlaatjes }; bewaarAchtergronden();
+    try{ localStorage.setItem(BOEK_SLEUTEL, JSON.stringify({ boek, huidigNr, gewijzigd })); }catch(e){} }
   vulAchtergrondKeuze();
   if(!MAKER){
     const nr = +ADRES.get('level');
