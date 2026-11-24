@@ -133,7 +133,7 @@
   <div><button id="naamNee">Toch niet</button><button id="naamOk">Klaar</button></div></div>
 <input type="range" id="volume" min="0" max="100" step="1" aria-label="Volume van de muziek">
 <button id="opnieuw" style="display:none" title="Speel het begin nog een keer af">↻ nog een keer</button>
-<div id="versie">openingsscherm v0.50</div>
+<div id="versie">openingsscherm v0.52</div>
 <script>
 // =====================================================================
 // OELIEBOELIE – OPENINGSSCHERM v0.46 (v0.46: mist op het kaartje verder dan 3 levels vooruit; startpagina van de website; v0.45: gekoppeld aan spel.html en editor.html)
@@ -1158,22 +1158,61 @@ function mijnKlik(k, t){
     if(OPTIES.geluid){ toon(784, 0, 0.15, 0.08); toon(1175, 0.07, 0.25, 0.07); }
     openStuur(k.l); }
 }
-// (v0.50) Het insturen-venster. Het echte versturen (naar de brievenbus in Firebase) komt in de volgende stap.
+// (v0.50) Het insturen-venster. (v0.51) Versturen gaat echt: naar de brievenbus in Firebase (project oelieboelie-f6df6, Firestore, verzameling 'inzendingen').
+// Rechtstreeks via het webadres van Firestore (geen extra bibliotheek nodig). De regels in Firebase bepalen wat mag:
+// iedereen mag insturen (met toestemming, niet te groot), alleen Arjen mag lezen en weggooien. De apiKey is geen geheim.
+const FIREBASE = { apiKey: 'AIzaSyB3M1J2srTFu3XF4rs-esHafs3Pz4xqUwk', projectId: 'oelieboelie-f6df6' };
+const INSTUUR_VERSIE = 'v0.51';
+function eigenAchtergrondenSpeler(){ return new Promise(ok => { try{   // eigen plaatjes van de speler (zelfde opslag als de editor)
+  const r = indexedDB.open('oelieboelie', 1); r.onupgradeneeded = () => r.result.createObjectStore('opslag');
+  r.onerror = () => ok({}); r.onsuccess = () => { try{ const g = r.result.transaction('opslag').objectStore('opslag').get('oelieboelie_spelerboek_v1_achtergronden');
+    g.onsuccess = () => ok(g.result || {}); g.onerror = () => ok({}); }catch(e){ ok({}); } }; }catch(e){ ok({}); } }); }
+async function verkleinPlaatje(src, max){   // eigen achtergrond kleiner maken tot hij in de brievenbus past
+  const im = new Image(); im.src = src; await im.decode();
+  let h = Math.min(im.height, 900);
+  for(let i = 0; i < 12; i++){ const w = Math.round(im.width*h/im.height), c = document.createElement('canvas'); c.width = w; c.height = h;
+    c.getContext('2d').drawImage(im, 0, 0, w, h); const d = c.toDataURL('image/webp', 0.8);
+    if(d.length < max) return d; h = Math.round(h*0.8); }
+  return '';
+}
+function nieuwId(){ const t = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789', a = new Uint8Array(20); crypto.getRandomValues(a); return Array.from(a, x => t[x % t.length]).join(''); }
+async function naarBrievenbus(l, bijnaam){
+  let plaatje = '';
+  if(l.achtergrond){ const eigen = await eigenAchtergrondenSpeler(); if(eigen[l.achtergrond]) plaatje = await verkleinPlaatje(eigen[l.achtergrond], 550000); }
+  const level = JSON.stringify(l);
+  if(level.length >= 400000) throw new Error('te groot');
+  const basis = 'projects/' + FIREBASE.projectId + '/databases/(default)/documents';
+  const lijf = { writes: [{ update: { name: basis + '/inzendingen/' + nieuwId(), fields: {
+      level: { stringValue: level }, plaatje: { stringValue: plaatje }, bijnaam: { stringValue: bijnaam.slice(0, 20) },
+      toestemming: { booleanValue: true }, versie: { stringValue: INSTUUR_VERSIE } } },
+    updateTransforms: [{ fieldPath: 'tijd', setToServerValue: 'REQUEST_TIME' }], currentDocument: { exists: false } }] };
+  const r = await fetch('https://firestore.googleapis.com/v1/' + basis + ':commit?key=' + FIREBASE.apiKey,
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(lijf) });
+  if(!r.ok) throw new Error('brievenbus ' + r.status + ' ' + (await r.text()).slice(0, 300));
+}
 let stuurVoor = null;
 function openStuur(l){ stuurVoor = l; const v = document.getElementById('stuurVraag');
   document.getElementById('stuurLevel').textContent = '\u2018' + (l.naam || ('Level ' + l.nummer)) + '\u2019';
   let oud = ''; try{ oud = localStorage.getItem('oelieboelie_bijnaam') || ''; }catch(e){}
   document.getElementById('stuurNaam').value = oud;
   document.getElementById('stuurVink').checked = false; document.getElementById('stuurOk').disabled = true;
-  const m = document.getElementById('stuurMelding'); m.style.display = 'none'; m.textContent = '';
+  const m = document.getElementById('stuurMelding'); m.style.display = 'none'; m.textContent = ''; m.style.color = '#1d7a50';
   v.classList.add('zichtbaar'); }
 function sluitStuur(){ stuurVoor = null; const v = document.getElementById('stuurVraag'); if(v){ v.classList.remove('zichtbaar'); document.getElementById('stuurNaam').blur(); } }
-function stuurVerstuur(){ if(!stuurVoor || !document.getElementById('stuurVink').checked) return;
-  const bijnaam = document.getElementById('stuurNaam').value.trim();
+let stuurBezig = false;
+async function stuurVerstuur(){ if(!stuurVoor || stuurBezig || !document.getElementById('stuurVink').checked) return;
+  const bijnaam = document.getElementById('stuurNaam').value.trim(), l = stuurVoor, ok = document.getElementById('stuurOk');
   try{ localStorage.setItem('oelieboelie_bijnaam', bijnaam); }catch(e){}
-  const m = document.getElementById('stuurMelding');
-  m.textContent = 'De brievenbus is bijna klaar. Nog heel even geduld, dan kun je je level echt versturen!';
-  m.style.display = 'block'; }
+  const m = document.getElementById('stuurMelding'); m.style.color = '#1d7a50';
+  m.textContent = 'Bezig met versturen…'; m.style.display = 'block'; stuurBezig = true; ok.disabled = true;
+  try{ await naarBrievenbus(l, bijnaam);
+    m.textContent = 'Verstuurd! Arjen gaat je level bekijken. Dank je wel!';
+    if(OPTIES.geluid){ toon(659, 0, 0.2, 0.08); toon(880, 0.1, 0.2, 0.08); toon(1319, 0.2, 0.4, 0.08); }
+    setTimeout(() => { if(stuurVoor === l) sluitStuur(); }, 2600); }
+  catch(e){ console.warn(e); m.style.color = '#b0342c';
+    m.textContent = e.message === 'te groot' ? 'Dit level is te groot om te versturen.' : 'Het versturen lukte niet. Ben je met internet verbonden? Probeer het straks nog eens.';
+    ok.disabled = false; }
+  stuurBezig = false; }
 document.getElementById('stuurNee').onclick = sluitStuur;
 document.getElementById('stuurOk').onclick = stuurVerstuur;
 document.getElementById('stuurVink').onchange = e => { document.getElementById('stuurOk').disabled = !e.target.checked; };
@@ -1207,6 +1246,20 @@ function tekenMijn(t, al){
     ctx.strokeStyle = '#7a3d12'; ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     ctx.beginPath(); ctx.moveTo(x - 4*d, MIJN_Y - 10); ctx.lineTo(x + 6*d, MIJN_Y); ctx.lineTo(x - 4*d, MIJN_Y + 10); ctx.stroke(); ctx.restore(); }
 }
+// (v0.52) Arjen: bij Mijn levels was de muur te druk (de oude schetsen leken op je eigen levels).
+// Daarom bij het inzoomen een wazige, donkere versie van de kamer. Wazig maken door klein te tekenen en weer op te blazen
+// (werkt in elke browser, ook op tablets). Eén keer uitgerekend en bewaard.
+let huisWazigC = null;
+function huisWazig(){
+  if(huisWazigC) return huisWazigC;
+  if(!IMG.huis.naturalWidth) return null;
+  const k = document.createElement('canvas'); k.width = Math.round(PW/10); k.height = Math.round(PH/10);
+  const kg = k.getContext('2d'); kg.imageSmoothingQuality = 'high'; kg.drawImage(IMG.huis, 0, 0, k.width, k.height);
+  const m = document.createElement('canvas'); m.width = Math.round(PW/4); m.height = Math.round(PH/4);
+  const mg = m.getContext('2d'); mg.imageSmoothingQuality = 'high'; mg.drawImage(k, 0, 0, m.width, m.height);
+  mg.fillStyle = 'rgba(28,14,6,0.55)'; mg.fillRect(0, 0, m.width, m.height);   // donkerder, zodat het lichte papier afsteekt
+  huisWazigC = m; return m;
+}
 function huis(t){
   const a = huisAlpha(t);
   if(a <= 0){ if(huisUit !== null && t - huisUit > 0.5){ huisIn = null; huisUit = null; menuUit = t; } return; }
@@ -1217,6 +1270,7 @@ function huis(t){
   ctx.drawImage(IMG.huis, 0, 0, PW, PH);
   const rust = hc() ? null : huisRustigBeeld();   // (v0.38) bij hoog contrast dempt hcDemp al
   if(rust && mz < 1){ ctx.save(); ctx.globalAlpha *= 1 - mz; ctx.drawImage(rust, 0, 0, PW, PH); ctx.restore(); }
+  if(mz > 0){ const wz = huisWazig(); if(wz){ ctx.save(); ctx.globalAlpha *= mz; ctx.drawImage(wz, 0, 0, PW, PH); ctx.restore(); } }   // (v0.52) Mijn levels: muur wazig en donker, de velletjes springen eruit
   // (v0.39) het voorwerp waar je naar wijst wordt weer scherp
   const dts = spotT === null ? 0 : Math.min(0.1, t - spotT); spotT = t;
   const actief = huisWijs || (naarEditor !== null ? 'tafel' : null), spots = rust ? huisSpotBeelden() : null;
