@@ -1,0 +1,1893 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Oelieboelie</title>
+<style>
+  html,body{margin:0;height:100%;background:#1b2633;overflow:hidden;touch-action:manipulation}
+  canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
+  #kaart{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.9);opacity:0;pointer-events:none;transition:opacity .4s,transform .4s;
+    background:linear-gradient(#fff6de,#f3dfb0);border:5px solid #1f9e9a;border-radius:28px;padding:28px 40px;text-align:center;
+    box-shadow:0 0 0 3px #f6e2b5 inset,0 0 0 6px rgba(31,158,154,.35) inset,0 14px 40px rgba(0,0,0,.45);font-family:"Trebuchet MS",system-ui,sans-serif;color:#7a3d12;max-width:80vw}
+  #kaart.zichtbaar{opacity:1;transform:translate(-50%,-50%) scale(1);pointer-events:auto}
+  #kaartTekst{font-size:26px;font-weight:700;margin-bottom:8px} #kaartTekst small{display:block;font-size:16px;font-weight:400;margin-top:8px;color:#8a5a2a}
+  #terug{margin-top:16px;font:700 16px "Trebuchet MS",system-ui,sans-serif;color:#fff;background:#1f9e9a;border:0;border-radius:20px;padding:10px 20px;cursor:pointer;box-shadow:0 4px 0 #167a77}
+  #toeg{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.9);opacity:0;pointer-events:none;transition:opacity .3s,transform .3s;
+    background:linear-gradient(#fff6de,#f3dfb0);border:5px solid #1f9e9a;border-radius:28px;padding:22px 30px;width:min(520px,86vw);
+    box-shadow:0 0 0 3px #f6e2b5 inset,0 0 0 6px rgba(31,158,154,.35) inset,0 14px 40px rgba(0,0,0,.5);font-family:"Trebuchet MS",system-ui,sans-serif;color:#7a3d12}
+  #toeg.zichtbaar{opacity:1;transform:translate(-50%,-50%) scale(1);pointer-events:auto}
+  #toeg .kop{font-size:26px;font-weight:700;text-align:center;margin-bottom:12px}
+  #toeg .rij{display:flex;align-items:center;gap:16px;padding:12px 6px;border-top:2px dashed rgba(122,61,18,.25);cursor:pointer}
+  #toeg .rij span{flex:1} #toeg .rij b{font-size:21px;display:block} #toeg .rij small{font-size:15px;color:#8a5a2a}
+  #toeg input[type=checkbox]{display:none}
+  #toeg .rij i{width:64px;height:34px;border-radius:17px;background:#c9b89a;position:relative;flex:none;transition:background .2s;box-shadow:inset 0 2px 4px rgba(0,0,0,.25)}
+  #toeg .rij i::after{content:'';position:absolute;left:3px;top:3px;width:28px;height:28px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 2px 4px rgba(0,0,0,.3)}
+  #toeg input:checked + i{background:#2aa36b} #toeg input:checked + i::after{left:33px}
+  #toeg .noot{font-size:14px;color:#8a5a2a;text-align:center;margin-top:8px}
+  #toegKlaar{display:block;margin:14px auto 0;font:700 18px "Trebuchet MS",system-ui,sans-serif;color:#fff;background:#1f9e9a;border:0;border-radius:20px;padding:10px 34px;cursor:pointer;box-shadow:0 4px 0 #167a77}
+  #lvlKaart{position:fixed;width:260px;opacity:0;pointer-events:none;transform:scale(.9);transition:opacity .15s,transform .15s;
+    background:linear-gradient(#fff8e6,#f3e2b8);border:4px solid #1f9e9a;border-radius:18px;padding:10px 12px 12px;text-align:center;
+    box-shadow:0 10px 26px rgba(0,0,0,.45);font-family:"Trebuchet MS",system-ui,sans-serif;color:#7a3d12;z-index:6}
+  #lvlKaart.zichtbaar{opacity:1;pointer-events:auto;transform:scale(1)}
+  #lvlPlaatje{width:100%;border-radius:10px;display:block;border:2px solid rgba(122,61,18,.35)}
+  #lvlKaart.toekomst #lvlPlaatje{filter:grayscale(1) sepia(1) hue-rotate(170deg) saturate(1.4) brightness(1.25) contrast(.8)}
+  #lvlKaart.mist #lvlPlaatje{filter:none}   /* (v0.46) verder weg dan 3 levels: een mistwolk in plaats van het plaatje */
+  #lvlNr{font-size:14px;margin-top:8px;color:#8a5a2a} #lvlNaam{font-size:21px;font-weight:700;line-height:1.15;margin:2px 0 4px}
+  #lvlStand{font-size:14px;color:#8a5a2a;min-height:18px}
+  #lvlSpeel{margin-top:8px;font:700 18px "Trebuchet MS",system-ui,sans-serif;color:#fff;background:#2aa36b;border:0;border-radius:18px;padding:8px 26px;cursor:pointer;box-shadow:0 4px 0 #1d7a50}
+  #lvlKaart.toekomst #lvlSpeel{display:none}
+  #lvlJoker{display:none;margin:8px 0 0 6px;font:700 18px "Trebuchet MS",system-ui,sans-serif;color:#fff;background:#1f9e9a;border:0;border-radius:18px;padding:8px 16px;cursor:pointer;box-shadow:0 4px 0 #167a77}
+  #lvlKaart.magJoker #lvlJoker{display:inline-block}
+  #lvlZeker{display:none;margin-top:8px;font-size:15px;font-weight:700}
+  #lvlZeker button{margin:8px 4px 0;font:700 16px "Trebuchet MS",system-ui,sans-serif;border:0;border-radius:16px;padding:7px 16px;cursor:pointer}
+  #zekerJa{color:#fff;background:#1f9e9a;box-shadow:0 3px 0 #167a77} #zekerNee{color:#7a3d12;background:#ead6a8;box-shadow:0 3px 0 #c9ad72}
+  #lvlKaart.vraag #lvlZeker{display:block} #lvlKaart.vraag #lvlKnoppen{display:none}
+  /* (v0.42) Hooky met het bordje 'Terug' (Images\hooky_terug.png); werkt net als Fungy hieronder */
+  #boekTerug{position:fixed;left:10px;top:8px;display:none;background:none;border:0;padding:0;cursor:pointer;z-index:6;width:clamp(120px,12vw,200px);transform-origin:30% 90%;transition:transform .18s ease;filter:drop-shadow(0 4px 6px rgba(0,0,0,.45))}
+  #boekTerug img{display:block;width:100%;height:auto;pointer-events:none}
+  #boekTerug:hover,#boekTerug:focus-visible{transform:scale(1.06) rotate(-3deg);filter:drop-shadow(0 0 10px rgba(255,215,120,.9))}
+  #boekTerug:active{transform:scale(.97)}
+  /* (v0.41) Fungy met het bordje 'terug naar de startpagina' (Images\fungy_startpagina.png) */
+  #plekTerug{position:fixed;left:10px;top:8px;display:none;background:none;border:0;padding:0;cursor:pointer;z-index:6;width:clamp(120px,12vw,200px);transform-origin:30% 90%;transition:transform .18s ease;filter:drop-shadow(0 4px 6px rgba(0,0,0,.45))}
+  #plekTerug img{display:block;width:100%;height:auto;pointer-events:none}
+  #plekTerug:hover,#plekTerug:focus-visible{transform:scale(1.06) rotate(-3deg);filter:drop-shadow(0 0 10px rgba(255,215,120,.9))}
+  #plekTerug:active{transform:scale(.97)}
+  #naamVraag{position:fixed;left:50%;top:42%;width:min(420px,88vw);transform:translate(-50%,-50%) scale(.9);opacity:0;pointer-events:none;transition:opacity .18s,transform .18s;
+    background:linear-gradient(#fff8e6,#f3e2b8);border:5px solid #1f9e9a;border-radius:22px;padding:18px 20px 16px;text-align:center;
+    box-shadow:0 14px 34px rgba(0,0,0,.55);font-family:"Trebuchet MS",system-ui,sans-serif;color:#7a3d12;z-index:7}
+  #naamVraag.zichtbaar{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+  #naamTitel{font-size:22px;font-weight:700;margin-bottom:12px}
+  #naamInvoer{width:100%;box-sizing:border-box;font:700 26px "Trebuchet MS",system-ui,sans-serif;color:#5a2e10;text-align:center;background:#fffdf5;
+    border:3px dashed #e0a040;border-radius:14px;padding:8px 10px;outline:none}
+  #naamInvoer:focus{border-color:#1f9e9a}
+  #naamVraag button{margin:14px 6px 0;font:700 18px "Trebuchet MS",system-ui,sans-serif;border:0;border-radius:18px;padding:9px 22px;cursor:pointer}
+  #naamOk{color:#fff;background:#2aa36b;box-shadow:0 4px 0 #1d7a50} #naamNee{color:#7a3d12;background:#ead6a8;box-shadow:0 4px 0 #c9ad72}
+  #naamVraag.schud{animation:schud .3s}
+  #wisVraag{position:fixed;left:50%;top:42%;width:min(480px,90vw);transform:translate(-50%,-50%) scale(.9);opacity:0;pointer-events:none;transition:opacity .18s,transform .18s;
+    background:linear-gradient(#fff8e6,#f3e2b8);border:5px solid #e0587a;border-radius:22px;padding:18px 20px 16px;text-align:center;
+    box-shadow:0 14px 34px rgba(0,0,0,.55);font-family:"Trebuchet MS",system-ui,sans-serif;color:#7a3d12;z-index:7}
+  #wisVraag.zichtbaar{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+  #wisTitel{font-size:23px;font-weight:700;margin-bottom:8px} #wisTekst{font-size:17px;color:#8a5a2a}
+  #wisVraag button{margin:16px 6px 0;font:700 17px "Trebuchet MS",system-ui,sans-serif;border:0;border-radius:18px;padding:10px 20px;cursor:pointer;vertical-align:middle}
+  #wisNee{color:#fff;background:#2aa36b;box-shadow:0 4px 0 #1d7a50}
+  #wisHoud{position:relative;overflow:hidden;color:#fff;background:#d9506f;box-shadow:0 4px 0 #a8364f;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+  #wisHoud::before{content:'';position:absolute;left:0;top:0;bottom:0;width:calc(var(--p,0)*100%);background:rgba(255,255,255,.38)}
+  #wisHoud span{position:relative}
+  @keyframes schud{25%{margin-left:-8px}75%{margin-left:8px}}
+  #volume{position:fixed;display:none;-webkit-appearance:none;appearance:none;height:14px;border-radius:7px;background:linear-gradient(90deg,#1f9e9a var(--v,60%),#e9d7ad var(--v,60%));border:2px solid #7a3d12;outline:none}
+  #volume::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:#fff6de;border:3px solid #7a3d12;cursor:pointer}
+  #volume::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:#fff6de;border:3px solid #7a3d12;cursor:pointer}
+  #speel{position:fixed;left:50%;transform:translate(-50%,0) scale(.9);opacity:0;pointer-events:none;
+    font:700 22px/1 "Trebuchet MS",system-ui,sans-serif;color:#7a3d12;letter-spacing:.5px;
+    padding:16px 34px 16px 30px;border-radius:40px;border:4px solid #1f9e9a;cursor:pointer;
+    background:linear-gradient(#fff6de,#f6e2b5);box-shadow:0 6px 0 #167a77,0 10px 18px rgba(0,0,0,.35);
+    transition:opacity .4s,transform .4s}
+  #speel.zichtbaar{opacity:1;transform:translate(-50%,0) scale(1);pointer-events:auto}
+  #speel:hover{transform:translate(-50%,0) scale(1.05)}
+  #speel:active{transform:translate(-50%,3px) scale(1);box-shadow:0 3px 0 #167a77,0 6px 12px rgba(0,0,0,.35)}
+  #opnieuw{position:fixed;right:12px;top:10px;font:600 13px system-ui,sans-serif;color:#fff;opacity:.75;
+    background:rgba(20,30,40,.55);border:1px solid rgba(255,255,255,.25);border-radius:14px;padding:6px 12px;cursor:pointer}
+  #opnieuw:hover{opacity:1}
+  #versie{position:fixed;left:10px;bottom:8px;font:12px system-ui,sans-serif;color:#fff;opacity:.6;text-shadow:0 1px 2px #000}
+</style>
+</head>
+<body>
+<canvas id="doek"></canvas>
+<div id="kaart"><div id="kaartTekst"></div><button id="terug">← terug naar Oelieboelieland</button></div>
+<div id="toeg"><div class="kop">🔍 Toegankelijkheid</div>
+  <label class="rij"><span><b>Loep</b><small>maakt het speelveld groter; zoomen met het muiswieltje of door te knijpen</small></span><input type="checkbox" id="optLoep"><i></i></label>
+  <label class="rij"><span><b>Hoog contrast</b><small>rustige achtergrond, de oelieboelies en gevaren duidelijk omlijnd</small></span><input type="checkbox" id="optContrast"><i></i></label>
+  <div class="noot">Tik buiten dit kader om verder te gaan.</div></div>
+<div id="lvlKaart"><img id="lvlPlaatje" alt=""><div id="lvlNr"></div><div id="lvlNaam"></div><div id="lvlStand"></div><div id="lvlKnoppen"><button id="lvlSpeel">▶ Speel</button><button id="lvlJoker">✨ Joker</button></div><div id="lvlZeker">Weet je het zeker? Je hebt maar één toverkrijtje.<br><button id="zekerNee">Nee</button><button id="zekerJa">Ja, gebruik</button></div></div>
+<button id="boekTerug" aria-label="terug naar de boeken" title="terug naar de boeken"><img alt="" src="plaatjes/opening/terug_boek.webp"></button>
+<button id="plekTerug" aria-label="terug naar de startpagina" title="terug naar de startpagina"><img alt="" src="plaatjes/opening/terug_plek.webp"></button>
+<div id="wisVraag"><div id="wisTitel"></div><div id="wisTekst"></div>
+  <div><button id="wisNee">Nee, toch niet</button><button id="wisHoud"><span>Houd vast om leeg te maken</span></button></div></div>
+<div id="naamVraag"><div id="naamTitel">Wie gaat er in dit boek spelen?</div>
+  <input id="naamInvoer" maxlength="14" autocomplete="off" spellcheck="false" placeholder="je naam">
+  <div><button id="naamNee">Toch niet</button><button id="naamOk">Klaar</button></div></div>
+<input type="range" id="volume" min="0" max="100" step="1" aria-label="Volume van de muziek">
+<button id="opnieuw" style="display:none" title="Speel het begin nog een keer af">↻ nog een keer</button>
+<div id="versie">openingsscherm v0.47</div>
+<script>
+// =====================================================================
+// OELIEBOELIE – OPENINGSSCHERM v0.46 (v0.46: mist op het kaartje verder dan 3 levels vooruit; startpagina van de website; v0.45: gekoppeld aan spel.html en editor.html)
+// Stap 1: blauwdruk-wereld → inkleuren → logo met grote O → blauwdrukje schommelt in de O,
+// laat los, ploft op de onderrand, wordt Balloony (zonder ballon) en blijft zitten.
+// Alles staat in 'podiumpixels': het podium is zo groot als de achtergrond (1672×941) en wordt
+// zo geschaald dat het scherm altijd helemaal gevuld is.
+// =====================================================================
+const D = {"A": {"kleur": "plaatjes/opening/kleur.webp", "schets": "plaatjes/opening/schets.webp", "logo": "plaatjes/opening/logo.webp", "O": "plaatjes/opening/O.webp", "sch": "plaatjes/opening/sch.webp", "los": "plaatjes/opening/los.webp", "bal": "plaatjes/opening/bal.webp", "lach": "plaatjes/opening/lach.webp", "kruip": "plaatjes/opening/kruip.webp", "vlinder": "plaatjes/opening/vlinder.webp", "wegwijzer": "plaatjes/opening/wegwijzer.webp", "wieken": "plaatjes/opening/wieken.webp", "kaart1": "plaatjes/opening/kaart1.webp", "belS": "plaatjes/opening/belS.webp", "belP": "plaatjes/opening/belP.webp", "kamer": "plaatjes/opening/kamer.webp", "pluis": "plaatjes/opening/pluis.webp", "thumbs": {}, "plek": "plaatjes/opening/plek.webp", "boeken": [{"x": 400, "y": 371, "w": 307, "h": 288, "img": "plaatjes/opening/boeken1.webp"}, {"x": 712, "y": 370, "w": 284, "h": 288, "img": "plaatjes/opening/boeken2.webp"}, {"x": 999, "y": 372, "w": 316, "h": 288, "img": "plaatjes/opening/boeken3.webp"}], "gum": "plaatjes/opening/gum.webp", "krijt": "plaatjes/opening/krijt.webp", "ok_geluidAan": "plaatjes/opening/ok_geluidAan.webp", "ok_geluidUit": "plaatjes/opening/ok_geluidUit.webp", "ok_muziekAan": "plaatjes/opening/ok_muziekAan.webp", "ok_muziekUit": "plaatjes/opening/ok_muziekUit.webp", "ok_toeg": "plaatjes/opening/ok_toeg.webp", "ok_balk": "plaatjes/opening/ok_balk.webp", "ok_knop": "plaatjes/opening/ok_knop.webp", "hk_prik": "plaatjes/opening/hk_prik.webp", "hk_maak": "plaatjes/opening/hk_maak.webp", "hk_mijn": "plaatjes/opening/hk_mijn.webp", "hk_speel": "plaatjes/opening/hk_speel.webp", "hk_bouw": "plaatjes/opening/hk_bouw.webp", "hk_eerst": "plaatjes/opening/hk_eerst.webp", "huis": "plaatjes/opening/huis.webp", "kaart2": "plaatjes/opening/kaart2.webp", "kaart3": "plaatjes/opening/kaart3.webp", "kaart4": "plaatjes/opening/kaart4.webp", "knG": "plaatjes/opening/knG.webp", "knV": "plaatjes/opening/knV.webp", "knT": "plaatjes/opening/knT.webp", "knS": "plaatjes/opening/knS.webp", "ooglid": "plaatjes/opening/ooglid.png", "kijk": "plaatjes/opening/kijk.webp", "bord_start": "plaatjes/opening/bord_start.webp"}, "M": {"bg": [1672, 941], "logo": {"w": 1500, "h": 750, "schaal": 0.8455467869222097, "oudeO": [33.82187147688839, 279.0304396843292, 308.62457722660656, 667.9819616685458]}, "O": {"w": 552, "h": 620, "gat": {"top": [288.4160139251523, 166.73629242819842], "bot": [254.96083550913835, 417.65013054830285], "l": 157.56309834638816, "r": 378.798955613577}}, "sch": [{"x": 0, "w": 162, "h": 206, "kx": 89.5, "ky": 81.7, "kr": 45.4, "hx": 92.0, "hy": 30.2}, {"x": 164, "w": 155, "h": 208, "kx": 82.8, "ky": 82.2, "kr": 45.7, "hx": 82.2, "hy": 30.8}, {"x": 321, "w": 147, "h": 197, "kx": 72.7, "ky": 82.2, "kr": 46.8, "hx": 73.0, "hy": 30.8}, {"x": 470, "w": 160, "h": 209, "kx": 72.7, "ky": 82.2, "kr": 46.3, "hx": 71.9, "hy": 31.3}, {"x": 632, "w": 166, "h": 199, "kx": 75.0, "ky": 77.2, "kr": 45.1, "hx": 71.6, "hy": 26.9}, {"x": 800, "w": 148, "h": 204, "kx": 74.4, "ky": 81.1, "kr": 46.3, "hx": 73.6, "hy": 30.8}, {"x": 950, "w": 147, "h": 201, "kx": 72.2, "ky": 82.2, "kr": 46.3, "hx": 73.0, "hy": 30.8}, {"x": 1099, "w": 156, "h": 205, "kx": 82.8, "ky": 81.1, "kr": 45.5, "hx": 83.1, "hy": 30.2}], "los": [{"x": 0, "w": 142, "h": 211, "kx": 70.5, "ky": 85.5, "kr": 45.5, "hx": 70.5, "hy": 34.7}, {"x": 144, "w": 172, "h": 191, "kx": 86.1, "ky": 82.6, "kr": 45.6, "hx": 89.5, "hy": 52.6}, {"x": 318, "w": 168, "h": 200, "kx": 84.3, "ky": 83.8, "kr": 44.8, "hx": 80.6, "hy": 4.0}, {"x": 488, "w": 165, "h": 195, "kx": 82.6, "ky": 87.2, "kr": 46.0, "hx": 78.0, "hy": 6.4}, {"x": 655, "w": 177, "h": 183, "kx": 87.8, "ky": 89.5, "kr": 47.4, "hx": 80.0, "hy": 20.8}, {"x": 834, "w": 170, "h": 188, "kx": 84.3, "ky": 86.1, "kr": 46.0, "hx": 78.3, "hy": 3.5}, {"x": 1006, "w": 139, "h": 194, "kx": 68.7, "ky": 87.8, "kr": 46.6, "hx": 62.4, "hy": 19.6}, {"x": 1147, "w": 144, "h": 193, "kx": 71.6, "ky": 86.6, "kr": 46.1, "hx": 65.3, "hy": 19.6}], "bal": [{"x": 0, "w": 193, "h": 237, "kx": 109.2, "ky": 86.6, "kr": 48.6, "ax": 96.5, "ay": 165.9}, {"x": 195, "w": 193, "h": 237, "kx": 109.2, "ky": 86.6, "kr": 48.3, "ax": 96.5, "ay": 165.9}, {"x": 390, "w": 193, "h": 237, "kx": 108.0, "ky": 86.6, "kr": 48.8, "ax": 96.5, "ay": 165.9}, {"x": 585, "w": 192, "h": 237, "kx": 108.0, "ky": 86.6, "kr": 48.6, "ax": 96.0, "ay": 165.9}, {"x": 779, "w": 193, "h": 236, "kx": 107.4, "ky": 86.0, "kr": 47.9, "ax": 96.5, "ay": 165.2}, {"x": 974, "w": 192, "h": 236, "kx": 107.4, "ky": 89.6, "kr": 45.2, "ax": 96.0, "ay": 165.2}, {"x": 1168, "w": 193, "h": 236, "kx": 107.4, "ky": 86.0, "kr": 48.3, "ax": 96.5, "ay": 165.2}, {"x": 1363, "w": 192, "h": 236, "kx": 108.0, "ky": 86.0, "kr": 48.2, "ax": 96.0, "ay": 165.2}], "lach": [{"x": 0, "w": 194, "h": 237, "ax": 97.0, "ay": 165.9}, {"x": 196, "w": 193, "h": 237, "ax": 96.5, "ay": 165.9}, {"x": 391, "w": 194, "h": 237, "ax": 97.0, "ay": 165.9}, {"x": 587, "w": 193, "h": 237, "ax": 96.5, "ay": 165.9}, {"x": 782, "w": 193, "h": 238, "ax": 96.5, "ay": 166.9}, {"x": 977, "w": 194, "h": 238, "ax": 97.0, "ay": 166.9}, {"x": 1173, "w": 194, "h": 237, "ax": 97.0, "ay": 165.9}, {"x": 1369, "w": 193, "h": 236, "ax": 96.5, "ay": 164.9}], "kruip": [{"x": 0, "w": 366, "h": 207, "ax": 147.0, "ay": 207}, {"x": 368, "w": 367, "h": 215, "ax": 220.0, "ay": 215}, {"x": 737, "w": 420, "h": 369, "ax": 212.0, "ay": 369}, {"x": 1159, "w": 424, "h": 370, "ax": 218.0, "ay": 370}, {"x": 1585, "w": 417, "h": 370, "ax": 213.0, "ay": 370}, {"x": 2004, "w": 414, "h": 374, "ax": 210.0, "ay": 374}, {"x": 2420, "w": 422, "h": 366, "ax": 214.5, "ay": 366}, {"x": 2844, "w": 420, "h": 370, "ax": 214.5, "ay": 370}], "vlinder": [{"x": 0, "w": 173, "h": 170, "ax": 128.6, "ay": 112.0}, {"x": 175, "w": 184, "h": 122, "ax": 140.0, "ay": 64.0}, {"x": 361, "w": 200, "h": 133, "ax": 138.9, "ay": 54.9}, {"x": 563, "w": 199, "h": 131, "ax": 140.0, "ay": 55.4}, {"x": 764, "w": 171, "h": 162, "ax": 124.6, "ay": 55.4}, {"x": 937, "w": 184, "h": 106, "ax": 140.0, "ay": 55.4}, {"x": 1123, "w": 199, "h": 131, "ax": 140.6, "ay": 54.9}, {"x": 1324, "w": 180, "h": 133, "ax": 136.0, "ay": 77.1}], "ww": {"paal": {"x": 0, "w": 337, "h": 601}, "pijl": [{"x": 339, "w": 820, "h": 364, "vilt": [113, 92, 661, 278]}, {"x": 1161, "w": 535, "h": 251, "vilt": [84, 72, 431, 190]}, {"x": 1698, "w": 522, "h": 249, "vilt": [83, 68, 424, 185]}], "bord": {"w": 840, "h": 359}}, "wieken": {"w": 500, "h": 511}, "pluis": {"w": 185, "h": 240, "ax": 93.3, "ay": 76.2}, "levels": [{"nr": 1, "naam": "Oelieboelie Buildy"}, {"nr": 2, "naam": "Bruggetjes"}, {"nr": 3, "naam": "In de val?"}, {"nr": 4, "naam": "Oelieboelie Fungy"}, {"nr": 5, "naam": "Fungy power!"}, {"nr": 6, "naam": "Paddo poing poing"}, {"nr": 7, "naam": "Oelieboelie Balloony"}, {"nr": 8, "naam": "Zwevend"}, {"nr": 9, "naam": "Holbewoners"}, {"nr": 10, "naam": "Oelieboelie Bomby"}, {"nr": 11, "naam": "Boem!"}, {"nr": 12, "naam": "Vele slachtoffers"}, {"nr": 13, "naam": "Oelieboelie Rocky"}, {"nr": 14, "naam": "Steengoed"}, {"nr": 15, "naam": "Ontsnap uit de kerker"}, {"nr": 16, "naam": "Oelieboelie Roby"}, {"nr": 17, "naam": "Grottenonderzoek"}, {"nr": 18, "naam": "Ughe ughe"}, {"nr": 19, "naam": "Oelieboelie Hooky"}, {"nr": 20, "naam": "Naar beneden"}, {"nr": 21, "naam": "Nog een keer en nog een keer"}], "ooglid": {"x": 1135, "y": 788, "w": 24, "h": 25}, "kijk": [{"x": 0, "w": 193, "h": 237, "ax": 96.5, "ay": 165.9}, {"x": 195, "w": 193, "h": 237, "ax": 96.5, "ay": 165.9}, {"x": 390, "w": 193, "h": 237, "ax": 96.5, "ay": 165.9}, {"x": 585, "w": 193, "h": 237, "ax": 96.5, "ay": 165.9}]}};
+const M = D.M;
+// (v0.44) Fungy gluurt uit het gras bij de paddenstoelen (Images\fungy_gluurt.png, losgeknipt van de blauwe achtergrond)
+D.A.fungy = "plaatjes/opening/fungy.webp";
+M.fungy = [{"x": 0, "w": 259, "h": 261, "ax": 128.0, "ay": 258}, {"x": 261, "w": 255, "h": 288, "ax": 128.0, "ay": 285}, {"x": 518, "w": 252, "h": 331, "ax": 128.5, "ay": 328}, {"x": 772, "w": 252, "h": 331, "ax": 129.0, "ay": 328}, {"x": 1026, "w": 255, "h": 335, "ax": 129.0, "ay": 332}, {"x": 1283, "w": 269, "h": 334, "ax": 131.0, "ay": 331}, {"x": 1554, "w": 245, "h": 333, "ax": 127.0, "ay": 330}, {"x": 1801, "w": 260, "h": 280, "ax": 130.5, "ay": 277}];
+
+// ---- instellingen (hier schaaf je aan maat, plek en tempo) ----
+const LOGO_BREED   = 860;     // breedte van het logo op het podium
+const LOGO_Y       = 26;      // afstand van de bovenkant
+const LOGO_X_SCHUIF= 70;      // logo iets naar rechts, want de grote O steekt links uit
+const O_FACTOR     = 1.45;    // de nieuwe O is zoveel keer zo hoog als de O in het logo
+const FIGUUR_SCHAAL= 0.85;    // grootte van de oelieboelie (1 = opgeslagen plaatjesmaat)
+const BAL_ZAKT     = 0.70;    // waar Balloony's knuistjes zitten (deel van zijn hoogte vanaf boven)
+const BAL_SCHAAL   = 0.80;    // Balloony ten opzichte van het blauwdrukje (zijn haar en voelsprieten maken hem groter)
+const BAL_HOOGTE   = 10;      // zoveel podiumpixels boven het laagste punt van het gat liggen zijn knuistjes
+
+const T_SCHETS     = 0.7;     // zo lang zie je eerst alleen de potloodschets
+const T_KLEUR      = 2.1;     // zo lang duurt het inkleuren
+const T_LOGO       = 2.3;     // dan komt het logo
+const T_O          = 2.6;     // dan springt de O erin (met de oelieboelie eraan)
+const SCHOMMEL_FPS = 9;
+const SCHOMMEL_KEER= 2;       // zo vaak schommelt hij heen en weer
+const T_ZIT_TOT_BALLOONY = 0.6;
+const BUNGEL_FPS   = 5;
+const BUNGEL_DRUK  = 3.2;     // zo lang mag Balloony eerst lekker wild trappelen (seconden)
+const RUST_MIN = 1.2, RUST_MAX = 7.5;   // (v0.4) rust tussen twee kleine bewegingen: meestal kort-ish, soms lang
+const LACH_EERST = [8, 20];            // (v0.4) de eerste keer aankijken: ergens tussen 8 en 20 seconden na de drukke start
+const LACH_MIN = 18, LACH_MAX = 60;    // daarna ergens tussen 18 en 60 seconden opnieuw
+// (v0.12) Rocky kruipt rechtsonder van onder de rand van het scherm omhoog: eerst zijn vingers, dan zijn hoofd
+// tot net boven zijn ogen. Hij kijkt rond, ziet de speler, schrikt, en verdwijnt weer (hoofd, dan vingers).
+const ROCKY_X = 1430;                  // midden van zijn hoofd (podium)
+const ROCKY_SCHAAL = 0.5;              // hoofd opgeslagen 420 px breed → 210 podiumpixels
+const ROCKY_HAND = 0.72;               // handen zoveel hoofdbreedtes links en rechts van het midden
+const ROCKY_HANDMAAT = 0.75;           // handen iets kleiner dan in de tekening
+const ROCKY_ZICHT = 0.91;              // zoveel van zijn hoofd komt boven de rand (tot net onder zijn ogen)
+const ROCKY_EERST = [2, 5];            // eerste keer: zoveel seconden nadat Balloony er is
+const ROCKY_RUST = [15, 35];           // daarna zoveel seconden tussen twee keer
+
+// ---- plaatjes ----
+function laad(src){ const i = new Image(); i.src = src; return i; }
+const IMG = { kleur: laad(D.A.kleur), schets: laad(D.A.schets), logo: laad(D.A.logo), O: laad(D.A.O),
+              sch: laad(D.A.sch), los: laad(D.A.los), bal: laad(D.A.bal), lach: laad(D.A.lach), kruip: laad(D.A.kruip), vlinder: laad(D.A.vlinder), wegwijzer: laad(D.A.wegwijzer), wieken: laad(D.A.wieken), kamer: laad(D.A.kamer), plek: laad(D.A.plek), hkPrik: laad(D.A.hk_prik), hkMaak: laad(D.A.hk_maak), hkMijn: laad(D.A.hk_mijn), hkSpeel: laad(D.A.hk_speel), hkBouw: laad(D.A.hk_bouw), hkEerst: laad(D.A.hk_eerst), okGA: laad(D.A.ok_geluidAan), okGU: laad(D.A.ok_geluidUit), okMA: laad(D.A.ok_muziekAan), okMU: laad(D.A.ok_muziekUit), okT: laad(D.A.ok_toeg), okBalk: laad(D.A.ok_balk), okKnop: laad(D.A.ok_knop), krijt: laad(D.A.krijt), huis: laad(D.A.huis), gum: laad(D.A.gum), kaart1: laad(D.A.kaart1), kaart2: laad(D.A.kaart2), kaart3: laad(D.A.kaart3), kaart4: laad(D.A.kaart4), knG: laad(D.A.knG), knV: laad(D.A.knV), knT: laad(D.A.knT), knS: laad(D.A.knS), belS: laad(D.A.belS), belP: laad(D.A.belP), pluis: laad(D.A.pluis), ooglid: laad(D.A.ooglid), kijk: laad(D.A.kijk), bordStart: laad(D.A.bord_start), fungy: laad(D.A.fungy) };
+
+// ---- podium ----
+const doek = document.getElementById('doek'), ctx = doek.getContext('2d');
+const PW = M.bg[0], PH = M.bg[1];
+let schaal = 1, ox = 0, oy = 0, dpr = 1, randBoven = 0, randOnder = 0, zijbalk = false;
+const VEILIG_BOVEN = 10, VEILIG_ONDER = 870;   // (v0.8) dit stuk van het podium is altijd in beeld
+const ZIJBALK_KLEUR = '#1b2633';               // zelfde donkerblauw als rond het speelveld in het spel
+const klem = (v, a, b) => Math.max(a, Math.min(b, v));
+function maat(){
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  doek.width = Math.round(innerWidth*dpr); doek.height = Math.round(innerHeight*dpr);
+  // (v0.8) Verschillende schermvormen. Het 'veilige gebied' (van de boom tot en met de grot, van de bovenkant
+  // van het logo tot onder de Speel-knop) staat altijd helemaal in beeld.
+  //  - normaal (16:9 tot ca. 1,94:1): het beeld vult het scherm; bij iets bredere schermen gaat er boven en
+  //    onder een klein stukje af (nooit van het veilige gebied);
+  //  - smaller dan 16:9 (iPad, 4:3): de hele breedte blijft in beeld; erboven komt extra lucht en eronder
+  //    extra ondergrond (gespiegeld en wazig);
+  //  - breder dan ca. 1,94:1: het beeld houdt op; links en rechts donkerblauwe zijbalken.
+  const W = innerWidth, H = innerHeight, R = W/H, BG_R = PW/PH, MAX_R = PW/(VEILIG_ONDER - VEILIG_BOVEN);
+  randBoven = 0; randOnder = 0; zijbalk = false;
+  if(R < BG_R){
+    schaal = W/PW; const extra = H/schaal - PH;
+    randBoven = extra*0.65; randOnder = extra - randBoven;
+    ox = 0; oy = randBoven*schaal;
+  } else if(R <= MAX_R){
+    schaal = W/PW; const zicht = H/schaal, weg = PH - zicht;
+    const wy = klem(weg*0.3, VEILIG_ONDER - zicht, VEILIG_BOVEN);
+    ox = 0; oy = -wy*schaal;
+  } else {
+    schaal = H/(VEILIG_ONDER - VEILIG_BOVEN); zijbalk = true;
+    ox = (W - PW*schaal)/2; oy = -VEILIG_BOVEN*schaal;
+  }
+  // de Speel-knop op podiumhoogte 800 (onder het menu-gebied)
+  const knop = { style: {}, offsetHeight: 0 };   // (v0.16) de tijdelijke Speel-knop is vervangen door de wegwijzer
+  knop.style.fontSize = klem(24*schaal, 14, 30) + 'px';
+  knop.style.top = (oy + 858*schaal - knop.offsetHeight) + 'px';   // (v0.8) onderkant altijd binnen het veilige gebied
+  // (v0.43) Fungy en Hooky (de terugknoppen) hangen in de linkerbovenhoek van het speelbeeld, niet van het scherm:
+  // op een ultrabreed scherm schuiven ze dus mee naar het beeld. Hun grootte groeit mee met het beeld.
+  for(const id of ['plekTerug', 'boekTerug']){ const b = document.getElementById(id); if(!b) continue;
+    b.style.left = Math.max(10, ox + 10) + 'px'; b.style.top = '8px'; b.style.width = klem(190*schaal, 110, 240) + 'px'; }
+}
+addEventListener('resize', maat); maat();
+
+// ---- logo en O op het podium ----
+const LS = LOGO_BREED / M.logo.w;                         // schaal van het logo
+const LOGO_X = (PW - LOGO_BREED)/2 + LOGO_X_SCHUIF;
+const oudeO = M.logo.oudeO.map(v => v*LS);               // [x0, y0, x1, y1] van de oude O
+const OH = (oudeO[3]-oudeO[1]) * O_FACTOR, OS = OH / M.O.h, OW = M.O.w*OS;
+const O_X = LOGO_X + oudeO[2] - OW + 14;                 // rechterkant van de nieuwe O bij de oude
+const O_Y = LOGO_Y + oudeO[3] - OH + 22;                 // onderkant iets lager dan de oude
+const GAT = M.O.gat;
+const gatTop = { x: O_X + GAT.top[0]*OS, y: O_Y + GAT.top[1]*OS };
+const gatBot = { x: O_X + GAT.bot[0]*OS, y: O_Y + GAT.bot[1]*OS };
+
+// ---- tijd ----
+let start = performance.now();
+function opnieuw(){ start = performance.now(); deeltjes.length = 0; landTijd = null; }
+document.getElementById('opnieuw').onclick = opnieuw;
+
+// ---- hulpjes ----
+const glad = v => { v = klem(v,0,1); return v*v*(3-2*v); };
+function veer(t, duur=0.55, overschiet=0.18){       // 0 → 1 met een klein overschietje
+  if(t <= 0) return 0; if(t >= duur) return 1;
+  const v = t/duur; return 1 + Math.sin(v*Math.PI*1.5) * overschiet * (1-v) - Math.pow(1-v,3);
+}
+function tekenFrame(img, f, x, y, s, alpha=1, rot=0, ax=null, ay=null){
+  // tekent beeldje f zo dat punt (ax, ay) van het beeldje op (x, y) van het podium komt
+  ax = ax ?? f.w/2; ay = ay ?? f.h/2;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.translate(x, y); if(rot) ctx.rotate(rot); ctx.scale(s, s);
+  ctx.drawImage(img, f.x, 0, f.w, f.h, -ax, -ay, f.w, f.h); ctx.restore();
+}
+
+// ---- fonkeltjes ----
+const deeltjes = [];
+function fonkel(x, y, n, kracht=60, kleuren=['#fff7c2','#ffd24a','#ffffff','#ffe9a8']){
+  for(let i=0;i<n;i++){ const h = Math.random()*Math.PI*2, v = kracht*(0.3+Math.random());
+    deeltjes.push({ x, y, vx: Math.cos(h)*v, vy: Math.sin(h)*v - kracht*0.3, leven: 0.5+Math.random()*0.6, t: 0,
+      r: 2+Math.random()*3.5, k: kleuren[i % kleuren.length] }); }
+}
+function tekenSter(x, y, r, a){
+  ctx.save(); ctx.globalAlpha = a; ctx.translate(x, y); ctx.beginPath();
+  for(let i=0;i<8;i++){ const rr = i%2 ? r*0.28 : r, h = i*Math.PI/4; ctx.lineTo(Math.cos(h)*rr, Math.sin(h)*rr); }
+  ctx.closePath(); ctx.fill(); ctx.restore();
+}
+
+// ---- het inkleuren ----
+const kleurDoek = document.createElement('canvas'), kctx = kleurDoek.getContext('2d');
+kleurDoek.width = PW; kleurDoek.height = PH;
+// (v0.8) extra lucht boven en ondergrond onder (alleen bij smallere schermen): gespiegeld en wazig
+const randCache = {};
+// maakt een wazige versie van wat teken() op een vel van w×h zet; de randen worden eerst 'uitgerekt',
+// zodat het waas aan de randen niet doorzichtig (en dus donker) wordt
+function wazig(w, h, teken, px = 14){
+  const m = px*3, T = document.createElement('canvas'); T.width = w + 2*m; T.height = h + 2*m;
+  const t = T.getContext('2d'); t.save(); t.translate(m, m); teken(t); t.restore();
+  t.drawImage(T, m, m, w, 1, m, 0, w, m);            t.drawImage(T, m, m+h-1, w, 1, m, m+h, w, m);
+  t.drawImage(T, m, 0, 1, h+2*m, 0, 0, m, h+2*m);     t.drawImage(T, m+w-1, 0, 1, h+2*m, m+w, 0, m, h+2*m);
+  const F = document.createElement('canvas'); F.width = w; F.height = h; const f = F.getContext('2d');
+  f.filter = `blur(${px}px)`; f.drawImage(T, -m, -m); f.filter = 'none';
+  return F;
+}
+function randBeeld(naam, onder){
+  const sleutel = naam + (onder ? 'O' : 'B'); if(randCache[sleutel]) return randCache[sleutel];
+  const img = IMG[naam]; if(!img.complete || !img.naturalWidth) return null;
+  const h = 560, sy = img.naturalHeight/PH;
+  const c = wazig(PW, h, k => { k.scale(1, -1);
+    if(onder) k.drawImage(img, 0, img.naturalHeight - h*sy, img.naturalWidth, h*sy, 0, -h, PW, h);
+    else      k.drawImage(img, 0, 0, img.naturalWidth, h*sy, 0, -h, PW, h); });
+  const k = c.getContext('2d');
+  // naar de verte toe iets zachter/lichter (lucht) of donkerder (grond)
+  const g = k.createLinearGradient(0, onder ? 0 : h, 0, onder ? h : 0);
+  g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, onder ? 'rgba(30,40,30,0.35)' : 'rgba(190,220,255,0.35)');
+  k.fillStyle = g; k.fillRect(0, 0, PW, h);
+  return (randCache[sleutel] = c);
+}
+// een zachte overgang over de naad: het wazige beeld loopt een stukje over de rand van het echte beeld heen
+function naadBeeld(naam, onder){
+  const sleutel = naam + (onder ? 'nO' : 'nB'); if(randCache[sleutel]) return randCache[sleutel];
+  const img = IMG[naam]; if(!img.complete || !img.naturalWidth) return null;
+  const h = 70, sy = img.naturalHeight/PH;
+  const c = wazig(PW, h, k => {
+    if(onder) k.drawImage(img, 0, img.naturalHeight - h*sy, img.naturalWidth, h*sy, 0, 0, PW, h);
+    else      k.drawImage(img, 0, 0, img.naturalWidth, h*sy, 0, 0, PW, h); });
+  const k = c.getContext('2d'); k.globalCompositeOperation = 'destination-in';
+  const g = k.createLinearGradient(0, onder ? h : 0, 0, onder ? 0 : h);
+  g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+  k.fillStyle = g; k.fillRect(0, 0, PW, h);
+  return (randCache[sleutel] = c);
+}
+function tekenNaden(naam, alpha){
+  if(randBoven <= 0 && randOnder <= 0) return;
+  const b = naadBeeld(naam, false), o = naadBeeld(naam, true); if(!b || !o) return;
+  ctx.save(); ctx.globalAlpha = alpha;
+  if(randBoven > 0) ctx.drawImage(b, 0, 0);
+  if(randOnder > 0) ctx.drawImage(o, 0, PH - o.height);
+  ctx.restore();
+}
+function tekenRanden(naam, alpha){
+  if(randBoven <= 0 && randOnder <= 0) return;
+  const b = randBeeld(naam, false), o = randBeeld(naam, true); if(!b || !o) return;
+  ctx.save(); ctx.globalAlpha = alpha;
+  if(randBoven > 0) ctx.drawImage(b, 0, b.height - Math.min(b.height, randBoven + 2), PW, Math.min(b.height, randBoven + 2), 0, -randBoven - 1, PW, Math.min(b.height, randBoven + 2));
+  if(randBoven > b.height){ ctx.drawImage(b, 0, 0, PW, 2, 0, -randBoven - 1, PW, randBoven - b.height + 2); }
+  if(randOnder > 0) ctx.drawImage(o, 0, 0, PW, Math.min(o.height, randOnder + 2), 0, PH - 1, PW, Math.min(o.height, randOnder + 2));
+  if(randOnder > o.height){ ctx.drawImage(o, 0, o.height - 2, PW, 2, 0, PH - 1 + o.height, PW, randOnder - o.height + 2); }
+  ctx.restore();
+}
+// =====================================================================
+// (v0.34) HOOG CONTRAST OOK IN HET OPENINGSSCHERM (als 'Hoog contrast' aanstaat in de molen)
+// 'Spotlight': de tekeningen gaan naar achteren (donkerder, bijna kleurloos); alles waar je op kunt tikken blijft
+// in volle kleur met een vaste gele rand. Naambordjes groter. Vlinder, pluisje, glimwormpjes en stofjes weg.
+// In het prentenboek: kaart naar achteren, pad met donkere rand, bolletjes met donkere rand, volgende level felle ring.
+// =====================================================================
+function hc(){ return !!OPTIES.contrast; }
+const HC_GEEL = '#ffd83c';
+function hcDemp(x, y, w, h, sterk = 0.55){
+  ctx.save(); ctx.globalCompositeOperation = 'saturation'; ctx.fillStyle = 'rgba(128,128,128,0.82)'; ctx.fillRect(x, y, w, h);
+  ctx.globalCompositeOperation = 'source-over'; ctx.fillStyle = `rgba(6,10,18,${sterk})`; ctx.fillRect(x, y, w, h); ctx.restore();
+}
+function hcVorm(v){   // v = { ellips: [cx, cy, rx, ry] } of { rect: [x0, y0, x1, y1] }
+  ctx.beginPath();
+  if(v.ellips){ const [cx, cy, rx, ry] = v.ellips; ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI*2); }
+  else { const [x0, y0, x1, y1] = v.rect, m = 8; ctx.roundRect(x0 - m, y0 - m, x1 - x0 + 2*m, y1 - y0 + 2*m, 26); }
+}
+function hcSpot(img, v, t){   // stukje van de tekening weer in volle kleur, met een gele rand eromheen
+  ctx.save(); hcVorm(v); ctx.clip(); ctx.drawImage(img, 0, 0, PW, PH); ctx.restore();
+  ctx.save(); ctx.strokeStyle = HC_GEEL; ctx.lineWidth = 4.5; ctx.globalAlpha *= 0.85 + 0.15*Math.sin(t*3);
+  ctx.shadowColor = 'rgba(255,216,60,0.85)'; ctx.shadowBlur = 14; hcVorm(v); ctx.stroke(); ctx.restore();
+}
+function hcWereld(t){   // buiten: alles naar achteren behalve de molen en het huisje
+  const v = glad((t - T_SCHETS)/T_KLEUR); if(v <= 0) return;
+  ctx.save(); ctx.globalAlpha = v;
+  hcDemp(-PW, -PH, PW*3, PH*3);
+  hcSpot(IMG.kleur, { ellips: [262, 420, 118, 165] }, t);
+  hcSpot(IMG.kleur, { ellips: [1478, 372, 205, 175] }, t);
+  ctx.restore();
+}
+function tekenWereld(t){
+  tekenRanden('schets', 1);
+  ctx.drawImage(IMG.schets, 0, 0, PW, PH);
+  tekenNaden('schets', 1);
+  const v = glad((t - T_SCHETS)/T_KLEUR);
+  tekenRanden('kleur', v);
+  if(v <= 0) return;
+  if(v >= 1){ ctx.drawImage(IMG.kleur, 0, 0, PW, PH); tekenNaden('kleur', 1); return; }
+  const cx = PW*0.5, cy = PH*0.42, max = Math.hypot(PW*0.55, PH*0.62), rand = 140;
+  const r = v*(max + rand);
+  kctx.globalCompositeOperation = 'source-over'; kctx.clearRect(0,0,PW,PH);
+  kctx.drawImage(IMG.kleur, 0, 0, PW, PH);
+  kctx.globalCompositeOperation = 'destination-in';
+  const g = kctx.createRadialGradient(cx, cy, Math.max(0, r-rand), cx, cy, Math.max(1, r));
+  g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+  kctx.fillStyle = g; kctx.fillRect(0,0,PW,PH);
+  ctx.drawImage(kleurDoek, 0, 0);
+  // gloed en fonkeltjes op de rand van de kleur
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  const g0 = Math.max(0, r-rand*0.9), g1 = Math.max(g0+1, r-rand*0.2);
+  const gl = ctx.createRadialGradient(cx, cy, g0, cx, cy, g1);
+  gl.addColorStop(0,'rgba(255,230,160,0)'); gl.addColorStop(0.7,'rgba(255,225,150,0.16)'); gl.addColorStop(1,'rgba(255,230,160,0)');
+  ctx.fillStyle = gl; ctx.fillRect(0,0,PW,PH); ctx.restore();
+  if(Math.random() < 0.9) for(let i=0;i<3;i++){ const h = Math.random()*Math.PI*2, rr = r - rand*0.55;
+    fonkel(cx + Math.cos(h)*rr, cy + Math.sin(h)*rr, 1, 25); }
+}
+
+// ---- de oelieboelie in de O ----
+let landTijd = null, balloonyTijd = null;
+function oelieboelie(t, oRot, oSq){
+  const tO = t - T_O; if(tO < 0) return;
+  const sch = M.sch, los = M.los, bal = M.bal, S = FIGUUR_SCHAAL;
+  const tSchommel = sch.length * SCHOMMEL_KEER / SCHOMMEL_FPS;
+  const tLos = 0.30, tVal = 0.34;
+  const hangX = gatTop.x, hangY = gatTop.y - 12;
+  // wat de O doet (kantelen/indeuken) doet de oelieboelie mee: we tekenen in het assenstelsel van de O
+  if(tO < tSchommel){
+    const i = Math.floor(tO*SCHOMMEL_FPS) % sch.length, f = sch[i];
+    const zwaai = Math.sin((tO*SCHOMMEL_FPS/sch.length)*Math.PI*2 + Math.PI/2) * 0.06;
+    tekenFrame(IMG.sch, f, hangX, hangY, S, 1, zwaai, f.hx, f.hy);
+    return;
+  }
+  const t2 = tO - tSchommel;
+  // waar zijn hoofd zit als hij hangt (beeldje 0 van 'los', uitgelijnd op de handen)
+  const f0 = los[0], kopHangX = hangX + (f0.kx - f0.hx)*S, kopHangY = hangY + (f0.ky - f0.hy)*S;
+  // waar zijn hoofd zit als hij zit (beeldje 7 van 'los': voetjes over de onderrand)
+  const f7 = los[7], zitKopX = gatBot.x, zitKopY = gatBot.y + (f7.h*0.2 - (f7.h - f7.ky))*S;
+  if(t2 < tLos){
+    const f = t2 < tLos/2 ? los[0] : los[1];
+    if(f === los[0]) tekenFrame(IMG.los, f, hangX, hangY, S, 1, 0, f.hx, f.hy);
+    else tekenFrame(IMG.los, f, kopHangX, kopHangY, S, 1, 0, f.kx, f.ky);
+    return;
+  }
+  const t3 = t2 - tLos;
+  if(t3 < tVal){
+    const v = t3/tVal, val = v*v;                         // versnellen, zoals vallen
+    const f = v < 0.5 ? los[2] : los[3];
+    tekenFrame(IMG.los, f, kopHangX + (zitKopX-kopHangX)*v, kopHangY + (zitKopY-kopHangY)*val, S, 1, 0, f.kx, f.ky);
+    return;
+  }
+  if(landTijd === null){ landTijd = t; }
+  const t4 = t3 - tVal;
+  const landReeks = [[4,0.10],[5,0.10],[6,0.12],[7,9]];
+  let acc = 0, fi = 7; for(const [k,d] of landReeks){ if(t4 < acc + d){ fi = k; break; } acc += d; }
+  const tTrans = t4 - 0.32 - T_ZIT_TOT_BALLOONY;
+  const f = los[fi];
+  // blauwdruk: verdwijnt in de tover-flits
+  const aBlauw = tTrans < 0 ? 1 : 1 - klem(tTrans/0.22, 0, 1);
+  const sBlauw = tTrans < 0 ? 1 : 1 + 0.18*klem(tTrans/0.22, 0, 1);
+  if(aBlauw > 0) tekenFrame(IMG.los, f, zitKopX, zitKopY, S*sBlauw, aBlauw, 0, f.kx, f.ky);
+  if(tTrans >= 0){
+    if(balloonyTijd === null){ balloonyTijd = t; }
+    const [vel, j] = balloonyBeeld(Math.max(0, tTrans - 0.1)), b = M[vel][j];
+    const sB = S * BAL_SCHAAL * (0.55 + 0.45*veer(tTrans, 0.45, 0.22));
+    const aB = klem(tTrans/0.15, 0, 1);
+    // Balloony: knuistjes op de onderrand
+    tekenFrame(IMG[vel], b, gatBot.x, gatBot.y - BAL_HOOGTE, sB, aB, 0, b.ax, b.ay);
+  }
+}
+
+// ---- (v0.2) Balloony: eerst even wild, daarna vooral rust ----
+// Beeldje 0 is de rusthouding. Af en toe: één trappeltje (beeldje 1, 3 of 7), de ogen even dicht (beeldje 5),
+// of een kort dubbel trappeltje. (v0.3) Heel soms kijkt ze de speler recht aan en lacht ze liefdevol
+// (reeks 'lach'). Sinds v0.4 is de volgorde echt toevallig.
+const RUST = ['bal', 0];
+const ACTIES = [ [['bal',1,0.4]], [['bal',3,0.4]], [['bal',5,0.28]], [['bal',7,0.4]],
+                 [['bal',1,0.22],['bal',0,0.18],['bal',3,0.22]], [['bal',5,0.18],['bal',0,0.14],['bal',5,0.18]] ];
+const LACH = [['lach',0,0.12],['lach',1,0.22],['lach',2,0.45],['lach',3,0.25],['lach',4,1.0],['lach',5,0.8],['lach',6,0.4],['lach',7,0.2]];
+// (v0.4) Echt toeval: bij elke keer afspelen een nieuw plan. Rustpauzes wisselen sterk (soms twee bewegingen
+// vlak na elkaar, soms lang niets), elke beweging duurt net iets korter of langer, en de keuze is gewogen:
+// een enkel trappeltje of knipperen komt het vaakst voor, het dubbele trappeltje minder vaak.
+// (v0.40) Ter afwisseling kijkt ze soms naar links beneden, alsof ze iets op de grond ziet (Images\balloony_kijkt.png):
+// de ogen glijden naar beneden, blijven daar even, ze knippert één keer en kijkt dan weer omhoog.
+ACTIES.push([['kijk',1,0.12],['kijk',2,1.5],['kijk',3,0.15],['kijk',2,0.8],['kijk',1,0.12]]);
+const GEWICHT = [3, 3, 3, 2, 1, 1, 1.5];
+function kiesActie(){
+  const tot = GEWICHT.reduce((a,b)=>a+b,0); let r = Math.random()*tot;
+  for(let i=0;i<ACTIES.length;i++){ r -= GEWICHT[i]; if(r < 0) return ACTIES[i]; }
+  return ACTIES[0];
+}
+let balloonyPlan = [];
+function maakPlan(){
+  const plan = []; let t = BUNGEL_DRUK + 0.5 + Math.random()*1.5;
+  let lachOp = BUNGEL_DRUK + LACH_EERST[0] + Math.random()*(LACH_EERST[1]-LACH_EERST[0]);
+  while(t < 900){
+    let a; if(t >= lachOp){ a = LACH; lachOp = t + LACH_MIN + Math.random()*(LACH_MAX - LACH_MIN); }
+    else a = kiesActie();
+    const tempo = 0.8 + Math.random()*0.45;                       // net iets sneller of trager
+    a = a.map(([v,k,d]) => [v, k, d*tempo]);
+    plan.push([t, a]);
+    const r = Math.random(), rust = RUST_MIN + Math.pow(r, 1.6)*(RUST_MAX - RUST_MIN);   // vaker korter, soms lang
+    t += a.reduce((s, x) => s + x[2], 0) + rust;
+  }
+  balloonyPlan = plan;
+}
+maakPlan();
+function balloonyBeeld(tt){
+  if(tt < BUNGEL_DRUK) return ['bal', Math.floor(tt*BUNGEL_FPS) % 8];
+  for(const [t0, a] of balloonyPlan){
+    if(tt < t0) break;
+    let acc = t0; for(const [v, k, d] of a){ if(tt < acc + d) return [v, k]; acc += d; }
+  }
+  return RUST;
+}
+
+// ---- (v0.12) Rocky ----
+// Elk plan is een rijtje stapjes. Per stapje: hoe ver zijn linker- en rechterhand boven de rand zijn (0..1),
+// hoe ver zijn hoofd boven de rand is (0..1, 1 = tot onder zijn ogen) en welk hoofdbeeldje.
+// Beeldjes: 2 kijkt links, 3 kijkt rechts, 4 kijkt jou aan, 5 geschrokken, 6 wegduiken, 7 knippert.
+const rnd = (a, b) => a + Math.random()*(b - a);
+let rockyPlan = [];
+function maakRockyReeks(){
+  const eerst = Math.random() < 0.5 ? [2, 3] : [3, 2];
+  const r = [];   // [duur, L, R, hoofd, beeldje]
+  r.push([0.35, 1, 0, 0, 4], [rnd(0.3, 0.8), 1, 0, 0, 4], [0.35, 1, 1, 0, 4], [rnd(0.5, 1.2), 1, 1, 0, 4]);
+  r.push([0.7, 1, 1, 0.45, eerst[0]], [rnd(0.4, 0.9), 1, 1, 0.45, eerst[0]], [0.8, 1, 1, 1, eerst[0]]);
+  r.push([rnd(0.7, 1.3), 1, 1, 1, eerst[0]], [rnd(0.7, 1.3), 1, 1, 1, eerst[1]]);
+  if(Math.random() < 0.5) r.push([0.15, 1, 1, 1, 7]);
+  r.push([rnd(0.4, 0.8), 1, 1, 1, 4], [0.08, 1, 1, 1.08, 5], [rnd(0.6, 1.0), 1, 1, 1.08, 5], [0.3, 1, 1, 1, 6]);
+  r.push([0.25, 1, 1, 0, 6], [rnd(0.2, 0.5), 1, 1, 0, 6], [0.25, 1, 0, 0, 6], [0.2, 1, 0, 0, 6], [0.25, 0, 0, 0, 6]);
+  return r;
+}
+function maakRockyPlan(){
+  const plan = []; let t = rnd(ROCKY_EERST[0], ROCKY_EERST[1]);
+  while(t < 900){ const reeks = maakRockyReeks(), duur = reeks.reduce((a,x)=>a+x[0],0);
+    plan.push({ t0: t, reeks, duur }); t += duur + rnd(ROCKY_RUST[0], ROCKY_RUST[1]); }
+  rockyPlan = plan;
+}
+maakRockyPlan();
+function rocky(t){
+  if(balloonyTijd === null) return;
+  const tt = t - balloonyTijd;
+  const p = rockyPlan.find(q => tt >= q.t0 && tt < q.t0 + q.duur); if(!p) return;
+  // waar staan we in de reeks, en wat was de stand ervoor (om zacht tussen de standen te bewegen)
+  let d = tt - p.t0, vorig = [0, 0, 0, 0, 4], nu = p.reeks[0], v = 0;
+  for(const st of p.reeks){ if(d < st[0]){ nu = st; v = d/st[0]; break; } d -= st[0]; vorig = st; }
+  const meng = i => vorig[i] + (nu[i] - vorig[i])*glad(v);
+  const L = meng(1), R = meng(2), K = meng(3), kb = nu[4];
+  // de onderrand van wat je echt ziet (ook bij zijbalken of extra ondergrond)
+  const rand = (innerHeight - oy)/schaal;
+  const S = ROCKY_SCHAAL, hoofd = M.kruip[kb], hw = 420*S;
+  ctx.save();
+  if(zijbalk){ ctx.beginPath(); ctx.rect(0, -1e4, PW, 2e4); ctx.clip(); }
+  if(K > 0.001){
+    const zicht = K*ROCKY_ZICHT*hoofd.h*S;
+    ctx.drawImage(IMG.kruip, hoofd.x, 0, hoofd.w, hoofd.h, ROCKY_X - hoofd.ax*S, rand - zicht - (1-ROCKY_ZICHT)*0, hoofd.w*S, hoofd.h*S);
+  }
+  for(const [k, u, kant] of [[0, L, -1], [1, R, 1]]){
+    if(u <= 0.001) continue;
+    const f = M.kruip[k], hx = ROCKY_X + kant*ROCKY_HAND*hw, HS = S*ROCKY_HANDMAAT;
+    ctx.drawImage(IMG.kruip, f.x, 0, f.w, f.h, hx - f.w*HS/2, rand - u*f.h*HS + 2, f.w*HS, f.h*HS);
+  }
+  ctx.restore();
+}
+
+// ---- (v0.44) Fungy gluurt linksonder uit het gras bij de paddenstoelen ----
+// Net als bij een poppenkast: alles van Fungy wat onder de graslijn zit, wordt niet getekend. De graslijn heeft
+// kleine sprietjes, zodat het lijkt alsof hij echt tussen het gras omhoog komt.
+// Beeldjes: 0 ineengedoken, 1 ogen open, 2 kijkt links, 3 kijkt rechts, 4 ziet jou, 5 zwaait, 6 giechelt, 7 duikt weg.
+const FUNGY_X = 262;                   // midden van Fungy (podium)
+const FUNGY_LIJN = 812;                // hoogte van de graslijn bij zijn midden
+const FUNGY_HELLING = 0.12;            // de graslijn loopt een klein beetje af naar rechts, net als het mos
+const FUNGY_GROOT = 125;               // zo hoog is hij als hij rechtop staat (podiumpixels)
+const FUNGY_EERST = [2, 4];            // eerste keer: zoveel seconden nadat Rocky voor het eerst weg is
+const FUNGY_RUST = [20, 40];           // daarna zoveel seconden tussen twee keer
+const FUNGY_S = FUNGY_GROOT / M.fungy[2].ay;
+const fungyLijn = x => FUNGY_LIJN + (x - FUNGY_X)*FUNGY_HELLING;
+// de sprietjes langs de graslijn: één keer bedacht, daarna steeds dezelfde
+const fungyGras = (() => { const p = []; let x = FUNGY_X - 75;
+  while(x <= FUNGY_X + 75){ p.push([x, rnd(0, 2.5)]); x += rnd(2, 4); p.push([x, -rnd(4, 11)]); x += rnd(2, 4); }
+  return p; })();
+let fungyPlan = [];
+function maakFungyReeks(){
+  const r = [];   // [duur, hoe ver boven het gras (0..1), beeldje]
+  r.push([0.7, 0.3, 0], [rnd(0.3, 0.9), 0.3, 0], [0.5, 0.68, 1], [rnd(0.6, 1.3), 0.68, 1]);
+  if(Math.random() < 0.25){   // soms alleen even gluren en weer weg
+    r.push([0.25, 0.68, 7], [rnd(0.2, 0.5), 0.68, 7], [0.4, 0, 7]); return r; }
+  const eerst = Math.random() < 0.5 ? [2, 3] : [3, 2];
+  r.push([0.35, 1, eerst[0]], [rnd(0.7, 1.3), 1, eerst[0]], [rnd(0.7, 1.3), 1, eerst[1]]);
+  r.push([0.1, 1.05, 4], [0.12, 1, 4], [rnd(0.4, 0.8), 1, 4]);
+  const k = Math.random();
+  if(k < 0.5){ const n = 2 + Math.floor(Math.random()*2); for(let i=0;i<n;i++) r.push([0.22, 1, 5], [0.22, 1, 4]); }
+  else if(k < 0.9) r.push([rnd(0.8, 1.4), 1, 6]);
+  r.push([0.2, 1, 7], [rnd(0.3, 0.6), 1, 7], [0.3, 0, 7]);
+  return r;
+}
+function maakFungyPlan(){
+  // nooit tegelijk met Rocky: valt hij erin, dan wacht Fungy tot Rocky weer weg is
+  const bezet = t => rockyPlan.find(q => t < q.t0 + q.duur + 1.5 && t + 14 > q.t0 - 1.5);
+  const plan = [];
+  let t = (rockyPlan.length ? rockyPlan[0].t0 + rockyPlan[0].duur : 5) + rnd(FUNGY_EERST[0], FUNGY_EERST[1]);
+  while(t < 900){
+    let q; while((q = bezet(t))) t = q.t0 + q.duur + 1.5;
+    const reeks = maakFungyReeks(), duur = reeks.reduce((a,x)=>a+x[0],0);
+    plan.push({ t0: t, reeks, duur }); t += duur + rnd(FUNGY_RUST[0], FUNGY_RUST[1]);
+  }
+  fungyPlan = plan;
+}
+maakFungyPlan();
+function fungy(t){
+  if(balloonyTijd === null) return;
+  const tt = t - balloonyTijd;
+  const p = fungyPlan.find(q => tt >= q.t0 && tt < q.t0 + q.duur); if(!p) return;
+  let d = tt - p.t0, vorig = [0, 0, 0], nu = p.reeks[0], v = 0;
+  for(const st of p.reeks){ if(d < st[0]){ nu = st; v = d/st[0]; break; } d -= st[0]; vorig = st; }
+  const K = vorig[1] + (nu[1] - vorig[1])*glad(v), f = M.fungy[nu[2]], S = FUNGY_S;
+  if(K <= 0.001) return;
+  const lijn = fungyLijn(FUNGY_X);
+  // een zacht donker plekje in het gras waar hij uit komt
+  const g = ctx.createRadialGradient(FUNGY_X, lijn + 2, 0, FUNGY_X, lijn + 2, 40);
+  g.addColorStop(0, `rgba(35,45,10,${0.35*Math.min(1, K*2)})`); g.addColorStop(1, 'rgba(35,45,10,0)');
+  ctx.save(); ctx.translate(FUNGY_X, lijn + 2); ctx.scale(1, 0.22); ctx.translate(-FUNGY_X, -(lijn + 2));
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(FUNGY_X, lijn + 2, 40, 0, Math.PI*2); ctx.fill(); ctx.restore();
+  // alleen tekenen boven de graslijn (met sprietjes)
+  ctx.save(); ctx.beginPath();
+  const x0 = fungyGras[0][0], x1 = fungyGras[fungyGras.length-1][0];
+  ctx.moveTo(x0, lijn - 400);
+  for(const [x, dy] of fungyGras) ctx.lineTo(x, fungyLijn(x) + dy);
+  ctx.lineTo(x1, lijn - 400); ctx.closePath(); ctx.clip();
+  const voet = lijn + 8 + (1 - K)*(FUNGY_GROOT + 12);
+  ctx.drawImage(IMG.fungy, f.x, 0, f.w, f.h, FUNGY_X - f.ax*S, voet - f.ay*S, f.w*S, f.h*S);
+  ctx.restore();
+}
+
+// ---- (v0.9) een paardenbloempluisje dwarrelt door het beeld ----
+// (v0.10) Getekend door ChatGPT (Images\pluisje.png), losgeknipt van de donkerblauwe achtergrond.
+// Het waait van links naar rechts, op en neer deinend en zachtjes wiegend rond het knooppunt bovenaan het steeltje.
+const PLUIS_GROOT = 76;                // hoogte op het podium
+const PLUIS_EERST = [1.5, 4];          // eerste keer: zoveel seconden nadat de O er is
+const PLUIS_RUST = [3, 10];            // daarna zoveel seconden tot het volgende pluisje
+const PLUIS_DUUR = [14, 22];           // zo lang doet een pluisje over de oversteek
+const pluisBeeld = (() => { const k = PLUIS_GROOT / M.pluis.h;
+  return { c: IMG.pluis, w: M.pluis.w*k, h: M.pluis.h*k, ax: M.pluis.ax*k, ay: M.pluis.ay*k }; })();
+let pluisPlan = [];
+// ---- (v0.13) vlinder: fladdert grillig door het beeld, soms dichtbij (groot), soms ver weg (klein) ----
+const VLINDER_GROOT = 85;              // breedte op het podium als hij 'gewoon' dichtbij is
+const VLINDER_DUUR = [9, 16];          // zo lang is hij in beeld
+// Zijn route: hij komt binnen bij een willekeurige rand, fladdert langs 2 à 4 willekeurige punten en vliegt
+// bij een (andere) willekeurige rand weer weg. Bij elk punt hoort een diepte: ver weg = kleiner en een tikje vaag.
+function maakVlinder(t0){
+  const rand = () => { const k = Math.floor(Math.random()*4), u = rnd(0.1, 0.9);
+    return k === 0 ? [-0.08, u] : k === 1 ? [1.08, u] : k === 2 ? [u, -0.1] : [u, 1.1]; };
+  const punten = [rand()], n = 2 + Math.floor(Math.random()*3);
+  for(let i = 0; i < n; i++) punten.push([rnd(0.12, 0.88), rnd(0.1, 0.8)]);
+  punten.push(rand());
+  const diepte = punten.map(() => Math.random() < 0.35 ? rnd(0.18, 0.4) : rnd(0.45, 1.35));   // (v0.14) soms heel ver weg
+  const zweef = [];   // (v0.14) niet meer zweven: hij blijft fladderen
+  return { soort: 'vlinder', t0, duur: rnd(VLINDER_DUUR[0], VLINDER_DUUR[1]), punten, diepte, zweef,
+           slag: rnd(4.5, 6.5), f1: rnd(0, 6.28), f2: rnd(0, 6.28) };
+}
+function cr(p0, p1, p2, p3, u){   // vloeiende lijn door de punten (Catmull-Rom)
+  const u2 = u*u, u3 = u2*u;
+  return 0.5*((2*p1) + (-p0 + p2)*u + (2*p0 - 5*p1 + 4*p2 - p3)*u2 + (-p0 + 3*p1 - 3*p2 + p3)*u3);
+}
+function vlinderPlek(p, tt){
+  const n = p.punten.length - 1, s = klem(tt/p.duur, 0, 1)*n, i = Math.min(n - 1, Math.floor(s)), u = s - i;
+  const P = k => p.punten[klem(k, 0, n)], Z = k => p.diepte[klem(k, 0, n)];
+  const x = cr(P(i-1)[0], P(i)[0], P(i+1)[0], P(i+2)[0], u), y = cr(P(i-1)[1], P(i)[1], P(i+1)[1], P(i+2)[1], u);
+  const z = cr(Z(i-1), Z(i), Z(i+1), Z(i+2), u);
+  // van 'deel van wat je ziet' naar podiumpunten (werkt bij elke schermvorm)
+  const L = -ox/schaal, T = -oy/schaal, B = innerWidth/schaal, H = innerHeight/schaal;
+  return [L + x*B, T + y*H, klem(z, 0.16, 1.45)];
+}
+function vlinder(t, laag){
+  const p = pluisPlan.find(q => t >= q.t0 && t < q.t0 + q.duur); if(!p || p.soort !== 'vlinder') return;
+  const tt = t - p.t0;
+  let [x, y, z] = vlinderPlek(p, tt);
+  if((laag === 'achter') !== (z < 0.8)) return;      // ver weg: achter het logo langs; dichtbij: ervoor
+  const [x2] = vlinderPlek(p, tt + 0.08);
+  // grillig fladderen: kleine zwenkjes bovenop de route
+  x += (Math.sin(tt*2.3 + p.f1)*16 + Math.sin(tt*5.1 + p.f2)*6)*z;
+  y += (Math.sin(tt*1.9 + p.f2)*20 + Math.sin(tt*4.4 + p.f1)*7)*z;
+  // vleugelslag (of even zweven met open vleugels); bij elke neerslag een wipje omhoog
+  const zw = p.zweef.find(([a, d]) => tt >= a && tt < a + d);
+  const fase = tt*p.slag, k = zw ? 2 : Math.floor(fase*8) % 8;
+  if(!zw) y -= Math.sin(fase*Math.PI*2)*5*z;
+  const f = M.vlinder[k];                    // opgeslagen ca. 200 px breed
+  const sc = VLINDER_GROOT*z/200, links = x2 < x;
+  ctx.save(); ctx.translate(x, y); if(links) ctx.scale(-1, 1);
+  ctx.rotate(Math.sin(tt*3.1 + p.f1)*0.12);
+  if(z < 0.4){ ctx.filter = 'blur(0.8px) saturate(0.75)'; ctx.globalAlpha = 0.85; }
+  else if(z < 0.7){ ctx.filter = 'blur(0.6px) saturate(0.85)'; ctx.globalAlpha = 0.9; }
+  ctx.drawImage(IMG.vlinder, f.x, 0, f.w, f.h, -f.ax*sc, -f.ay*sc, f.w*sc, f.h*sc);
+  ctx.restore();
+}
+function maakPluisPlan(){
+  const plan = []; let t = T_O + rnd(PLUIS_EERST[0], PLUIS_EERST[1]);
+  let vorige = '', twee = 0;
+  while(t < 900){
+    // (v0.13) afwisselend een pluisje of een vlinder; nooit drie keer achter elkaar hetzelfde
+    let soort = Math.random() < 0.5 ? 'pluis' : 'vlinder';
+    if(soort === vorige && twee >= 1) soort = soort === 'pluis' ? 'vlinder' : 'pluis';
+    if(plan.length === 0) soort = 'vlinder';          // (v0.15) eerst altijd de vlinder,
+    else if(plan.length === 1) soort = 'pluis';       // dan het pluisje, daarna willekeurig
+    twee = soort === vorige ? twee + 1 : 0; vorige = soort;
+    if(soort === 'pluis'){
+      const d = rnd(PLUIS_DUUR[0], PLUIS_DUUR[1]);
+      plan.push({ soort, t0: t, duur: d, y0: rnd(120, 620), y1: rnd(120, 620), a1: rnd(18, 40), w1: rnd(0.35, 0.6), a2: rnd(6, 14), w2: rnd(1.1, 1.7),
+                  f: rnd(0, 6.28), s: rnd(0.85, 1.15) });
+      t += d + rnd(PLUIS_RUST[0], PLUIS_RUST[1]);
+    } else {
+      const v = maakVlinder(t); plan.push(v); t += v.duur + rnd(PLUIS_RUST[0], PLUIS_RUST[1]);
+    }
+  }
+  pluisPlan = plan;
+}
+function pluisje(t){
+  const p = pluisPlan.find(q => t >= q.t0 && t < q.t0 + q.duur); if(!p || p.soort !== 'pluis') return;
+  const tt = t - p.t0, v = tt/p.duur;
+  // van net links buiten het beeld naar net rechts erbuiten (ook bij smalle of brede schermen)
+  const links = -ox/schaal - 60, rechts = (innerWidth - ox)/schaal + 60;
+  const x = links + (rechts - links)*v;
+  const golf = Math.sin(tt*p.w1 + p.f)*p.a1 + Math.sin(tt*p.w2 + p.f*1.7)*p.a2;
+  const y = p.y0 + (p.y1 - p.y0)*glad(v) + golf;
+  const rot = Math.cos(tt*p.w1 + p.f)*0.22 + Math.sin(tt*p.w2*0.8)*0.08;   // wiegt mee met het deinen
+  const B = pluisBeeld, S = p.s;
+  ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.scale(S, S);
+  ctx.shadowColor = 'rgba(0,0,0,0.15)'; ctx.shadowBlur = 3; ctx.shadowOffsetY = 2;
+  ctx.drawImage(B.c, -B.ax, -B.ay, B.w, B.h); ctx.restore();
+}
+
+// ---- (v0.11) het egeltje: snuffelt af en toe en knippert met zijn oogje ----
+// Geen nieuwe tekening: het snuitje wordt uit de achtergrond geknipt en heel even iets groter gemaakt
+// (snuffel-snuffel), en over het oogje komt kort een ooglidje in de kleur van zijn vacht.
+const EGEL_NEUS = { x: 1116, y: 801, r: 11, basis: { x: 1122, y: 802 } };
+const EGEL_OOG  = { x: 1147, y: 800.5, rx: 6.3, ry: 6.0 };
+const EGEL_SNUF = [2, 7];              // seconden tussen twee keer snuffelen
+const EGEL_KNIP = [2.5, 8];            // seconden tussen twee keer knipperen
+let egelPlan = null, neusPlek = null;
+function maakEgelPlan(){
+  const snuf = [], knip = []; let t = rnd(1, 3);
+  while(t < 900){ const n = 2 + Math.floor(Math.random()*3); snuf.push([t, n]); t += n*0.16 + rnd(EGEL_SNUF[0], EGEL_SNUF[1]); }
+  t = rnd(0.5, 2.5);
+  while(t < 900){ const dubbel = Math.random() < 0.25; knip.push([t, dubbel]); t += (dubbel ? 0.5 : 0.2) + rnd(EGEL_KNIP[0], EGEL_KNIP[1]); }
+  egelPlan = { snuf, knip };
+}
+function egel(t){
+  const t0 = T_SCHETS + T_KLEUR; if(t < t0 || !egelPlan) return;
+  const tt = t - t0;
+  // snuffelen: een paar korte pulsjes
+  const sn = egelPlan.snuf.find(([s, n]) => tt >= s && tt < s + n*0.16);
+  if(sn){
+    if(!neusPlek){   // het snuitje één keer uitknippen, met zachte randen
+      const N = EGEL_NEUS, d = N.r*2, c = document.createElement('canvas'); c.width = d*4; c.height = d*4;
+      const k = c.getContext('2d'); k.scale(4, 4); k.drawImage(IMG.kleur, N.x - N.r, N.y - N.r, d, d, 0, 0, d, d);
+      k.globalCompositeOperation = 'destination-in';
+      const g = k.createRadialGradient(N.r, N.r, N.r*0.55, N.r, N.r, N.r); g.addColorStop(0,'rgba(0,0,0,1)'); g.addColorStop(1,'rgba(0,0,0,0)');
+      k.fillStyle = g; k.fillRect(0, 0, d, d); neusPlek = c;
+    }
+    const v = ((tt - sn[0]) % 0.16)/0.16, p = Math.sin(v*Math.PI);
+    const N = EGEL_NEUS, sc = 1 + 0.09*p, B = N.basis;
+    ctx.save(); ctx.translate(B.x, B.y - 0.7*p); ctx.scale(sc, sc); ctx.translate(-B.x, -B.y);
+    ctx.drawImage(neusPlek, N.x - N.r, N.y - N.r, N.r*2, N.r*2); ctx.restore();
+  }
+  // knipperen: ooglidje zakt even naar beneden en gaat weer open
+  const kn = egelPlan.knip.find(([s, dub]) => tt >= s && tt < s + (dub ? 0.5 : 0.2));
+  if(kn){
+    let v = tt - kn[0]; if(kn[1] && v > 0.25) v -= 0.3; if(v < 0 || v > 0.2) return;
+    const dicht = Math.sin(v/0.2*Math.PI), O = EGEL_OOG, L = M.ooglid;
+    // ooglid = een stukje vacht zonder oog (vooraf berekend), dat van boven naar beneden over het oog schuift
+    const onder = O.y - O.ry - 1 + (2*O.ry + 2)*dicht;
+    ctx.save(); ctx.beginPath(); ctx.rect(L.x, L.y, L.w, onder - L.y); ctx.clip();
+    ctx.drawImage(IMG.ooglid, L.x, L.y, L.w, L.h); ctx.restore();
+    ctx.save(); ctx.beginPath(); ctx.ellipse(O.x, O.y, O.rx, O.ry, 0, 0, Math.PI*2); ctx.clip();
+    ctx.strokeStyle = 'rgba(90,45,20,0.8)'; ctx.lineWidth = 1.1;
+    const lijn = Math.min(onder, O.y + O.ry*0.35);   // het dichte oogje: een gebogen streepje iets onder het midden
+    ctx.beginPath(); ctx.moveTo(O.x - O.rx, lijn - 0.5); ctx.quadraticCurveTo(O.x, lijn + 1.6*dicht, O.x + O.rx, lijn - 0.5); ctx.stroke();
+    ctx.restore();
+  }
+}
+maakEgelPlan();
+
+// =====================================================================
+// (v0.16) HET MENU: de wereld is het menu
+// Een houten wegwijzer groeit midden in het dal uit de grond (eerst als potloodschets, dan in kleur).
+// Drie wijzers wijzen naar echte plekken: Begin het spel → het dal in, de verte in; Opties → de molen;
+// Maak zelf een level → het huisje. Wijzen = de wijzer wiebelt en zijn plek licht op. Kiezen = het beeld
+// zoomt naar die plek. Ook direct op de molen of het huisje tikken werkt.
+// =====================================================================
+const WIEK_AS = { x: 255, y: 361 };    // het asje van de molen (podium)
+const WIEK_MAAT = 172;                 // doorsnede van het wiekenkruis op het podium
+const WIEK_PLAT = 0.82;                // een tikje perspectief (de molen staat schuin)
+const WIEK_BEGIN = -0.72;              // stand van de wieken zoals op de achtergrond (radialen)
+const WIEK_TEMPO = 0.35, WIEK_SNEL = 2.6;   // gewoon draaien / als je naar Opties wijst
+const WW_X = 975, WW_VOET = 796;        // de voet van de wegwijzer (podium)
+const WW_SCHAAL = 0.6;               // paal
+const WW_PIJL = 0.36;                // opgeslagen maat → podium
+const T_WW = T_O + M.sch.length*SCHOMMEL_KEER/SCHOMMEL_FPS + 0.30;   // (v0.37) de wegwijzer groeit uit de grond zodra de o loslaat (Arjen: eerder)
+const MENU = [
+  { id: 'spelen', tekst: 'Start', pijl: 0, bord: true, y: 0.17, hoek: 0.04, links: true,   // (v0.40) gewoon bordje zonder pijl (Images\start.png)
+    plek: { x: 820, y: 610, r: 170 }, zoom: 2.2, kaart: 'Hier begint straks de reis door Oelieboelieland:<small>de landkaart met de 5 werelden en al je levels.</small>' },
+  { id: 'opties', tekst: 'Opties', pijl: 1, y: 0.63, hoek: 0.2, links: true,
+    plek: { x: 262, y: 430, r: 110, rect: [175, 290, 355, 560] }, zoom: 2.6, kaart: 'Binnen in de molen:<small>hier komen straks de opties (muziek, geluid, schermvullend, voortgang wissen).</small>' },
+  { id: 'maken', tekst: 'Maak je eigen level', pijl: 2, y: 0.4, hoek: -0.16, links: false,
+    plek: { x: 1470, y: 380, r: 170, rect: [1290, 220, 1672, 530] }, zoom: 2.0, kaart: 'In het huisje van de maker:<small>hier kun je straks zelf levels tekenen.</small>' },
+];
+let huisIn = null, huisUit = null, huisWijs = null, prikT = -9, naarEditor = null;
+let menuUit = null, kamerIn = null, kamerUit = null, boekIn = null, boekUit = null, plekIn = null, plekUit = null, plekKies = null, plekWijs = null;
+let wiekHoek = WIEK_BEGIN, wiekTempo = 0, menuWijs = null, menuKeuze = null, keuzeTijd = 0, laatsteT = 0;
+const wijsTijd = {};
+function menuReset(){ mijnT = null; mijnUit = null; jokerAnim = null; huisIn = null; huisUit = null; huisWijs = null; naarEditor = null; prikT = -9; gumActief = null; wisAnim = null; sluitWis(); plekIn = null; plekUit = null; plekKies = null; plekWijs = null; sluitNaam(); menuWijs = null; menuKeuze = null; menuUit = null; kamerIn = null; kamerUit = null; boekIn = null; boekUit = null; boekWijs = null; sluitLvl(); kamerWijs = null; toegDicht(); wiekHoek = WIEK_BEGIN; wiekTempo = 0; document.getElementById('kaart').classList.remove('zichtbaar'); }
+
+// de wieken draaien (pas als de wereld is ingekleurd; daarvoor staan ze stil in de stand van de schets)
+function wieken(t){
+  const dt = Math.min(0.05, Math.max(0, t - laatsteT)); laatsteT = t;
+  const v = glad((t - T_SCHETS)/T_KLEUR); if(v <= 0) return;
+  const doel = t < T_SCHETS + T_KLEUR ? 0 : (menuWijs === 'opties' ? WIEK_SNEL : WIEK_TEMPO);
+  wiekTempo += (doel - wiekTempo)*Math.min(1, dt*2.5); wiekHoek += wiekTempo*dt;
+  const S = WIEK_MAAT/M.wieken.w;
+  ctx.save(); ctx.globalAlpha = v; ctx.translate(WIEK_AS.x, WIEK_AS.y); ctx.scale(WIEK_PLAT, 1); ctx.rotate(wiekHoek);
+  ctx.filter = 'blur(1.1px) saturate(0.85) brightness(1.04)';
+  ctx.drawImage(IMG.wieken, -M.wieken.w*S/2, -M.wieken.h*S/2, M.wieken.w*S, M.wieken.h*S);
+  ctx.restore();
+}
+
+// waar staat elke wijzer (voor tekenen én voor aanwijzen)
+const BORD_B = 240;   // (v0.41) iets kleiner (was 280)
+//   // (v0.40) breedte van het Start-bordje (podium)
+function wijzerVorm(m, t){
+  const P = M.ww.paal, ph = P.h*WW_SCHAAL;
+  const f = m.bord ? M.ww.bord : M.ww.pijl[m.pijl], w = m.bord ? BORD_B : f.w*WW_PIJL, h = m.bord ? BORD_B*f.h/f.w : f.h*WW_PIJL;
+  const ax = WW_X + (m.links ? 10 : -10), ay = WW_VOET - ph + ph*m.y + h/2;
+  let hoek = m.hoek;
+  const wt = wijsTijd[m.id] || 0;
+  if(menuWijs === m.id) hoek += Math.sin((t - wt)*14)*0.05*Math.exp(-(t - wt)*2.5);
+  return { f, w, h, ax, ay, hoek, links: m.links };
+}
+function opWijzer(px, py, m, t){
+  const v = wijzerVorm(m, t);
+  let dx = px - v.ax, dy = py - v.ay; const c = Math.cos(-v.hoek), s = Math.sin(-v.hoek);
+  let lx = dx*c - dy*s, ly = dx*s + dy*c; if(v.links) lx = -lx;
+  return lx > -6 && lx < v.w && ly > -v.h/2 && ly < v.h/2;
+}
+function wegwijzer(t){
+  const tw = t - T_WW; if(tw <= 0) return;
+  const P = M.ww.paal, S = WW_SCHAAL, groei = glad(tw/0.7), kleur = glad((tw - 0.8)/0.7);
+  const schets = 'grayscale(1) sepia(1) hue-rotate(170deg) saturate(1.6) brightness(1.35)';
+  const lagen = kleur < 1 ? [[schets, 1 - kleur], ['none', kleur]] : [['none', 1]];
+  for(const [filter, alpha] of lagen){
+    if(alpha <= 0.001) continue;
+    ctx.save(); ctx.filter = filter; ctx.globalAlpha = alpha;
+    // de paal groeit uit de grond
+    ctx.save(); ctx.translate(WW_X, WW_VOET); ctx.scale(1, groei);
+    ctx.drawImage(IMG.wegwijzer, P.x, 0, P.w, P.h, -P.w*S/2, -P.h*S, P.w*S, P.h*S); ctx.restore();
+    // de wijzers springen er één voor één aan
+    MENU.forEach((m, i) => {
+      const tp = tw - 0.55 - i*0.22; if(tp <= 0) return;
+      const v = wijzerVorm(m, t), sc = veer(tp, 0.5, 0.2);
+      ctx.save(); ctx.translate(v.ax, v.ay); ctx.rotate(v.hoek); if(v.links && !m.bord) ctx.scale(-1, 1); ctx.scale(sc, sc);
+      if(menuWijs === m.id && filter === 'none'){ ctx.shadowColor = 'rgba(255,220,120,0.9)'; ctx.shadowBlur = 18; }
+      else if(hc() && filter === 'none'){ ctx.shadowColor = 'rgba(255,216,60,0.9)'; ctx.shadowBlur = 16; }
+      if(m.bord){ ctx.drawImage(IMG.bordStart, -v.w, -v.h/2, v.w, v.h); ctx.restore(); return; }   // (v0.40) beslag tegen de paal, tekst zit in het plaatje
+      ctx.drawImage(IMG.wegwijzer, v.f.x, 0, v.f.w, v.f.h, 0, -v.h/2, v.w, v.h);
+      ctx.shadowBlur = 0;
+      // tekst op het vilten lapje (nooit gespiegeld)
+      const [x0, y0, x1, y1] = v.f.vilt.map(q => q*WW_PIJL), cx = (x0 + x1)/2, cy = (y0 + y1)/2 - v.h/2;
+      ctx.translate(cx, cy); if(v.links) ctx.scale(-1, 1);
+      tekenViltTekst(m.tekst, (x1 - x0)*0.9, (y1 - y0)*0.86, menuWijs === m.id);
+      ctx.restore();
+    });
+    ctx.restore();
+  }
+}
+function tekenViltTekst(tekst, bw, bh, aan){
+  ctx.fillStyle = aan ? '#5a2a08' : '#7a3d12'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  let regels = [tekst], fs = Math.min(bh*0.62, 34);
+  const pas = r => { ctx.font = `700 ${fs}px "Trebuchet MS", system-ui, sans-serif`; return r.every(x => ctx.measureText(x).width <= bw); };
+  while(!pas(regels) && fs > 15) fs -= 1;
+  if(!pas(regels)){ const w = tekst.split(' '), h = Math.ceil(w.length/2); regels = [w.slice(0,h).join(' '), w.slice(h).join(' ')];
+    fs = Math.min(bh*0.4, 26); while(!pas(regels) && fs > 10) fs -= 1; }
+  regels.forEach((r, i) => ctx.fillText(r, 0, (i - (regels.length-1)/2)*fs*1.05 + fs*0.05));
+}
+// de plek waar je naar wijst, licht op
+function menuGlans(t){
+  if(!menuWijs || menuKeuze) return;
+  const m = MENU.find(x => x.id === menuWijs), p = m.plek, k = 0.55 + 0.25*Math.sin(t*4);
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r);
+  g.addColorStop(0, `rgba(255,225,150,${0.32*k})`); g.addColorStop(1, 'rgba(255,225,150,0)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill();
+  if(m.id === 'maken') for(const [x, y] of [[1420, 290], [1590, 405], [1468, 410]]){   // ramen en lantaarn gaan branden
+    const r = ctx.createRadialGradient(x, y, 0, x, y, 34); r.addColorStop(0, `rgba(255,200,90,${0.55*k})`); r.addColorStop(1, 'rgba(255,200,90,0)');
+    ctx.fillStyle = r; ctx.beginPath(); ctx.arc(x, y, 34, 0, Math.PI*2); ctx.fill(); }
+  ctx.restore();
+  if(m.id === 'spelen' && Math.random() < 0.5){   // het dal in: glinsterende stofjes die de verte in zweven
+    const u = Math.random(); fonkel(WW_X - 120 - u*230 + (Math.random()-0.5)*50, 690 - u*110, 1, 18); }
+}
+// kiezen: het beeld zoomt naar de plek, daarna verschijnt (voorlopig) een kaartje
+function camera(t){
+  if(!menuKeuze) return;
+  const m = MENU.find(x => x.id === menuKeuze);
+  let k = glad((t - keuzeTijd)/1.1);
+  if(menuUit !== null){ k = 1 - glad((t - menuUit)/1.0); if(k <= 0){ menuKeuze = null; menuUit = null; menuWijs = null; return; } }   // (v0.19) weer uitzoomen
+  const s = 1 + (m.zoom - 1)*k;
+  const C = { x: (innerWidth/2 - ox)/schaal, y: (innerHeight/2 - oy)/schaal }, T = m.plek;
+  // nooit voorbij de rand van de wereld zoomen (geen donkere stukken in beeld)
+  const L = -ox/schaal, R = (innerWidth - ox)/schaal, B0 = -oy/schaal, B1 = (innerHeight - oy)/schaal;
+  let ax = T.x + (C.x - T.x)*k - s*T.x, ay = T.y + (C.y - T.y)*k - s*T.y;
+  // (v0.18) bij zijbalken is alleen het beeld tussen de balken zichtbaar: daaraan meten (anders een schokje bij de start)
+  const Lv = zijbalk ? 0 : L, Rv = zijbalk ? PW : R, wl = Math.min(0, Lv), wr = Math.max(PW, Rv);
+  ax = klem(ax, Rv - s*wr, Lv - s*wl); ay = klem(ay, B1 - s*(PH + randOnder), B0 + s*randBoven);
+  ctx.translate(ax, ay); ctx.scale(s, s);
+  if(k >= 1 && menuUit === null){
+    if(m.id === 'opties'){ if(kamerIn === null) kamerIn = t; }
+    else if(m.id === 'spelen'){ if(plekIn === null) plekIn = t; }
+    else if(m.id === 'maken'){ if(huisIn === null) huisIn = t; }
+    else document.getElementById('kaart').classList.add('zichtbaar');
+  }
+}
+function podiumPunt(e){ return [(e.clientX - ox)/schaal, (e.clientY - oy)/schaal]; }
+function menuOnder(px, py, t){
+  if(t < T_WW + 0.9 || menuKeuze) return null;
+  for(const m of MENU) if(opWijzer(px, py, m, t)) return m.id;
+  for(const m of MENU){ const r = m.plek.rect; if(r && px > r[0] && px < r[2] && py > r[1] && py < r[3]) return m.id; }
+  return null;
+}
+doek.addEventListener('pointermove', e => {
+  const t = (performance.now() - start)/1000, [px, py] = podiumPunt(e);
+  if(inKamer()){ const k = kamerOnder(px, py); kamerWijs = k; doek.style.cursor = k ? 'pointer' : 'default'; return; }
+  if(inHuis()){ const k = huisOnder(px, py); huisWijs = k; doek.style.cursor = k ? 'pointer' : 'default'; return; }
+  if(inBoek()){ boekBeweeg(px, py); return; }
+  if(inPlek()){ plekWijs = plekOnder(px, py); doek.style.cursor = plekWijs !== null ? 'pointer' : 'default'; return; }
+  const id = menuOnder(px, py, t);
+  if(id !== menuWijs){ menuWijs = id; if(id) wijsTijd[id] = t; }
+  doek.style.cursor = id ? 'pointer' : 'default';
+});
+doek.addEventListener('pointerleave', () => { menuWijs = null; });
+doek.addEventListener('click', e => {
+  const t = (performance.now() - start)/1000, [px, py] = podiumPunt(e);
+  if(document.getElementById('toeg').classList.contains('zichtbaar')){ toegDicht(); return; }   // (v0.31) buiten het kader tikken = klaar
+  if(inKamer()){ kamerKlik(kamerOnder(px, py), t); return; }
+  if(inHuis()){ huisKlik(huisOnder(px, py), t, px, py); return; }
+  if(inBoek()){ if(veegde){ veegde = false; return; } boekKlik(px, py, t); return; }
+  if(inPlek()){ plekKlik(plekOnder(px, py), t); return; }
+  const id = menuOnder(px, py, t);
+  if(!id) return;
+  menuWijs = id; menuKeuze = id; keuzeTijd = t;
+  document.getElementById('kaartTekst').innerHTML = MENU.find(x => x.id === id).kaart;
+});
+document.getElementById('terug').onclick = () => { document.getElementById('kaart').classList.remove('zichtbaar'); menuUit = (performance.now() - start)/1000; };
+
+// =====================================================================
+// (v0.19) OPTIES: BINNEN IN DE MOLEN
+// Na het inzoomen op de molen vloeit het beeld over in de molenkamer (Images\Openingsscherm\molenkamer.png,
+// even groot als het podium). Vier dingen om aan te raken, elk met een vilten naambordje:
+//   speeldoosje = muziek aan/uit (+ volumeschuifje), belletje = geluidjes aan/uit,
+//   loep = toegankelijkheid (eigen schermpje), deur = terug naar buiten.
+// De keuzes worden op dit apparaat bewaard (localStorage).
+// =====================================================================
+const OPTIES = (() => { const st = { muziek: true, volume: 60, geluid: true, loep: false, contrast: false };
+  try { Object.assign(st, JSON.parse(localStorage.getItem('oelieboelie_opties') || '{}')); } catch(e){}
+  return st; })();
+function bewaarOpties(){ try { localStorage.setItem('oelieboelie_opties', JSON.stringify(OPTIES)); } catch(e){} }
+const KAMER = [
+  { id: 'geluid',  rect: [80, 70, 245, 370],   label: [372, 250], tekst: () => 'Geluidjes', aan: () => OPTIES.geluid },
+  { id: 'muziek',  rect: [95, 370, 420, 640],  label: [255, 672], tekst: () => 'Muziek', aan: () => OPTIES.muziek },
+  { id: 'toeg',    rond: [858, 292, 150], rect: [700, 140, 1110, 560], label: [858, 292], tekst: () => 'Toegankelijkheid' },
+  { id: 'deur',    rect: [1305, 215, 1655, 715], label: null },   // (v0.28) de deur spreekt voor zich: geen bordje
+];
+let kamerWijs = null, belSchud = -9, doosSpeelt = -9;
+const stofjes = Array.from({ length: 40 }, () => ({ u: Math.random(), v: Math.random(), f: Math.random()*6.28, s: 0.6 + Math.random()*1.6 }));
+function kamerAlpha(t){
+  if(kamerIn === null) return 0;
+  if(kamerUit !== null) return 1 - glad((t - kamerUit)/0.5);
+  return glad((t - kamerIn)/0.55);
+}
+function inKamer(){ const t = (performance.now() - start)/1000; return kamerIn !== null && kamerUit === null && t - kamerIn > 0.5; }
+function kamerOnder(px, py){
+  if(document.getElementById('toeg').classList.contains('zichtbaar')) return null;
+  for(const d of KAMER){
+    if(d.rond && Math.hypot(px - d.rond[0], py - d.rond[1]) < d.rond[2]) return d.id;
+    const r = d.rect; if(px > r[0] && px < r[2] && py > r[1] && py < r[3]) return d.id;
+    if(d.label){ const [lx, ly] = d.label, [w, h] = optieMaat(d); if(Math.abs(px - lx) < w/2 && Math.abs(py - ly) < h/2) return d.id; }
+  }
+  return null;
+}
+// kleine geluidjes, met de computer zelf gemaakt (geen bestanden nodig)
+let audio = null;
+function toon(freq, wanneer, duur, sterk, soort = 'sine'){
+  try { audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+    const o = audio.createOscillator(), g = audio.createGain(), t0 = audio.currentTime + wanneer;
+    o.type = soort; o.frequency.value = freq; g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(sterk, t0 + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + duur); o.connect(g).connect(audio.destination); o.start(t0); o.stop(t0 + duur + 0.05);
+  } catch(e){}
+}
+function belGeluid(){ toon(1568, 0, 1.2, 0.18); toon(2093, 0, 0.9, 0.08); toon(3136, 0, 0.5, 0.04); }
+function doosGeluid(){ const v = OPTIES.volume/100*0.22; [784, 988, 1175, 1568, 1175, 988].forEach((f, i) => toon(f, i*0.16, 0.7, v, 'triangle')); }
+function kamerKlik(id, t){
+  if(!id) return;
+  if(id === 'geluid'){ OPTIES.geluid = !OPTIES.geluid; belSchud = t; if(OPTIES.geluid) belGeluid(); }
+  if(id === 'muziek'){ OPTIES.muziek = !OPTIES.muziek; if(OPTIES.muziek){ doosSpeelt = t; doosGeluid(); } }
+  if(id === 'toeg'){ document.getElementById('optLoep').checked = OPTIES.loep; document.getElementById('optContrast').checked = OPTIES.contrast;
+    document.getElementById('toeg').classList.add('zichtbaar'); }
+  if(id === 'deur'){ kamerUit = t; kamerWijs = null; doek.style.cursor = 'default'; }
+  bewaarOpties();
+}
+function toegDicht(){ document.getElementById('toeg').classList.remove('zichtbaar'); }
+document.getElementById('optLoep').onchange = e => { OPTIES.loep = e.target.checked; bewaarOpties(); };
+document.getElementById('optContrast').onchange = e => { OPTIES.contrast = e.target.checked; bewaarOpties(); };
+window.addEventListener('keydown', e => { if(e.key === 'Escape') toegDicht(); });
+const vol = document.getElementById('volume');
+vol.style.opacity = '0';   // (v0.35) onzichtbaar: het vilten balkje wordt getekend
+const VOLUME_BALK = [255, 728, 270, 46];   // midden x, midden y, breedte, hoogte (podium)
+function optieBeeld(d){
+  if(d.id === 'geluid') return OPTIES.geluid ? IMG.okGA : IMG.okGU;
+  if(d.id === 'muziek') return OPTIES.muziek ? IMG.okMA : IMG.okMU;
+  return IMG.okT;
+}
+function optieMaat(d){   // breedte en hoogte van de knop op het podium
+  const im = optieBeeld(d), r = im.naturalWidth ? im.naturalHeight/im.naturalWidth : 0.245;
+  const w = (d.id === 'toeg' ? 250 : 250)*(hc() ? 1.2 : 1); return [w, w*r];
+}
+function optieKnop(d, oplicht){
+  const im = optieBeeld(d), [w, h] = optieMaat(d), [x, y] = d.label;
+  ctx.save(); ctx.shadowColor = oplicht ? 'rgba(255,215,120,0.95)' : 'rgba(0,0,0,0.35)'; ctx.shadowBlur = oplicht ? 22 : 8; ctx.shadowOffsetY = oplicht ? 0 : 3;
+  if(oplicht){ ctx.translate(x, y); ctx.scale(1.04, 1.04); ctx.translate(-x, -y); }
+  ctx.drawImage(im, x - w/2, y - h/2, w, h); ctx.restore();
+}
+vol.value = OPTIES.volume; vol.style.setProperty('--v', OPTIES.volume + '%');
+vol.oninput = () => { OPTIES.volume = +vol.value; vol.style.setProperty('--v', vol.value + '%'); bewaarOpties(); };
+vol.onchange = () => { doosSpeelt = (performance.now() - start)/1000; doosGeluid(); };
+function viltBordje(x, y, tekst, aan, oplicht){
+  ctx.save(); if(hc()){ ctx.translate(x, y); ctx.scale(1.25, 1.25); ctx.translate(-x, -y); }   // (v0.34) hoog contrast: bordjes groter
+  ctx.font = '700 26px "Trebuchet MS", system-ui, sans-serif';
+  const tw = ctx.measureText(tekst).width, w = tw + (aan === undefined ? 44 : 84), h = 46, x0 = x - w/2, y0 = y - h/2;
+  ctx.shadowColor = oplicht ? 'rgba(255,215,120,0.95)' : 'rgba(0,0,0,0.35)'; ctx.shadowBlur = oplicht ? 22 : 8; ctx.shadowOffsetY = oplicht ? 0 : 3;
+  ctx.fillStyle = '#1f9e9a'; ctx.beginPath(); ctx.roundRect(x0 - 4, y0 - 4, w + 8, h + 8, 16); ctx.fill();
+  ctx.shadowColor = 'transparent';
+  ctx.fillStyle = oplicht ? '#fffaea' : '#f6e6c0'; ctx.beginPath(); ctx.roundRect(x0, y0, w, h, 12); ctx.fill();
+  ctx.setLineDash([6, 5]); ctx.strokeStyle = 'rgba(200,110,40,0.8)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect(x0 + 5, y0 + 5, w - 10, h - 10, 8); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle = hc() ? '#3d1a04' : '#7a3d12'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(tekst, x0 + 22, y + 1);
+  if(aan !== undefined){   // aan/uit-schakelaartje
+    const sx = x0 + w - 56, sy = y - 12;
+    ctx.fillStyle = aan ? '#2aa36b' : '#b9a684'; ctx.beginPath(); ctx.roundRect(sx, sy, 42, 24, 12); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(aan ? sx + 30 : sx + 12, sy + 12, 9, 0, Math.PI*2); ctx.fill();
+  }
+  ctx.restore();
+}
+// =====================================================================
+// (v0.27) MAAK JE EIGEN LEVEL: DE WERKTAFEL IN HET KNUSSE HUISJE
+// Na het inzoomen op het huisje vloeit het beeld over in de huiskamer (Images\Openingsscherm\huiskamer.png,
+// met Arjens eigen schetsen aan de muur). Drie dingen met een vilten naambordje:
+//   werktafel met de blauwdruk = 'Maak een level' -> opent de editor (oelieboelie_editor.html, in dezelfde map);
+//   prikbord = 'Prikbord' -> voorlopig een briefje 'binnenkort: levels van anderen'; deur = 'Naar buiten'.
+// Haardvuur en lantaarn flakkeren.
+// =====================================================================
+const HUIS = [
+  { id: 'tafel', rect: [515, 560, 1160, 745], label: [838, 772], beeld: 'hkMaak' },
+  { id: 'prik',  rect: [55, 100, 295, 395],   label: [178, 438], beeld: 'hkPrik' },
+  { id: 'mijn',  rect: [320, 15, 1255, 505],  label: [787, 534], beeld: 'hkMijn' },   // (v0.36) de muur met schetsen = Mijn levels
+  { id: 'deur',  rect: [1495, 180, 1672, 720], label: null },
+];
+// (v0.36) knoppen van ChatGPT (Images\Openingsscherm\optieknoppen2.png, maakeerstlevel.png).
+// Mijn levels: tik op de muur met schetsen -> het beeld zoomt in op de muur. Daar hangen straks je eigen levels als
+// potloodschetsjes (met Speel en Verder bouwen); zolang er nog geen eigen levels bewaard worden, hangt er het bordje
+// 'Maak eerst een level aan de werktafel ;)'. Tik ergens om weer uit te zoomen.
+let mijnT = null, mijnUit = null;
+// (v0.38) De huiskamer is drukker dan de molenkamer, waardoor de bordjes wegvielen tussen de lichte schetsen.
+// Daarom treedt de kamer een stapje terug: iets donkerder, iets minder fel en een héél lichte waas.
+// Die gedempte kamer wordt één keer klaargezet (scheelt rekenwerk). De bordjes blijven helder en krijgen een
+// zachte donkere gloed erachter. Bij inzoomen op de muur (Mijn levels) komt de kamer weer helder in beeld.
+let huisRustig = null;
+function huisRustigBeeld(){
+  if(huisRustig) return huisRustig;
+  const im = IMG.huis; if(!im.complete || !im.naturalWidth) return null;
+  const c = document.createElement('canvas'); c.width = PW; c.height = PH; const k = c.getContext('2d');
+  if('filter' in k) k.filter = 'blur(1.6px)';
+  k.drawImage(im, 0, 0, PW, PH); k.filter = 'none';
+  k.globalCompositeOperation = 'saturation'; k.fillStyle = 'rgba(128,128,128,0.35)'; k.fillRect(0, 0, PW, PH);   // minder fel
+  k.globalCompositeOperation = 'source-over'; k.fillStyle = 'rgba(28,14,5,0.42)'; k.fillRect(0, 0, PW, PH);    // iets donkerder
+  huisRustig = c; return c;
+}
+// (v0.39) Wijs je met de muis naar een voorwerp (prikbord, werktafel, muur met schetsen, deur), dan wordt alleen
+// dat voorwerp weer scherp en helder, met een zachte rand naar de gedempte kamer. Per voorwerp wordt dat scherpe
+// stukje één keer klaargezet. Het licht rustig op en dooft rustig uit.
+const HUIS_RAND = 34;   // hoe zacht de rand is (in pixels van het plaatje)
+let huisSpots = null; const spotA = {}; let spotT = null;
+function huisSpotBeelden(){
+  if(huisSpots) return huisSpots;
+  const im = IMG.huis; if(!im.complete || !im.naturalWidth) return null;
+  huisSpots = {};
+  for(const d of HUIS){ const [x0, y0, x1, y1] = d.rect, m = HUIS_RAND*2;
+    const c = document.createElement('canvas'); c.width = x1 - x0 + m*2; c.height = y1 - y0 + m*2; const k = c.getContext('2d');
+    // zacht masker: een afgerond vlak met een wazige rand (via de schaduw, werkt in elke browser)
+    k.shadowColor = '#000'; k.shadowBlur = HUIS_RAND; k.shadowOffsetX = 5000; k.fillStyle = '#000';
+    k.beginPath(); k.roundRect ? k.roundRect(m - 5000, m, x1 - x0, y1 - y0, 28) : k.rect(m - 5000, m, x1 - x0, y1 - y0); k.fill();
+    k.shadowColor = 'transparent'; k.globalCompositeOperation = 'source-in';
+    k.drawImage(im, x0 - m, y0 - m, c.width, c.height, 0, 0, c.width, c.height);
+    huisSpots[d.id] = { c, x: x0 - m, y: y0 - m }; }
+  return huisSpots;
+}
+function huisKnopMaat(d){ const im = IMG[d.beeld], r = im.naturalWidth ? im.naturalHeight/im.naturalWidth : 0.245, w = 250*(hc() ? 1.2 : 1); return [w, w*r]; }
+function huisAlpha(t){ if(huisIn === null) return 0; if(huisUit !== null) return 1 - glad((t - huisUit)/0.5); return glad((t - huisIn)/0.55); }
+function inHuis(){ const t = (performance.now() - start)/1000; return huisIn !== null && huisUit === null && t - huisIn > 0.5 && naarEditor === null; }
+function mijnZoom(t){ if(mijnT === null) return 0; if(mijnUit !== null){ const z = 1 - glad((t - mijnUit)/0.6); if(z <= 0){ mijnT = null; mijnUit = null; } return Math.max(0, z); } return glad((t - mijnT)/0.7); }
+function huisOnder(px, py){
+  if(mijnT !== null) return null;
+  for(const d of HUIS){ const r = d.rect; if(px > r[0] && px < r[2] && py > r[1] && py < r[3]) return d.id;
+    if(d.label){ const [lx, ly] = d.label, [w, h] = huisKnopMaat(d); if(Math.abs(px - lx) < w/2 && Math.abs(py - ly) < h/2) return d.id; } }
+  return null;
+}
+function huisKlik(id, t, px, py){
+  if(mijnT !== null){
+    if(mijnUit !== null || t - mijnT < 0.7) return;
+    const w = mijnKnopOnder((px - PW/2)/MIJN_ZOOM + MIJN_C[0], (py - PH/2)/MIJN_ZOOM + MIJN_C[1]);   // (v0.47) van het scherm naar de muur
+    if(w) return mijnKlik(w, t);
+    mijnUit = t; return; }   // ergens anders tikken = weer uitzoomen
+  if(!id) return;
+  if(id === 'mijn'){ mijnT = t; MIJN = mijnLevels(); mijnBlad = 0; huisWijs = null; doek.style.cursor = 'default'; if(OPTIES.geluid) bladGeluid(); }
+  if(id === 'deur'){ huisUit = t; huisWijs = null; doek.style.cursor = 'default'; }
+  if(id === 'prik'){ prikT = t; if(OPTIES.geluid) toon(880, 0, 0.15, 0.08); }
+  if(id === 'tafel'){ naarEditor = t; huisWijs = null; doek.style.cursor = 'default';
+    if(OPTIES.geluid){ toon(523, 0, 0.3, 0.1); toon(784, 0.1, 0.3, 0.1); toon(1047, 0.2, 0.6, 0.1); }
+    setTimeout(() => { location.href = 'editor.html?speler'; }, 900); }   // (v0.47) aan de werktafel altijd de spelersstand (zoals online)
+}
+// =====================================================================
+// (v0.47) MIJN LEVELS: je eigen levels hangen als potloodschetsjes aan de muur (3 tegelijk, met pijltjes bladeren).
+// Ze komen uit de spelersstand van de editor (localStorage 'oelieboelie_spelerboek_v1').
+// Speel = spel.html?eigen=N, Verder bouwen = editor.html?speler&level=N.
+// =====================================================================
+const MIJN_ZOOM = 1.65, MIJN_C = [787, 300], MIJN_PER = 3, MIJN_X = [487, 787, 1087], MIJN_Y = 225, VEL_B = 240, VEL_H = 150;
+let MIJN = [], mijnBlad = 0; const schetsCache = {};
+function mijnLevels(){ try{ const c = JSON.parse(localStorage.getItem('oelieboelie_spelerboek_v1') || 'null');
+  return c && Array.isArray(c.boek) ? c.boek.filter(l => l && Array.isArray(l.raster)).sort((a, b) => a.nummer - b.nummer) : []; }catch(e){ return []; } }
+function levelSchets(l){   // het level als potloodtekening (één keer per versie van het level)
+  const sl = l.nummer + '|' + l.raster.join('').length + '|' + l.raster.join('').split('.').length + '|' + (l.objecten || []).length;
+  if(schetsCache[l.nummer] && schetsCache[l.nummer].sl === sl) return schetsCache[l.nummer].c;
+  const B = l.breedte || (l.raster[0] || '').length, H = l.raster.length, k = 2, c = document.createElement('canvas');
+  c.width = B*k; c.height = H*k; const g = c.getContext('2d');
+  let z = l.nummer*97 + 13; const rnd = () => (z = (z*16807) % 2147483647)/2147483647;
+  for(let y = 0; y < H; y++){ const rij = l.raster[y] || ''; for(let x = 0; x < B; x++){ const ch = rij[x];
+    if(!ch || ch === '.') continue;
+    g.fillStyle = ch === 'W' ? 'rgba(70,110,170,0.55)' : ch === 'V' ? 'rgba(190,80,40,0.55)' : `rgba(60,60,64,${0.42 + 0.25*rnd()})`;
+    g.fillRect(x*k, y*k, k + 0.4, k + 0.4); } }
+  g.strokeStyle = 'rgba(60,60,64,0.6)'; g.lineWidth = 1.5;
+  for(const o of (l.objecten || [])){ g.strokeRect((o.x || 0)*k, (o.y || 0)*k, 6*k, 4*k); }   // spullen: een klein krabbeltje
+  const p = l.potlood, w = l.toverwolk;
+  if(p){ g.strokeStyle = '#c0841f'; g.lineWidth = 4; g.beginPath(); g.moveTo(p.x/8*k, p.y/8*k); g.lineTo(p.x/8*k + 14, p.y/8*k - 14); g.stroke(); }
+  if(w){ g.fillStyle = 'rgba(200,150,230,0.7)'; [[-8, 0, 7], [0, -5, 8], [8, 0, 7]].forEach(([dx, dy, r]) => { g.beginPath(); g.arc(w.x/8*k + dx, w.y/8*k + dy, r, 0, Math.PI*2); g.fill(); }); }
+  schetsCache[l.nummer] = { sl, c }; return c;
+}
+function mijnKnopMaat(im){ const w = 112; return [w, w*(im.naturalWidth ? im.naturalHeight/im.naturalWidth : 0.3)]; }
+function mijnZichtbaar(){ return MIJN.slice(mijnBlad*MIJN_PER, mijnBlad*MIJN_PER + MIJN_PER); }
+function mijnKnopOnder(wx, wy){
+  const n = Math.ceil(MIJN.length/MIJN_PER);
+  if(mijnBlad > 0 && Math.hypot(wx - 335, wy - MIJN_Y) < 30) return { soort: 'vorige' };
+  if(mijnBlad < n - 1 && Math.hypot(wx - 1240, wy - MIJN_Y) < 30) return { soort: 'volgende' };
+  const by = MIJN_Y + VEL_H/2 + 70;
+  mijnZichtbaar().forEach((l, i) => { const x = MIJN_X[i];
+    for(const [soort, dx, im] of [['speel', -60, IMG.hkSpeel], ['bouw', 60, IMG.hkBouw]]){ const [w, h] = mijnKnopMaat(im);
+      if(Math.abs(wx - (x + dx)) < w/2 && Math.abs(wy - by) < h/2) mijnKnopOnder.raak = { soort, l }; } });
+  const r = mijnKnopOnder.raak; mijnKnopOnder.raak = null; return r || null;
+}
+function mijnKlik(k, t){
+  if(k.soort === 'vorige' || k.soort === 'volgende'){ mijnBlad += k.soort === 'vorige' ? -1 : 1; if(OPTIES.geluid) bladGeluid(); return; }
+  if(k.soort === 'speel'){ if(!k.l.potlood || !k.l.toverwolk) return;
+    if(OPTIES.geluid){ toon(659, 0, 0.2, 0.08); toon(988, 0.08, 0.3, 0.08); }
+    setTimeout(() => { location.href = 'spel.html?eigen=' + k.l.nummer; }, 250); }
+  if(k.soort === 'bouw'){ if(OPTIES.geluid){ toon(523, 0, 0.3, 0.1); toon(784, 0.1, 0.3, 0.1); }
+    setTimeout(() => { location.href = 'editor.html?speler&level=' + k.l.nummer; }, 250); }
+}
+function tekenMijn(t, al){
+  const by = MIJN_Y + VEL_H/2 + 70;
+  mijnZichtbaar().forEach((l, i) => { const x = MIJN_X[i], hoek = [-0.035, 0.02, -0.015][i];
+    ctx.save(); ctx.globalAlpha *= al; ctx.translate(x, MIJN_Y); ctx.rotate(hoek);
+    ctx.shadowColor = 'rgba(0,0,0,0.45)'; ctx.shadowBlur = 14; ctx.shadowOffsetY = 5;
+    ctx.fillStyle = '#fbf4e2'; ctx.fillRect(-VEL_B/2 - 10, -VEL_H/2 - 10, VEL_B + 20, VEL_H + 52); ctx.shadowColor = 'transparent';
+    const sc = levelSchets(l), f = Math.min(VEL_B/sc.width, VEL_H/sc.height), sw = sc.width*f, sh = sc.height*f;
+    ctx.strokeStyle = 'rgba(120,100,70,0.35)'; ctx.lineWidth = 1; ctx.strokeRect(-VEL_B/2, -VEL_H/2, VEL_B, VEL_H);
+    ctx.drawImage(sc, -sw/2, -VEL_H/2 + (VEL_H - sh)/2, sw, sh);
+    ctx.fillStyle = '#d8473f'; ctx.beginPath(); ctx.arc(0, -VEL_H/2 - 4, 6, 0, Math.PI*2); ctx.fill();   // punaise
+    ctx.fillStyle = '#5a3a1a'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    let fs = 22; ctx.font = `700 ${fs}px "Trebuchet MS", system-ui, sans-serif`;
+    while(ctx.measureText(l.naam || '').width > VEL_B && fs > 12){ fs--; ctx.font = `700 ${fs}px "Trebuchet MS", system-ui, sans-serif`; }
+    ctx.fillText(l.naam || ('Level ' + l.nummer), 0, VEL_H/2 + 22);
+    ctx.restore();
+    for(const [dx, im, mag] of [[-60, IMG.hkSpeel, !!(l.potlood && l.toverwolk)], [60, IMG.hkBouw, true]]){ const [w, h] = mijnKnopMaat(im);
+      ctx.save(); ctx.globalAlpha *= al*(mag ? 1 : 0.4); ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 3;
+      ctx.drawImage(im, x + dx - w/2, by - h/2, w, h); ctx.restore(); }
+  });
+  const n = Math.ceil(MIJN.length/MIJN_PER);
+  for(const [x, d, zicht] of [[335, -1, mijnBlad > 0], [1240, 1, mijnBlad < n - 1]]){ if(!zicht) continue;
+    ctx.save(); ctx.globalAlpha *= al; ctx.fillStyle = '#fbf4e2'; ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowBlur = 8;
+    ctx.beginPath(); ctx.arc(x, MIJN_Y, 26, 0, Math.PI*2); ctx.fill(); ctx.shadowColor = 'transparent';
+    ctx.strokeStyle = '#7a3d12'; ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath(); ctx.moveTo(x - 4*d, MIJN_Y - 10); ctx.lineTo(x + 6*d, MIJN_Y); ctx.lineTo(x - 4*d, MIJN_Y + 10); ctx.stroke(); ctx.restore(); }
+}
+function huis(t){
+  const a = huisAlpha(t);
+  if(a <= 0){ if(huisUit !== null && t - huisUit > 0.5){ huisIn = null; huisUit = null; menuUit = t; } return; }
+  ctx.save(); ctx.setTransform(dpr*schaal, 0, 0, dpr*schaal, dpr*ox, dpr*oy); ctx.globalAlpha = a;
+  ctx.fillStyle = '#2a170c'; ctx.fillRect(-ox/schaal - 2, -oy/schaal - 2, innerWidth/schaal + 4, innerHeight/schaal + 4);
+  const mz = mijnZoom(t);
+  if(mz > 0){ const s = 1 + (MIJN_ZOOM - 1)*mz, cx = MIJN_C[0], cy = MIJN_C[1];   /* midden van de muur; zo blijft de bovenrand in beeld */ ctx.translate(PW/2, PH/2); ctx.scale(s, s); ctx.translate(-(PW/2 + (cx - PW/2)*mz), -(PH/2 + (cy - PH/2)*mz)); }
+  ctx.drawImage(IMG.huis, 0, 0, PW, PH);
+  const rust = hc() ? null : huisRustigBeeld();   // (v0.38) bij hoog contrast dempt hcDemp al
+  if(rust && mz < 1){ ctx.save(); ctx.globalAlpha *= 1 - mz; ctx.drawImage(rust, 0, 0, PW, PH); ctx.restore(); }
+  // (v0.39) het voorwerp waar je naar wijst wordt weer scherp
+  const dts = spotT === null ? 0 : Math.min(0.1, t - spotT); spotT = t;
+  const actief = huisWijs || (naarEditor !== null ? 'tafel' : null), spots = rust ? huisSpotBeelden() : null;
+  for(const d of HUIS){ const doel = d.id === actief ? 1 : 0, v = spotA[d.id] || 0;
+    spotA[d.id] = doel > v ? Math.min(1, v + dts/0.25) : Math.max(0, v - dts/0.4);
+    if(spots && spotA[d.id] > 0 && mz < 1){ const sp = spots[d.id]; ctx.save(); ctx.globalAlpha *= glad(spotA[d.id])*(1 - mz); ctx.drawImage(sp.c, sp.x, sp.y); ctx.restore(); } }
+  if(hc()){ hcDemp(-PW, -PH, PW*3, PH*3); for(const d of HUIS) hcSpot(IMG.huis, { rect: d.rect }, t); }
+  // haardvuur en lantaarn flakkeren
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  [[140, 705, 150, '255,150,60'], [62, 470, 90, '255,190,90']].forEach(([x, y, r, kl], i) => {
+    const f = 0.7 + 0.18*Math.sin(t*8.1 + i*3) + 0.12*Math.sin(t*13.7 + i);
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, `rgba(${kl},${0.3*f})`); g.addColorStop(1, `rgba(${kl},0)`);
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill(); });
+  // gloed om het ding waar je naar wijst (de blauwdruk gloeit blauw)
+  const w = HUIS.find(d => d.id === huisWijs) || (naarEditor !== null ? HUIS[0] : null);
+  if(w){ const [cx, cy] = [(w.rect[0] + w.rect[2])/2, (w.rect[1] + w.rect[3])/2], r = Math.max(w.rect[2] - w.rect[0], w.rect[3] - w.rect[1])*0.62;
+    const kl = w.id === 'tafel' ? '120,180,255' : '255,215,130';
+    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r); g.addColorStop(0, `rgba(${kl},${(hc() ? 0.22 : 0.12) + 0.04*Math.sin(t*5)})`); g.addColorStop(1, `rgba(${kl},0)`);   // (v0.39) zachter: het voorwerp licht nu zelf op
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fill(); }
+  ctx.restore();
+  ctx.save(); ctx.globalAlpha *= 1 - mz;
+  for(const d of HUIS) if(d.label){ const [w, h] = huisKnopMaat(d), [x, y] = d.label;   // (v0.38) zachte donkere gloed achter elk bordje
+    ctx.save(); ctx.translate(x, y); ctx.scale(w*0.72, h*1.5);
+    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 1); g.addColorStop(0, 'rgba(20,9,3,0.7)'); g.addColorStop(0.6, 'rgba(20,9,3,0.4)'); g.addColorStop(1, 'rgba(20,9,3,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, 1, 0, Math.PI*2); ctx.fill(); ctx.restore(); }
+  for(const d of HUIS) if(d.label){ const [w, h] = huisKnopMaat(d), [x, y] = d.label, op = huisWijs === d.id;
+    ctx.save(); ctx.shadowColor = op ? 'rgba(255,215,120,0.95)' : 'rgba(0,0,0,0.35)'; ctx.shadowBlur = op ? 22 : 8; ctx.shadowOffsetY = op ? 0 : 3;
+    if(op){ ctx.translate(x, y); ctx.scale(1.04, 1.04); ctx.translate(-x, -y); }
+    ctx.drawImage(IMG[d.beeld], x - w/2, y - h/2, w, h); ctx.restore(); }
+  ctx.restore();
+  // Mijn levels: ingezoomd op de muur (nog geen eigen levels: het bordje 'Maak eerst een level aan de werktafel')
+  if(mz > 0.6 && MIJN.length) tekenMijn(t, (mz - 0.6)/0.4);
+  else if(mz > 0.6){ const al = (mz - 0.6)/0.4, w = 760*(hc() ? 1.15 : 1), h = w*IMG.hkEerst.naturalHeight/Math.max(1, IMG.hkEerst.naturalWidth);
+    ctx.save(); ctx.globalAlpha *= al; ctx.translate(787, 300); ctx.rotate(-0.03); ctx.scale(0.62 + 0.38*al, 0.62 + 0.38*al);   // binnen de ingezoomde muur
+    ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 18; ctx.shadowOffsetY = 6;
+    ctx.drawImage(IMG.hkEerst, -w/2/1.65, -h/2/1.65, w/1.65, h/1.65); ctx.restore(); }
+  // briefje op het prikbord
+  const pd = t - prikT;
+  if(pd < 3){ const al = Math.min(1, pd*5, (3 - pd)*2); ctx.save(); ctx.globalAlpha = a*al; ctx.translate(178, 245); ctx.rotate(-0.04);
+    ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 3; ctx.fillStyle = '#fff6d8'; ctx.fillRect(-100, -62, 200, 124); ctx.shadowColor = 'transparent';
+    ctx.fillStyle = '#e0587a'; ctx.beginPath(); ctx.arc(0, -52, 7, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#7a3d12'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = '700 20px "Trebuchet MS", system-ui, sans-serif';
+    ctx.fillText('Binnenkort:', 0, -18); ctx.font = '600 17px "Trebuchet MS", system-ui, sans-serif'; ctx.fillText('levels die anderen', 0, 10); ctx.fillText('gemaakt hebben!', 0, 32); ctx.restore(); }
+  // naar de editor: de blauwdruk vult het beeld
+  if(naarEditor !== null){ const p = glad((t - naarEditor)/0.85); ctx.fillStyle = `rgba(70,130,220,${p})`;
+    ctx.fillRect(-ox/schaal - 2, -oy/schaal - 2, innerWidth/schaal + 4, innerHeight/schaal + 4); }
+  ctx.restore();
+}
+function kamer(t){
+  const a = kamerAlpha(t);
+  vol.style.display = (a >= 1 && OPTIES.muziek && kamerUit === null) ? 'block' : 'none';
+  if(a <= 0){ if(kamerUit !== null && t - kamerUit > 0.5){ kamerIn = null; kamerUit = null; menuUit = t; } return; }
+  ctx.save(); ctx.setTransform(dpr*schaal, 0, 0, dpr*schaal, dpr*ox, dpr*oy); ctx.globalAlpha = a;
+  ctx.fillStyle = '#2a170c'; ctx.fillRect(-ox/schaal - 2, -oy/schaal - 2, innerWidth/schaal + 4, innerHeight/schaal + 4);
+  // het belletje schudt even als je erop tikt
+  // (v0.20) de bel is netjes losgeknipt (alleen de bel zelf schommelt, rond het knopje bovenop); erachter is de muur bijgewerkt
+  const bs = t - belSchud, schud = bs < 1.4 ? Math.sin(bs*16)*0.13*Math.exp(-bs*2.6) : 0;
+  ctx.drawImage(IMG.kamer, 0, 0, PW, PH);
+  if(hc()){ hcDemp(-PW, -PH, PW*3, PH*3); for(const d of KAMER) hcSpot(IMG.kamer, d.rond ? { ellips: [d.rond[0], d.rond[1], d.rond[2] + 12, d.rond[2] + 12] } : { rect: d.rect }, t); }
+  if(schud){ const BX = 60, BY = 100, PX = 168.5, PY = 168;
+    ctx.drawImage(IMG.belP, BX, BY);
+    ctx.save(); ctx.translate(PX, PY); ctx.rotate(schud); ctx.translate(-PX, -PY); ctx.drawImage(IMG.belS, BX, BY); ctx.restore(); }
+  // stofjes in de zonnestraal (niet bij hoog contrast)
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  if(!hc()) for(const p of stofjes){
+    const u = (p.u + t*0.012*p.s) % 1, x = 1185 - u*260 + Math.sin(t*0.6 + p.f)*25 + (p.v - 0.5)*140*u, y = 110 + u*430 + Math.cos(t*0.5 + p.f)*12;
+    ctx.fillStyle = `rgba(255,230,170,${0.55*Math.sin(u*Math.PI)*(0.6 + 0.4*Math.sin(t*2 + p.f))})`;
+    ctx.beginPath(); ctx.arc(x, y, p.s*1.3, 0, Math.PI*2); ctx.fill();
+  }
+  ctx.restore();
+  // muzieknootjes boven het speeldoosje als het speelt
+  const ds = t - doosSpeelt;
+  if(ds < 1.6){ ctx.save(); ctx.fillStyle = '#ffe9a8'; ctx.font = '700 30px serif';
+    for(let i = 0; i < 3; i++){ const d = ds - i*0.25; if(d < 0) continue;
+      ctx.globalAlpha = a*Math.max(0, 1 - d/1.3); ctx.fillText(i % 2 ? '♫' : '♪', 200 + i*45 + Math.sin(d*5)*8, 380 - d*70); }
+    ctx.restore(); }
+  // gloed om het ding waar je naar wijst
+  const w = KAMER.find(d => d.id === kamerWijs);
+  if(w){ const [cx, cy, r] = w.rond || [(w.rect[0]+w.rect[2])/2, (w.rect[1]+w.rect[3])/2, Math.max(w.rect[2]-w.rect[0], w.rect[3]-w.rect[1])*0.62];
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+    g.addColorStop(0, `rgba(255,215,130,${0.22 + 0.06*Math.sin(t*5)})`); g.addColorStop(1, 'rgba(255,215,130,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fill(); ctx.restore(); }
+  // (v0.35) vilten knoppen van ChatGPT (Images\Openingsscherm\optieknoppen.png): Geluid en Muziek met aan/uit-schuifje,
+  // Toegankelijkheid in het glas van het vergrootglas; volumebalkje met een gouden knopje dat meeschuift
+  for(const d of KAMER) if(d.label) optieKnop(d, kamerWijs === d.id);
+  if(vol.style.display === 'block'){
+    const [bx, by, bw, bh] = VOLUME_BALK, k = 38*(hc() ? 1.2 : 1), x0 = bx - bw/2 + bh*0.55, x1 = bx + bw/2 - bh*0.55;
+    ctx.drawImage(IMG.okBalk, bx - bw/2, by - bh/2, bw, bh);
+    const kx = x0 + (x1 - x0)*OPTIES.volume/100;
+    ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowBlur = 6; ctx.shadowOffsetY = 2;
+    ctx.drawImage(IMG.okKnop, kx - k/2, by - k/2, k, k); ctx.restore();
+  }
+  ctx.restore();
+  // volumeschuifje onder het bordje 'Muziek'
+  if(vol.style.display === 'block'){   // het echte schuifje ligt onzichtbaar over het getekende balkje (muis, vinger en toetsen werken)
+    const [bx, by, bw, bh] = VOLUME_BALK;
+    vol.style.left = (ox + (bx - bw/2)*schaal) + 'px'; vol.style.top = (oy + (by - bh/2)*schaal) + 'px'; vol.style.width = (bw*schaal) + 'px'; vol.style.height = (bh*schaal) + 'px';
+  }
+}
+
+// =====================================================================
+// (v0.25) START, STAP 1: DE BOEKENPLEK (Images\Openingsscherm\boekenplek.png)
+// Drie boeken op een boomstronk in de schemer. Op het vilten lapje staat de naam (code). Leeg boek: '+ nieuw',
+// erop tikken = naam invullen. Boek met naam: het boek komt naar je toe en slaat open als prentenboek,
+// met de rand in de kleur van dat boek. Elk boek bewaart zijn eigen voortgang (localStorage 'oelieboelie_boeken').
+// De boeken zijn losgeknipt (veelhoek per boek) zodat ze omhoog kunnen komen als je ze aanwijst.
+// =====================================================================
+const BOEK_KLEUREN = [ { kaft: '#7d1f1a', rand: null, gloed: '255,120,90' },          // rood: de kaarten zijn al rood omrand
+                       { kaft: '#1f3b78', rand: [58, 96, 178], gloed: '120,160,255' },  // blauw
+                       { kaft: '#34561f', rand: [92, 132, 54], gloed: '170,220,110' } ]; // groen
+const LAPJES = [[568, 468], [859, 468], [1155, 469]];         // midden van de naamlapjes
+const LANTAARNS = [[325, 222, 70, '255,190,90'], [465, 195, 85, '255,140,50'], [645, 140, 95, '255,225,150'], [1350, 422, 70, '255,190,90']];
+const PB = D.A.boeken.map(b => ({ ...b, im: laad(b.img) }));
+let gekozen = 0, naamVoor = null;
+const til = [0, 0, 0];
+const glimmers = Array.from({ length: 16 }, (_, i) => ({ x: 180 + Math.random()*1350, y: 140 + Math.random()*300, f: Math.random()*9, s: 0.5 + Math.random() }));
+let BOEKEN = (() => { try { const b = JSON.parse(localStorage.getItem('oelieboelie_boeken')); if(Array.isArray(b) && b.length === 3) return b; } catch(e){}
+  return [0, 1, 2].map(() => ({ naam: '', gehaald: 0 })); })();
+function bewaarBoeken(){ try { localStorage.setItem('oelieboelie_boeken', JSON.stringify(BOEKEN)); } catch(e){} }
+function plekAlpha(t){ if(plekIn === null) return 0; if(plekUit !== null) return 1 - glad((t - plekUit)/0.5); return glad((t - plekIn)/0.55); }
+function inPlek(){ const t = (performance.now() - start)/1000;
+  return plekIn !== null && plekUit === null && t - plekIn > 0.5 && boekIn === null && plekKies === null && naamVoor === null && wisVoor === null && wisAnim === null; }
+function plekOnder(px, py){ if(gumZichtbaar() && Math.abs(px - gumPos[0]) < 62 && Math.abs(py - gumPos[1]) < 55) return 'gum';
+  for(let i = 0; i < 3; i++){ const b = PB[i]; if(px > b.x && px < b.x + b.w && py > b.y - 10 && py < b.y + b.h) return i; } return null; }
+function plekKlik(i, t){
+  if(i === 'gum'){ gumActief = gumActief === null ? t : null; if(gumActief !== null && OPTIES.geluid) toon(660, 0, 0.18, 0.08); return; }
+  if(gumActief !== null){ gumActief = null; if(i !== null && BOEKEN[i].naam) openWis(i); return; }   // met de gum op een boek tikken
+  if(i === null) return;
+  if(BOEKEN[i].naam) kiesBoek(i, t); else openNaam(i);
+}
+function kiesBoek(i, t){
+  gekozen = i; plekKies = { i, t }; plekWijs = null; doek.style.cursor = 'default';
+  kaartNr = Math.min(KAARTEN.length - 1, Math.floor(BOEKEN[i].gehaald/PER_KAART)); blad = null;
+  if(OPTIES.geluid) bladGeluid();
+}
+function openNaam(i){
+  naamVoor = i; plekWijs = null; const v = document.getElementById('naamVraag'), inv = document.getElementById('naamInvoer');
+  inv.value = ''; v.classList.add('zichtbaar'); setTimeout(() => inv.focus(), 60);
+}
+function sluitNaam(){ naamVoor = null; const v = document.getElementById('naamVraag'); if(v){ v.classList.remove('zichtbaar'); document.getElementById('naamInvoer').blur(); } }
+function naamKlaar(){
+  const inv = document.getElementById('naamInvoer'), naam = inv.value.trim().replace(/\s+/g, ' ');
+  if(!naam){ const v = document.getElementById('naamVraag'); v.classList.remove('schud'); void v.offsetWidth; v.classList.add('schud'); inv.focus(); return; }
+  const i = naamVoor; BOEKEN[i] = { naam, gehaald: 0 }; bewaarBoeken(); sluitNaam();
+  if(OPTIES.geluid){ toon(784, 0, 0.3, 0.1); toon(1175, 0.12, 0.5, 0.09); }
+  kiesBoek(i, (performance.now() - start)/1000 + 0.7);   // even je naam laten zien, dan gaat het boek open
+}
+document.getElementById('naamOk').onclick = naamKlaar;
+document.getElementById('naamNee').onclick = sluitNaam;
+document.getElementById('naamInvoer').addEventListener('keydown', e => { if(e.key === 'Enter') naamKlaar(); if(e.key === 'Escape') sluitNaam(); });
+document.getElementById('plekTerug').onclick = () => { plekUit = (performance.now() - start)/1000; plekWijs = null; };
+// ---- (v0.26) een boek leeg maken met de gum (Arjens keuze A) ----
+// De vilten gum (uit Images\gumknop.png) ligt op de boomstronk zodra er een boek met een naam is. Tik op de gum: hij zweeft omhoog,
+// 'Welk boek wil je leeg maken?'. Tik op een boek met naam: vilten schermpje; de rode knop moet je 2 seconden vasthouden.
+// Daarna gumt de gum de naam van het lapje (kruimels) en het boek is weer leeg ('+ nieuw').
+const GUM_RUST = [1248, 700], GUM_W = 112, HOUD_DUUR = 2000;
+let gumActief = null, wisVoor = null, wisAnim = null, houdStart = null;
+let gumPos = GUM_RUST.slice();
+const kruimels = [];
+function gumZichtbaar(){ return BOEKEN.some(b => b.naam) || wisAnim !== null; }
+function openWis(i){
+  wisVoor = i; plekWijs = null; const n = BOEKEN[i].naam;
+  document.getElementById('wisTitel').textContent = 'Het boek van ' + n + ' leeg maken?';
+  document.getElementById('wisTekst').textContent = 'Alles wat ' + n + ' heeft gehaald, is dan weg. Dat kun je niet meer terugdraaien.';
+  document.getElementById('wisVraag').classList.add('zichtbaar');
+}
+function sluitWis(){ wisVoor = null; houdStart = null; const v = document.getElementById('wisVraag'); if(v) v.classList.remove('zichtbaar'); }
+function wisKlaar(){
+  const i = wisVoor; sluitWis(); wisAnim = { i, t: (performance.now() - start)/1000 }; wisGeluid();
+}
+function wisGeluid(){   // gum-geschuur (proefgeluid)
+  try{ if(!OPTIES.geluid) return; audio = audio || new (window.AudioContext || window.webkitAudioContext)(); const ac = audio;
+    const n = ac.sampleRate*1.3, buf = ac.createBuffer(1, n, ac.sampleRate), d = buf.getChannelData(0);
+    for(let i = 0; i < n; i++){ const v = i/n; d[i] = (Math.random()*2 - 1)*(0.5 + 0.5*Math.sin(i/ac.sampleRate*2*Math.PI*9))*Math.min(1, v*8, (1 - v)*5)*0.4; }
+    const s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain(); f.type = 'lowpass'; f.frequency.value = 1400;
+    g.gain.value = 0.6*OPTIES.volume/100; s.buffer = buf; s.connect(f); f.connect(g); g.connect(ac.destination); s.start(); }catch(e){}
+}
+document.getElementById('wisNee').onclick = sluitWis;
+(() => { const hk = document.getElementById('wisHoud');
+  hk.addEventListener('pointerdown', e => { e.preventDefault(); houdStart = performance.now(); try { hk.setPointerCapture(e.pointerId); } catch(_){} });
+  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(n => hk.addEventListener(n, () => { houdStart = null; }));
+  hk.addEventListener('contextmenu', e => e.preventDefault());
+  const lus = () => { const p = houdStart ? Math.min(1, (performance.now() - houdStart)/HOUD_DUUR) : 0;
+    hk.style.setProperty('--p', p); if(p >= 1 && wisVoor !== null){ houdStart = null; wisKlaar(); } requestAnimationFrame(lus); };
+  requestAnimationFrame(lus); })();
+function tekenGum(t){
+  if(!gumZichtbaar()) return;
+  let doel = GUM_RUST, hoek = -0.08, schaalG = 1;
+  if(gumActief !== null){ doel = [860, 200 + Math.sin(t*3)*8]; hoek = -0.25 + Math.sin(t*2.2)*0.06; schaalG = 1.15; }
+  if(wisAnim){ const w = t - wisAnim.t, [lx, ly] = LAPJES[wisAnim.i];
+    if(w < 1.4){ doel = [lx + Math.sin(w*17)*58*Math.min(1, w*4), ly - 18]; hoek = -0.5 + Math.sin(w*17)*0.12; schaalG = 1.1;
+      if(w > 0.25 && Math.random() < 0.6) kruimels.push({ x: gumPos[0] + (Math.random() - 0.5)*70, y: gumPos[1] + 30, vx: (Math.random() - 0.5)*90, vy: -40 - Math.random()*60, t0: t,
+        kl: Math.random() < 0.5 ? '232,90,130' : '245,225,190', r: 2 + Math.random()*3 }); }
+    else if(w > 1.6){ if(BOEKEN[wisAnim.i].naam){ BOEKEN[wisAnim.i] = { naam: '', gehaald: 0 }; bewaarBoeken(); } if(w > 2.1) wisAnim = null; }
+  }
+  gumPos[0] += (doel[0] - gumPos[0])*0.2; gumPos[1] += (doel[1] - gumPos[1])*0.2;
+  // kruimels vallen op de boomstronk
+  for(let k = kruimels.length - 1; k >= 0; k--){ const c = kruimels[k], d = t - c.t0; if(d > 1.2){ kruimels.splice(k, 1); continue; }
+    const x = c.x + c.vx*d, y = c.y + c.vy*d + 260*d*d; ctx.fillStyle = `rgba(${c.kl},${1 - d/1.2})`; ctx.beginPath(); ctx.arc(x, Math.min(y, 690), c.r, 0, Math.PI*2); ctx.fill(); }
+  const w = GUM_W*schaalG, h = w*IMG.gum.height/Math.max(1, IMG.gum.width);
+  ctx.save(); ctx.translate(gumPos[0], gumPos[1]); ctx.rotate(hoek);
+  ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = gumActief !== null || wisAnim ? 22 : 8; ctx.shadowOffsetY = gumActief !== null || wisAnim ? 14 : 4;
+  ctx.drawImage(IMG.gum, -w/2, -h/2, w, h); ctx.restore();
+  if(plekWijs === 'gum' && gumActief === null){ ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    const g = ctx.createRadialGradient(gumPos[0], gumPos[1], 10, gumPos[0], gumPos[1], 90); g.addColorStop(0, 'rgba(255,130,170,0.35)'); g.addColorStop(1, 'rgba(255,130,170,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(gumPos[0], gumPos[1], 90, 0, Math.PI*2); ctx.fill(); ctx.restore(); }
+  if(gumActief !== null){   // vraagje onder de zwevende gum
+    ctx.save(); ctx.font = '700 24px "Trebuchet MS", system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const tk = 'Welk boek wil je leeg maken?', tw = ctx.measureText(tk).width;
+    ctx.fillStyle = 'rgba(255,248,230,0.92)'; ctx.beginPath(); ctx.roundRect(860 - tw/2 - 16, 270, tw + 32, 40, 14); ctx.fill();
+    ctx.fillStyle = '#7a3d12'; ctx.fillText(tk, 860, 291); ctx.restore(); }
+}
+
+// de landkaart met de rand in de kleur van het gekozen boek (rode randpixels omkleuren; één keer per kaart en kleur)
+const kaartRandCache = {};
+function kaartBeeld(n){
+  const kl = BOEK_KLEUREN[gekozen], im = IMG[KAARTEN[n].img];
+  if(!kl.rand || !im.complete || !im.naturalWidth) return im;
+  const key = n + '_' + gekozen; if(kaartRandCache[key]) return kaartRandCache[key];
+  const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight;
+  const g = c.getContext('2d'); g.drawImage(im, 0, 0);
+  const W = c.width, H = c.height, B = 19, d = g.getImageData(0, 0, W, H), p = d.data;
+  for(let y = 0; y < H; y++) for(let x = 0; x < W; x++){
+    if(!(x < B || x >= W - B || y < B || y >= H - B || (Math.abs(x - W/2) < 40 && (y < 32 || y > H - 32)))) continue;
+    const i = (y*W + x)*4, r = p[i], gg = p[i+1], b = p[i+2];
+    if(r > 80 && r > gg*1.5 && r > b*1.5){ const f = r/190, m = Math.min(1, (r - Math.max(gg, b))/90);
+      p[i] = r*(1 - m) + Math.min(255, kl.rand[0]*f)*m; p[i+1] = gg*(1 - m) + Math.min(255, kl.rand[1]*f)*m; p[i+2] = b*(1 - m) + Math.min(255, kl.rand[2]*f)*m; }
+  }
+  g.putImageData(d, 0, 0); kaartRandCache[key] = c; return c;
+}
+function plek(t){
+  const a = plekAlpha(t);
+  document.getElementById('plekTerug').style.display = a >= 1 && plekUit === null && boekIn === null && plekKies === null && naamVoor === null && wisVoor === null && wisAnim === null ? 'block' : 'none';
+  if(a <= 0){ if(plekUit !== null && t - plekUit > 0.5){ plekIn = null; plekUit = null; menuUit = t; } return; }
+  if(boekIn !== null && t - boekIn > 0.7 && boekUit === null) return;   // het boek ligt open: de boekenplek is niet te zien
+  ctx.save(); ctx.setTransform(dpr*schaal, 0, 0, dpr*schaal, dpr*ox, dpr*oy); ctx.globalAlpha = a;
+  ctx.fillStyle = '#10141f'; ctx.fillRect(-ox/schaal - 2, -oy/schaal - 2, innerWidth/schaal + 4, innerHeight/schaal + 4);
+  ctx.drawImage(IMG.plek, 0, 0, PW, PH);
+  if(hc()) hcDemp(-PW, -PH, PW*3, PH*3);
+  // lantaarntjes flakkeren, glimwormpjes zweven
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  if(!hc()) LANTAARNS.forEach(([x, y, r, kl], i) => { const f = 0.75 + 0.15*Math.sin(t*7.3 + i*2) + 0.1*Math.sin(t*12.7 + i*5);
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r*1.6); g.addColorStop(0, `rgba(${kl},${0.32*f})`); g.addColorStop(1, `rgba(${kl},0)`);
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r*1.6, 0, Math.PI*2); ctx.fill(); });
+  if(!hc()) for(const p of glimmers){ const x = p.x + Math.sin(t*0.3*p.s + p.f)*40, y = p.y + Math.sin(t*0.45*p.s + p.f*2)*22, k = 0.5 + 0.5*Math.sin(t*1.7*p.s + p.f);
+    const g = ctx.createRadialGradient(x, y, 0, x, y, 9); g.addColorStop(0, `rgba(255,235,140,${0.9*k})`); g.addColorStop(1, 'rgba(255,235,140,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, 9, 0, Math.PI*2); ctx.fill(); }
+  ctx.restore();
+  // de boeken: aangewezen boek komt omhoog en gloeit; gekozen boek komt naar je toe
+  const volgorde = plekKies ? [0, 1, 2].filter(i => i !== plekKies.i).concat(plekKies.i) : [0, 1, 2];
+  for(const i of volgorde){
+    const b = PB[i], doel = (plekWijs === i && !plekKies && (gumActief === null || BOEKEN[i].naam)) ? 1 : (gumActief !== null && BOEKEN[i].naam ? 0.35 + 0.25*Math.sin(t*5 + i) : 0); til[i] += (doel - til[i])*0.18;
+    let x = b.x, y = b.y - 16*til[i], s = 1;
+    if(plekKies && plekKies.i === i){ const p = glad((t - plekKies.t)/0.8); s = 1 + 1.6*p;
+      x = b.x + (PW/2 - b.w*s/2 - b.x)*p; y = b.y + (PH/2 - b.h*s/2 - b.y)*p;
+      if(boekIn === null && t - plekKies.t > 0.65) boekIn = t; }
+    else if(til[i] < 0.01 && !hc()) { tekenNaam(i, x, y, 1); continue; }
+    if(til[i] > 0.01){ ctx.save(); ctx.globalCompositeOperation = 'lighter'; const cx = b.x + b.w/2, cy = b.y + b.h/2;
+      const g = ctx.createRadialGradient(cx, cy, 40, cx, cy, b.w*0.85); g.addColorStop(0, `rgba(${BOEK_KLEUREN[i].gloed},${0.35*til[i]})`); g.addColorStop(1, `rgba(${BOEK_KLEUREN[i].gloed},0)`);
+      ctx.fillStyle = g; ctx.fillRect(cx - b.w, cy - b.h, b.w*2, b.h*2); ctx.restore(); }
+    ctx.save(); ctx.shadowColor = hc() ? 'rgba(255,216,60,0.95)' : 'rgba(0,0,0,0.55)'; ctx.shadowBlur = (hc() ? 26 : 18) + 20*Math.max(til[i], s - 1); ctx.shadowOffsetY = hc() ? 0 : 8 + 10*til[i];
+    ctx.drawImage(b.im, x, y, b.w*s, b.h*s); ctx.restore();
+    tekenNaam(i, x, y, s);
+  }
+  tekenGum(t);
+  ctx.restore();
+}
+function tekenNaam(i, x, y, s){
+  const b = PB[i], [lx, ly] = LAPJES[i], cx = x + (lx - b.x)*s, cy = y + (ly - b.y)*s, naam = BOEKEN[i].naam;
+  ctx.save(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  if(naam && wisAnim && wisAnim.i === i){ const t = (performance.now() - start)/1000; ctx.globalAlpha *= 1 - klem((t - wisAnim.t - 0.3)/1.1, 0, 1); }
+  if(naam){ let f = 34; ctx.font = `700 ${f}px "Trebuchet MS", system-ui, sans-serif`;
+    while(ctx.measureText(naam).width > 170 && f > 16){ f -= 1; ctx.font = `700 ${f}px "Trebuchet MS", system-ui, sans-serif`; }
+    ctx.font = `700 ${f*s}px "Trebuchet MS", system-ui, sans-serif`; ctx.fillStyle = '#5a2e10'; ctx.fillText(naam, cx, cy + 2*s); }
+  else { ctx.font = `700 ${26*s}px "Trebuchet MS", system-ui, sans-serif`; ctx.fillStyle = 'rgba(90,46,16,0.42)'; ctx.fillText('+ nieuw', cx, cy + 2*s); }
+  ctx.restore();
+}
+
+// =====================================================================
+// (v0.21) START: HET PRENTENBOEK MET DE LANDKAART
+// Na het inzoomen op het dal vloeit het beeld over in het opengeslagen boek. Op de dubbele pagina staat
+// landkaart 1 (Images\Openingsscherm\landkaart1.png). Het pad en de 25 bolletjes tekent de code.
+// Gehaald = gekleurd vilten bolletje; volgende = glinstert; nog niet gehaald = potloodschets;
+// nog geen level gemaakt = gestippeld rondje (niet aan te tikken). Rechts aan de rand van het boek zie je
+// dat er nog 3 dubbele pagina's volgen (elk een eigen landkaart, 25 levels per kaart).
+// In deze proef is de voortgang nagebootst: levels 1 t/m 7 gehaald.
+// =====================================================================
+const BOEK_SCHAAL = 0.9;               // het boek op het podium (de rest is tafel)
+const PER_KAART = 25;
+// (v0.24) vier landkaarten, elk met een eigen pad (in pixels van het plaatje, 1672 x 941).
+// Het pad begint steeds linksonder en eindigt waar de volgende kaart begint.
+const KAARTEN = [
+  { img: 'kaart1', naam: 'Het dal', kleur: '#7f9e3a',     // langs het vijvertje en de konijntjes het toverbos in
+    pad: [[70,742],[260,712],[480,688],[700,664],[920,640],[1110,602],[1200,545],[1120,490],[960,470],[835,440],
+          [800,385],[870,335],[1010,318],[1160,300],[1280,262],[1350,222],[1402,188]] },
+  { img: 'kaart2', naam: 'Het toverbos', kleur: '#3f7d4a',  // onderlangs het bos, door de open plek, naar het doorkijkje op de bergen
+    pad: [[60,835],[300,800],[560,780],[800,750],[1000,705],[1150,640],[1170,570],[1060,525],[930,500],[880,440],
+          [960,390],[1100,370],[1220,345],[1310,318]] },
+  { img: 'kaart3', naam: 'De bergen', kleur: '#6b7f99',     // over de bergweide, langs de waterval, naar het uitzicht op zee
+    pad: [[110,660],[330,645],[560,645],[780,665],[960,690],[1110,650],[1190,580],[1110,515],[960,485],[905,435],
+          [1000,400],[1150,390],[1260,368],[1330,345]] },
+  { img: 'kaart4', naam: 'De Oelieboeliezee', kleur: '#2f7fb5', // over het strand, langs het zeehondje, naar de pier
+    pad: [[310,665],[440,610],[560,530],[700,485],[830,515],[830,610],[730,690],[700,790],[840,855],[1020,820],
+          [1140,740],[1170,650],[1240,590],[1310,545],[1365,515]] }
+];
+const LEVELS = [];                     // (v0.45) de levels die er nu zijn: bij het starten uit levels/levelboek.json
+const LEVEL_ACHTERGROND = {};
+async function laadLevels(){
+  try{
+    const r = await fetch('levels/levelboek.json', { cache: 'no-store' }); if(!r.ok) return;
+    const d = await r.json(), A = d.achtergronden || {};
+    for(const l of [...(d.levels || [])].sort((a, b) => a.nummer - b.nummer)){
+      LEVELS.push({ nr: l.nummer, naam: l.naam });
+      if(l.achtergrond && A[l.achtergrond]) LEVEL_ACHTERGROND[l.nummer] = A[l.achtergrond];
+    }
+  }catch(e){}
+}
+let boekWijs = null, boekKeuze = null, lvlNu = null;
+let kaartNr = 0, blad = null;          // blad = bezig met omslaan: { van, naar, t0 }
+const BLAD_DUUR = 0.75;
+const thumbs = {}; for(const [k, v] of Object.entries(D.A.thumbs)) { thumbs[k] = v; }
+function padPunten(P){
+  // vloeiende lijn door de punten, en 25 plekken op gelijke afstand
+  const fijn = [];
+  for(let i = 0; i < P.length - 1; i++) for(let u = 0; u < 1; u += 0.05){
+    const Q = k => P[klem(k, 0, P.length - 1)];
+    fijn.push([cr(Q(i-1)[0], Q(i)[0], Q(i+1)[0], Q(i+2)[0], u), cr(Q(i-1)[1], Q(i)[1], Q(i+1)[1], Q(i+2)[1], u)]);
+  }
+  fijn.push(P[P.length - 1]);
+  const lang = [0]; for(let i = 1; i < fijn.length; i++) lang.push(lang[i-1] + Math.hypot(fijn[i][0]-fijn[i-1][0], fijn[i][1]-fijn[i-1][1]));
+  const tot = lang[lang.length - 1], plekken = [];
+  for(let n = 0; n < PER_KAART; n++){
+    const d = tot*(0.035 + 0.93*n/(PER_KAART - 1)); let j = 1; while(lang[j] < d) j++;
+    const v = (d - lang[j-1])/(lang[j] - lang[j-1]); plekken.push([fijn[j-1][0] + (fijn[j][0]-fijn[j-1][0])*v, fijn[j-1][1] + (fijn[j][1]-fijn[j-1][1])*v]);
+  }
+  return { fijn, plekken };
+}
+const PADEN = KAARTEN.map(k => padPunten(k.pad));
+function boekRect(){ const w = PW*BOEK_SCHAAL, h = PH*BOEK_SCHAAL; return { x: (PW - w)/2 - 10, y: (PH - h)/2, w, h, k: BOEK_SCHAAL }; }
+function boekAlpha(t){ if(boekIn === null) return 0; if(boekUit !== null) return 1 - glad((t - boekUit)/0.5); return glad((t - boekIn)/0.6); }
+function inBoek(){ const t = (performance.now() - start)/1000; return boekIn !== null && boekUit === null && t - boekIn > 0.6; }
+function staatVan(nr){ const B = BOEKEN[gekozen], g = B.gehaald; if(nr > LEVELS.length) return 'leeg'; if(B.joker === nr) return 'half'; if(nr <= g) return 'gehaald'; if(nr === g + 1) return 'volgende'; return 'toekomst'; }
+function bolletjeOnder(px, py){
+  if(blad) return null; const R = boekRect(), PAD = PADEN[kaartNr];
+  for(let i = 0; i < PER_KAART; i++){ const [x, y] = PAD.plekken[i], nr = kaartNr*PER_KAART + i + 1;
+    if(Math.hypot(px - (R.x + x*R.k), py - (R.y + y*R.k)) < 31 && staatVan(nr) !== 'leeg') return nr; }
+  return null;
+}
+// tabjes rechts aan het boek en de ezelsoortjes onderin: om naar een andere kaart te bladeren
+function tabRect(i){ const R = boekRect(); return [R.x + R.w - 10, R.y + 70 + i*82, 52 + (i === kaartNr ? 10 : 0), 60]; }
+function bladerOnder(px, py){
+  if(blad) return null;
+  for(let i = 0; i < KAARTEN.length; i++){ const [x, y, w, h] = tabRect(i); if(i !== kaartNr && px > x + 10 && px < x + w && py > y && py < y + h) return i; }
+  const R = boekRect(), es = 70;
+  if(kaartNr < KAARTEN.length - 1 && px > R.x + R.w - es && py > R.y + R.h - es) return kaartNr + 1;
+  if(kaartNr > 0 && px < R.x + es && py > R.y + R.h - es) return kaartNr - 1;
+  return null;
+}
+function sla(naar){
+  if(naar === null || naar === kaartNr || naar < 0 || naar >= KAARTEN.length || blad) return;
+  blad = { van: kaartNr, naar, t0: (performance.now() - start)/1000 }; kaartNr = naar;
+  boekKeuze = null; boekWijs = null; sluitLvl(); bladGeluid();
+}
+function bladGeluid(){   // zacht ritselend geluidje (proefgeluid)
+  try{ if(!OPTIES.geluid) return; audio = audio || new (window.AudioContext || window.webkitAudioContext)(); const ac = audio; const n = ac.sampleRate*0.35, buf = ac.createBuffer(1, n, ac.sampleRate), d = buf.getChannelData(0);
+    for(let i = 0; i < n; i++){ const v = i/n; d[i] = (Math.random()*2 - 1)*Math.sin(Math.PI*v)*0.35; }
+    const s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain(); f.type = 'bandpass'; f.frequency.value = 2400; f.Q.value = 0.7;
+    g.gain.value = 0.5*OPTIES.volume/100; s.buffer = buf; s.connect(f); f.connect(g); g.connect(ac.destination); s.start(); }catch(e){}
+}
+function boekBeweeg(px, py){
+  const nr = bolletjeOnder(px, py), b = bladerOnder(px, py); doek.style.cursor = nr || b !== null || krijtOnder(px, py) ? 'pointer' : 'default';
+  if(nr !== boekWijs){ boekWijs = nr; if(nr) toonLvl(nr); else if(!boekKeuze) sluitLvl(); }
+}
+function boekKlik(px, py, t){
+  const b = bladerOnder(px, py); if(b !== null){ sla(b); return; }
+  if(krijtOnder(px, py)){ krijtTip = t; return; }
+  const nr = bolletjeOnder(px, py);
+  if(nr){ boekKeuze = nr; toonLvl(nr); } else { boekKeuze = null; sluitLvl(); }
+}
+// vegen (tablet): naar links vegen = volgende kaart, naar rechts = vorige
+let veegStart = null, veegde = false;
+doek.addEventListener('pointerdown', e => { if(inBoek()) veegStart = [e.clientX, e.clientY]; veegde = false; });
+doek.addEventListener('pointerup', e => {
+  if(!veegStart || !inBoek()) { veegStart = null; return; }
+  const dx = e.clientX - veegStart[0], dy = e.clientY - veegStart[1]; veegStart = null;
+  if(Math.abs(dx) > 80 && Math.abs(dx) > 1.5*Math.abs(dy)){ veegde = true; sla(kaartNr + (dx < 0 ? 1 : -1)); }
+});
+function toonLvl(nr){
+  const L = LEVELS[nr - 1], st = staatVan(nr), k = document.getElementById('lvlKaart'); lvlNu = nr;
+  const pl = document.getElementById('lvlPlaatje');   // (v0.45) duimnagel als los plaatje; ontbreekt die, dan de achtergrond van het level
+  // (v0.46) Arjen: alleen je volgende level en de twee daarna laten hun plaatje zien; verder weg hangt er mist
+  const inMist = st === 'toekomst' && nr > BOEKEN[gekozen].gehaald + 3;
+  k.classList.toggle('mist', inMist);
+  pl.onerror = () => { pl.onerror = null; pl.src = LEVEL_ACHTERGROND[nr] || ''; };
+  pl.src = inMist ? mistPlaatje() : 'plaatjes/levels/level' + nr + '.webp';
+  document.getElementById('lvlNr').textContent = 'Level ' + nr;
+  document.getElementById('lvlNaam').textContent = st === 'toekomst' ? '???' : L.naam;
+  document.getElementById('lvlStand').textContent = st === 'gehaald' ? '★ gehaald' : st === 'volgende' ? 'Dit is je volgende level!'
+    : st === 'half' ? 'Overgeslagen met je toverkrijtje. Haal hem alsnog, dan krijg je je krijtje terug!' : 'Haal eerst de levels hiervoor';
+  k.classList.toggle('toekomst', st === 'toekomst'); k.classList.remove('vraag');
+  k.classList.toggle('magJoker', st === 'volgende' && BOEKEN[gekozen].joker == null && !jokerAnim);
+  const R = boekRect(), [x, y] = PADEN[kaartNr].plekken[(nr - 1) % PER_KAART], sx = ox + (R.x + x*R.k)*schaal, sy = oy + (R.y + y*R.k)*schaal;
+  const kw = 260, kh = 320; let lx = sx + 34, ly = sy - kh/2;
+  if(lx + kw > innerWidth - 10) lx = sx - 34 - kw;
+  k.style.left = klem(lx, 10, innerWidth - kw - 10) + 'px'; k.style.top = klem(ly, 10, innerHeight - kh - 10) + 'px';
+  k.classList.add('zichtbaar');
+}
+// (v0.46) een mistwolkje, door de code getekend (één keer, daarna bewaard)
+let mistBron = null;
+function mistPlaatje(){
+  if(mistBron) return mistBron;
+  const W = 360, H = 201, c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d');
+  const bg = g.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#d7e1ea'); bg.addColorStop(1, '#b9c6d3');
+  g.fillStyle = bg; g.fillRect(0, 0, W, H);
+  let z = 11; const rnd = () => (z = (z*16807) % 2147483647)/2147483647;   // altijd dezelfde mist
+  const pluim = (x, y, r, a) => {   // een zachte, bolle mistwolk: blauwgrijze onderkant, licht bovenop
+    let rg = g.createRadialGradient(x, y + r*0.25, 0, x, y + r*0.25, r*1.05);
+    rg.addColorStop(0, `rgba(150,168,188,${a*0.45})`); rg.addColorStop(1, 'rgba(150,168,188,0)');
+    g.fillStyle = rg; g.beginPath(); g.arc(x, y + r*0.25, r*1.05, 0, Math.PI*2); g.fill();
+    rg = g.createRadialGradient(x - r*0.2, y - r*0.25, 0, x, y, r);
+    rg.addColorStop(0, `rgba(255,255,255,${a})`); rg.addColorStop(0.6, `rgba(246,249,252,${a*0.7})`); rg.addColorStop(1, 'rgba(240,245,250,0)');
+    g.fillStyle = rg; g.beginPath(); g.arc(x, y, r, 0, Math.PI*2); g.fill();
+  };
+  for(let laag = 0; laag < 4; laag++){             // van achter (hoog, klein, vaag) naar voor (laag, groot)
+    const n = 6 + laag*2, yb = 50 + laag*42, rb = 30 + laag*12, a = 0.32 + laag*0.12;
+    for(let i = 0; i < n; i++) pluim(-20 + (i + rnd()*0.8)*(W + 40)/n, yb + (rnd() - 0.5)*24, rb*(0.75 + rnd()*0.6), a);
+  }
+  g.filter = 'blur(4px)'; g.globalAlpha = 0.45; g.strokeStyle = '#ffffff'; g.lineCap = 'round';   // een paar vage slierten
+  for(let i = 0; i < 3; i++){ const y = 40 + i*42 + rnd()*12; g.lineWidth = 3 + rnd()*3; g.beginPath(); g.moveTo(-10, y);
+    g.bezierCurveTo(110, y - 14, 230, y + 14, 370, y - 3); g.stroke(); }
+  g.globalAlpha = 1; g.filter = 'none';
+  return mistBron = c.toDataURL('image/png');
+}
+function sluitLvl(){ document.getElementById('lvlKaart').classList.remove('zichtbaar'); }
+document.getElementById('lvlSpeel').onclick = () => {
+  // (v0.45) het echte level starten; na afloop brengt het spel je terug naar dit boek
+  const st = staatVan(lvlNu); if(st === 'toekomst' || st === 'leeg') return;
+  if(OPTIES.geluid){ toon(659, 0, 0.2, 0.08); toon(988, 0.08, 0.3, 0.08); }
+  const nr = lvlNu; setTimeout(() => { location.href = 'spel.html?level=' + nr + '&boek=' + gekozen; }, 250);
+};
+// =====================================================================
+// (v0.29) DE JOKER: HET TOVERKRIJTJE (Images\toverkrijtje.png)
+// Eén per boek. (v0.30: het krijtje ligt niet meer zichtbaar in het boek, Arjen vond het te prominent.) Bij je volgende level staat naast Speel de knop
+// 'Joker'; na 'Weet je het zeker?' vliegt het krijtje naar het bolletje en kleurt het half in (half turquoise,
+// half blauwdruk). Dat level telt als gehaald, het volgende gaat open. Haal je het overgeslagen level later
+// alsnog, dan wordt het bolletje helemaal turquoise en krijg je je krijtje terug (Arjens keuze).
+// Bewaard per boek: BOEKEN[i].joker = nummer van het overgeslagen level (of null).
+// =====================================================================
+const KRIJT_W = 180, KRIJT_TIP = [0.705, 0.363], KRIJT_RUST = [895, 72];
+let jokerAnim = null, krijtTip = -9;
+function jokerGeluid(terug){ if(!OPTIES.geluid) return; const f = terug ? [1568, 1319, 1047, 1568] : [784, 1047, 1319, 1568, 2093];
+  f.forEach((v, i) => toon(v, i*0.08, 0.5, 0.07, 'triangle')); }
+document.getElementById('lvlJoker').onclick = () => { document.getElementById('lvlKaart').classList.add('vraag'); };
+document.getElementById('zekerNee').onclick = () => { document.getElementById('lvlKaart').classList.remove('vraag'); };
+document.getElementById('zekerJa').onclick = () => {
+  if(staatVan(lvlNu) !== 'volgende' || BOEKEN[gekozen].joker != null) return;
+  jokerAnim = { nr: lvlNu, t: (performance.now() - start)/1000, soort: 'weg' }; jokerGeluid(false);
+  boekKeuze = null; boekWijs = null; sluitLvl();
+};
+function bolletjePodium(nr, R){ const [x, y] = PADEN[kaartNr].plekken[(nr - 1) % PER_KAART]; return [R.x + x*R.k, R.y + y*R.k]; }
+function krijtOnder(px, py){ return false; }
+function tekenKrijtAan(tx, ty, sch, al, hoek){   // teken het krijtje met de punt op (tx, ty)
+  const w = KRIJT_W*sch, h = w*IMG.krijt.height/Math.max(1, IMG.krijt.width);
+  ctx.save(); ctx.globalAlpha *= al; ctx.translate(tx, ty); ctx.rotate(hoek || 0);
+  ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 5;
+  ctx.drawImage(IMG.krijt, -KRIJT_TIP[0]*w, -KRIJT_TIP[1]*h, w, h); ctx.restore();
+}
+function glinsters(x, y, t, n){ ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  for(let i = 0; i < n; i++){ const a = t*3 + i*2.4, d = 14 + 22*((t*1.7 + i*0.37) % 1);
+    ctx.fillStyle = `rgba(255,220,110,${0.9*(1 - (t*1.7 + i*0.37) % 1)})`; ctx.beginPath(); ctx.arc(x + Math.cos(a)*d, y + Math.sin(a)*d, 3, 0, Math.PI*2); ctx.fill(); }
+  ctx.restore(); }
+function tekenKrijt(t, R){
+  const B = BOEKEN[gekozen];
+  if(!jokerAnim) return;   // (v0.30) Arjen: het krijtje hoeft niet steeds in beeld; het verschijnt alleen als je de joker gebruikt
+  const w = t - jokerAnim.t, [dx, dy] = bolletjePodium(jokerAnim.nr, R);
+  if(jokerAnim.soort === 'weg'){
+    if(w < 0.8){ const p = glad(w/0.8); tekenKrijtAan(dx + 40*(1 - p), dy - 60*(1 - p), 0.8, p, 0); glinsters(dx, dy, w, 5*p); }   // verschijnt en zakt naar het bolletje
+    else if(w < 1.7){ const k = w - 0.8; tekenKrijtAan(dx + Math.sin(k*28)*12, dy + Math.cos(k*21)*7, 0.8, 1, 0); glinsters(dx, dy, w, 7); }
+    else { if(B.joker == null){ B.joker = jokerAnim.nr; B.gehaald = Math.max(B.gehaald, jokerAnim.nr); bewaarBoeken(); }
+      if(w < 2.2) { tekenKrijtAan(dx, dy, 0.8*(1 - (w - 1.7)/0.5), 1 - (w - 1.7)/0.5, 0); glinsters(dx, dy, w, 9); } else jokerAnim = null; }
+  } else {   // terug naar de vouw van het boek
+    if(w < 0.3){ tekenKrijtAan(dx, dy, 0.8, w/0.3, 0); glinsters(dx, dy, w, 7); }
+    else if(w < 1.1){ const p = glad((w - 0.3)/0.8); tekenKrijtAan(dx + 40*p, dy - 90*p, 0.8, 1 - p, 0); glinsters(dx + 20*p, dy - 45*p, w, 7*(1 - p)); }   // zweeft omhoog en verdwijnt
+    else jokerAnim = null;
+  }
+}
+
+document.getElementById('boekTerug').onclick = () => { boekUit = (performance.now() - start)/1000; boekKeuze = null; boekWijs = null; sluitLvl(); };
+function tekenBolletje(x, y, nr, st, t, wijs){
+  // (v0.22) vilten badges van ChatGPT (Images\levelknop.png); het nummer zet de code erop
+  ctx.save();
+  if(st === 'leeg'){ ctx.globalAlpha *= 0.45; ctx.drawImage(IMG.knT, x - 20, y - 20, 40, 40); ctx.restore(); return; }   // plekje voor een level dat nog niet bestaat
+  let r = wijs ? 29 : 25;
+  if(st === 'volgende'){   // glinstert en ademt een beetje
+    const p = 0.5 + 0.5*Math.sin(t*4); r += 1.5*p;
+    const g = ctx.createRadialGradient(x, y, r*0.6, x, y, r*2.2); g.addColorStop(0, `rgba(255,215,90,${0.5 + 0.35*p})`); g.addColorStop(1, 'rgba(255,215,90,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r*2.2, 0, Math.PI*2); ctx.fill();
+  }
+  const img = st === 'gehaald' ? IMG.knG : st === 'volgende' ? IMG.knV : IMG.knT;
+  ctx.shadowColor = 'rgba(0,0,0,0.35)'; ctx.shadowBlur = 5; ctx.shadowOffsetY = 2;
+  ctx.drawImage(img, x - r, y - r, r*2, r*2); ctx.shadowColor = 'transparent';
+  if(hc()){ ctx.strokeStyle = '#120c06'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(x, y, r + 1, 0, Math.PI*2); ctx.stroke();
+    if(st === 'volgende'){ ctx.strokeStyle = HC_GEEL; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(x, y, r + 8, 0, Math.PI*2); ctx.stroke(); } }
+  if(st === 'half'){   // (v0.29) half ingekleurd met het toverkrijtje: linksonder turquoise, rechtsboven blauwdruk
+    ctx.save(); ctx.beginPath(); ctx.moveTo(x - r - 2, y - r - 2); ctx.lineTo(x + r + 2, y + r + 2); ctx.lineTo(x - r - 2, y + r + 2); ctx.closePath(); ctx.clip();
+    ctx.drawImage(IMG.knG, x - r, y - r, r*2, r*2);
+    ctx.beginPath(); ctx.arc(x, y, r - 3, 0, Math.PI*2); ctx.clip();   // krijtstreepjes: zo zie je dat hij met het krijtje is ingekleurd
+    ctx.strokeStyle = 'rgba(31,158,154,0.6)'; ctx.lineWidth = 3.2; ctx.lineCap = 'round';
+    for(let k = -2*r; k < 2*r; k += 6){ ctx.beginPath(); ctx.moveTo(x + k - r, y + r); ctx.lineTo(x + k + r, y - r); ctx.stroke(); }
+    ctx.restore(); }
+  ctx.fillStyle = st === 'toekomst' ? '#5d86b8' : '#7a3d12';
+  if(st === 'half'){ ctx.fillStyle = 'rgba(255,248,230,0.85)'; ctx.beginPath(); ctx.arc(x, y + 1, 12, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = '#7a3d12'; }
+  ctx.font = `700 ${nr > 99 ? 16 : nr > 9 ? 19 : 21}px "Trebuchet MS", system-ui, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(nr, x, y + 1);
+  if(st === 'gehaald'){ const s = 19; ctx.drawImage(IMG.knS, x + r*0.72 - s/2, y - r*0.72 - s/2, s, s); }
+  ctx.restore();
+}
+// (v0.45) terug uit het spel met een gehaald level: het bolletje kleurt in, het volgende gaat open
+let kleurAnim = null;
+function staatTeken(nr, t){
+  const st = staatVan(nr); if(!kleurAnim) return st; const w = t - kleurAnim.t;
+  if(w < 0.6){ if(nr === kleurAnim.nr) return 'volgende'; if(nr === kleurAnim.nr + 1 && st === 'volgende') return 'toekomst'; }
+  return st;
+}
+function tekenKleurAnim(t, R){
+  if(!kleurAnim) return; const w = t - kleurAnim.t;
+  if(w > 1.6){ kleurAnim = null; return; }
+  if(w < 0.6 || Math.floor((kleurAnim.nr - 1)/PER_KAART) !== kaartNr || blad) return;
+  if(!kleurAnim.klonk){ kleurAnim.klonk = true; if(OPTIES.geluid){ toon(1047, 0, 0.4, 0.12); toon(1319, 0.1, 0.4, 0.1); toon(1568, 0.2, 0.6, 0.1); } }
+  const [x, y] = bolletjePodium(kleurAnim.nr, R), k = (w - 0.6)/1.0;
+  ctx.save(); ctx.strokeStyle = `rgba(255,215,90,${0.9*(1 - k)})`; ctx.lineWidth = 6*(1 - k) + 1;
+  ctx.beginPath(); ctx.arc(x, y, 26 + 40*k, 0, Math.PI*2); ctx.stroke(); ctx.restore();
+  glinsters(x, y, w, Math.round(9*(1 - k)) + 2);
+}
+function tekenPadEnBolletjes(n, t, R){
+  const PAD = PADEN[n];
+  ctx.save(); ctx.translate(R.x, R.y); ctx.scale(R.k, R.k);
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  const lijn = () => { ctx.beginPath(); PAD.fijn.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); };
+  if(hc()){ hcDemp(0, 0, 1672, 941, 0.5); lijn(); ctx.strokeStyle = '#1a1208'; ctx.lineWidth = 44; ctx.stroke(); }
+  lijn(); ctx.strokeStyle = 'rgba(120,90,50,0.35)'; ctx.lineWidth = 34; ctx.stroke();
+  lijn(); ctx.strokeStyle = '#ead9ad'; ctx.lineWidth = 29; ctx.stroke();
+  lijn(); ctx.strokeStyle = 'rgba(255,250,230,0.55)'; ctx.lineWidth = 12; ctx.stroke();
+  lijn(); ctx.setLineDash([2, 9]); ctx.strokeStyle = 'rgba(150,110,60,0.35)'; ctx.lineWidth = 22; ctx.stroke(); ctx.setLineDash([]);
+  for(let i = 0; i < PER_KAART; i++){ const [x, y] = PAD.plekken[i], nr = n*PER_KAART + i + 1;
+    tekenBolletje(x, y, nr, staatTeken(nr, t), t, boekWijs === nr || boekKeuze === nr); }
+  ctx.restore();
+}
+// een halve bladzijde van kaart n tekenen (kant 0 = links, 1 = rechts), eventueel samengeknepen tot breedte b
+function halfBlad(n, kant, dx, b, R, t){
+  const im = kaartBeeld(n), hw = im.width/2, hwR = R.w/2;
+  ctx.save(); ctx.beginPath(); ctx.rect(dx, R.y, b, R.h); ctx.clip();
+  ctx.translate(dx, 0); ctx.scale(b/hwR, 1); ctx.translate(-(R.x + kant*hwR), 0);
+  ctx.drawImage(im, kant*hw, 0, hw, im.height, R.x + kant*hwR, R.y, hwR, R.h);
+  tekenPadEnBolletjes(n, t, R);
+  ctx.restore();
+}
+function boek(t){
+  const a = boekAlpha(t);
+  document.getElementById('boekTerug').style.display = a >= 1 && boekUit === null ? 'block' : 'none';
+  if(a <= 0){ if(boekUit !== null && t - boekUit > 0.5){ boekIn = null; boekUit = null; plekKies = null; blad = null; } return; }
+  const R = boekRect();
+  ctx.save(); ctx.setTransform(dpr*schaal, 0, 0, dpr*schaal, dpr*ox, dpr*oy); ctx.globalAlpha = a;
+  // tafel
+  const tg = ctx.createRadialGradient(PW/2, PH/2, 200, PW/2, PH/2, PW*0.75); tg.addColorStop(0, '#6b4a2e'); tg.addColorStop(1, '#2e1d10');
+  ctx.fillStyle = tg; ctx.fillRect(-ox/schaal - 2, -oy/schaal - 2, innerWidth/schaal + 4, innerHeight/schaal + 4);
+  // het boek komt even omhoog bij het openen
+  const op = glad((t - boekIn)/0.6), sc = 0.94 + 0.06*op;
+  ctx.translate(PW/2, PH/2); ctx.scale(sc, sc); ctx.translate(-PW/2, -PH/2);
+  // kaft
+  ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 30; ctx.shadowOffsetY = 12;
+  ctx.fillStyle = BOEK_KLEUREN[gekozen].kaft; ctx.beginPath(); ctx.roundRect(R.x - 24, R.y - 6, R.w + 48, R.h + 18, 10); ctx.fill(); ctx.shadowColor = 'transparent';
+  // tabjes: één per kaart, in de kleur van die kaart; de kaart waar je bent steekt verder uit
+  KAARTEN.forEach((K, i) => { const [x, y, w, h] = tabRect(i), hier = i === kaartNr;
+    ctx.globalAlpha = a*(hier ? 1 : 0.85); ctx.fillStyle = K.kleur; ctx.beginPath(); ctx.roundRect(x, y, w, h, 9); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.95)'; ctx.font = `700 ${hier ? 26 : 22}px "Trebuchet MS", system-ui, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(i + 1, x + 10 + (w - 10)/2, y + h/2 + 1); });
+  ctx.globalAlpha = a;
+  // de bladranden: links de pagina's die je al omgeslagen hebt, rechts de pagina's die nog komen
+  const links = Math.min(kaartNr, blad ? blad.van : kaartNr), rechts = KAARTEN.length - 1 - Math.max(kaartNr, blad ? blad.van : kaartNr);
+  for(let i = rechts; i >= 1; i--){ ctx.fillStyle = '#c9b48a'; ctx.fillRect(R.x + R.w/2, R.y + i*2, R.w/2 + i*5, R.h);
+    ctx.fillStyle = i % 2 ? '#f3e8cf' : '#e9dbbb'; ctx.fillRect(R.x + R.w/2, R.y + i*2, R.w/2 + i*5 - 1.5, R.h - 1.5); }
+  for(let i = links; i >= 1; i--){ ctx.fillStyle = '#c9b48a'; ctx.fillRect(R.x - i*5, R.y + i*2, R.w/2 + i*5, R.h);
+    ctx.fillStyle = i % 2 ? '#f3e8cf' : '#e9dbbb'; ctx.fillRect(R.x - i*5 + 1.5, R.y + i*2, R.w/2 + i*5 - 1.5, R.h - 1.5); }
+  const hw = R.w/2, rug = R.x + hw;
+  if(blad){
+    // bladzijde omslaan: het blad draait om de rug (in de breedte samengeknepen)
+    const p = glad(Math.min(1, (t - blad.t0)/BLAD_DUUR)), vooruit = blad.naar > blad.van;
+    const L = vooruit ? blad.van : blad.naar, Rr = vooruit ? blad.naar : blad.van;   // wat links en rechts onder het blad ligt
+    halfBlad(vooruit ? blad.van : blad.naar, 0, R.x, hw, R, t);
+    halfBlad(vooruit ? blad.naar : blad.van, 1, rug, hw, R, t);
+    const q = vooruit ? p : 1 - p;   // 0 = blad ligt rechts, 1 = blad ligt links
+    if(q < 0.5){ const b = hw*(1 - 2*q); halfBlad(vooruit ? blad.van : blad.naar, 1, rug, Math.max(b, 0.5), R, t);
+      ctx.fillStyle = `rgba(0,0,0,${0.35*2*q})`; ctx.fillRect(rug, R.y, b, R.h); }
+    else { const b = hw*(2*q - 1); halfBlad(vooruit ? blad.naar : blad.van, 0, rug - b, Math.max(b, 0.5), R, t);
+      ctx.fillStyle = `rgba(0,0,0,${0.35*(2 - 2*q)})`; ctx.fillRect(rug - b, R.y, b, R.h); }
+    // schaduw van de rug
+    const sg = ctx.createLinearGradient(rug - 30, 0, rug + 30, 0); sg.addColorStop(0, 'rgba(0,0,0,0)'); sg.addColorStop(0.5, 'rgba(0,0,0,0.18)'); sg.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = sg; ctx.fillRect(rug - 30, R.y, 60, R.h);
+    if(t - blad.t0 >= BLAD_DUUR) blad = null;
+  } else {
+    ctx.drawImage(kaartBeeld(kaartNr), R.x, R.y, R.w, R.h);
+    tekenPadEnBolletjes(kaartNr, t, R);
+  }
+  tekenKrijt(t, R); tekenKleurAnim(t, R);
+  // ezelsoortjes: rechtsonder naar de volgende kaart, linksonder terug
+  const es = 54, ey = R.y + R.h - 6;
+  const oor = (ex, dir) => {
+    ctx.fillStyle = '#d9c9a4'; ctx.beginPath(); ctx.moveTo(ex - dir*es, ey); ctx.lineTo(ex, ey - es); ctx.lineTo(ex, ey); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#f6edd5'; ctx.beginPath(); ctx.moveTo(ex - dir*es, ey); ctx.lineTo(ex, ey - es); ctx.lineTo(ex - dir*es*0.62, ey - es*0.62); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(120,90,50,0.4)'; ctx.lineWidth = 1.5; ctx.stroke(); };
+  if(!blad){
+    if(kaartNr < KAARTEN.length - 1) oor(R.x + R.w - 6, 1);
+    if(kaartNr > 0) oor(R.x + 6, -1);
+    ctx.font = '700 15px "Trebuchet MS", system-ui, sans-serif'; ctx.textAlign = 'right'; ctx.textBaseline = 'alphabetic';
+    const lt = KAARTEN[kaartNr].naam + ' · kaart ' + (kaartNr + 1) + ' van ' + KAARTEN.length, lw = ctx.measureText(lt).width, lx = R.x + R.w - 6 - es - 10;
+    ctx.fillStyle = 'rgba(255,248,230,0.85)'; ctx.beginPath(); ctx.roundRect(lx - lw - 8, ey - 30, lw + 16, 24, 8); ctx.fill();
+    ctx.fillStyle = '#7a3d12'; ctx.fillText(lt, lx, ey - 13);
+  }
+  ctx.restore();
+}
+
+// ---- elk beeldje ----
+let fonkelGedaan = false, flitsGedaan = false;
+function teken(nu){
+  const t = (nu - start)/1000;
+  const dt = 1/60;
+  ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,doek.width,doek.height);
+  ctx.setTransform(dpr*schaal, 0, 0, dpr*schaal, dpr*ox, dpr*oy);
+  ctx.imageSmoothingQuality = 'high';
+  camera(t);
+  tekenWereld(t);
+  wieken(t);
+  egel(t);
+  rocky(t);
+  fungy(t);
+  if(hc()){ hcWereld(t); wieken(t); }
+
+  if(!hc()) vlinder(t, 'achter');
+  // logo (zonder O)
+  const tl = t - T_LOGO;
+  if(tl > 0){
+    const s = 0.6 + 0.4*veer(tl, 0.6, 0.12), a = klem(tl/0.25, 0, 1);
+    const cx = LOGO_X + LOGO_BREED/2, cy = LOGO_Y + M.logo.h*LS/2;
+    ctx.save(); ctx.globalAlpha = a; ctx.translate(cx, cy); ctx.scale(s, s);
+    ctx.drawImage(IMG.logo, -LOGO_BREED/2, -M.logo.h*LS/2, LOGO_BREED, M.logo.h*LS); ctx.restore();
+  }
+  // de grote O, met de oelieboelie erin
+  const to = t - T_O;
+  if(to > 0){
+    const s = 0.4 + 0.6*veer(to, 0.55, 0.2), a = klem(to/0.2, 0, 1);
+    const ocx = O_X + OW/2, ocy = O_Y + OH/2;
+    // schommelen laat de O een heel klein beetje meewiebelen; landen deukt hem even in
+    const tSchommel = M.sch.length*SCHOMMEL_KEER/SCHOMMEL_FPS;
+    let rot = 0, sqx = 1, sqy = 1;
+    if(to < tSchommel) rot = Math.sin((to*SCHOMMEL_FPS/M.sch.length)*Math.PI*2 + Math.PI/2) * -0.025;
+    if(landTijd !== null){ const lt = t - landTijd; const w = Math.exp(-lt*7)*Math.cos(lt*26); sqy = 1 - 0.05*w; sqx = 1 + 0.035*w; }
+    ctx.save(); ctx.globalAlpha = a;
+    ctx.translate(ocx, ocy); ctx.rotate(rot); ctx.scale(s*sqx, s*sqy); ctx.translate(-ocx, -ocy);
+    ctx.drawImage(IMG.O, O_X, O_Y, OW, OH);
+    oelieboelie(t);
+    ctx.restore();
+  }
+  wegwijzer(t);
+  if(!hc()){ pluisje(t); vlinder(t, 'voor'); }
+  menuGlans(t);
+  // tover-flits bij het veranderen in Balloony
+  if(balloonyTijd !== null){
+    const ft = t - balloonyTijd;
+    if(!flitsGedaan){ flitsGedaan = true; fonkel(gatBot.x, gatBot.y - 30, 26, 120); }
+    if(ft < 0.5){
+      const a = 1 - ft/0.5, r = 40 + 120*ft;
+      const g = ctx.createRadialGradient(gatBot.x, gatBot.y-30, 0, gatBot.x, gatBot.y-30, r);
+      g.addColorStop(0, `rgba(255,255,240,${0.9*a})`); g.addColorStop(1, 'rgba(255,240,200,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(gatBot.x, gatBot.y-30, r, 0, Math.PI*2); ctx.fill();
+    }
+  }
+  if(landTijd !== null && !fonkelGedaan){ fonkelGedaan = true; fonkel(gatBot.x, gatBot.y, 10, 50, ['#dbe8ff','#ffffff','#bcd4ff']); }
+
+  // fonkeltjes
+  for(let i = deeltjes.length-1; i >= 0; i--){
+    const p = deeltjes[i]; p.t += dt; if(p.t > p.leven){ deeltjes.splice(i,1); continue; }
+    p.x += p.vx*dt; p.y += p.vy*dt; p.vy += 40*dt; p.vx *= 0.98;
+    ctx.fillStyle = p.k; tekenSter(p.x, p.y, p.r*(1 - p.t/p.leven*0.5), 1 - p.t/p.leven);
+  }
+  kamer(t);
+  huis(t);
+  plek(t);
+  boek(t);
+  if(zijbalk){   // (v0.8) donkerblauwe zijbalken met een zachte schaduw langs het beeld
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    const b0 = ox, b1 = ox + PW*schaal, W = innerWidth, H = innerHeight;
+    ctx.fillStyle = ZIJBALK_KLEUR; ctx.fillRect(0, 0, b0, H); ctx.fillRect(b1, 0, W - b1, H);
+    const sw = Math.min(70, b0);
+    let g = ctx.createLinearGradient(b0, 0, b0 - sw, 0); g.addColorStop(0,'rgba(0,0,0,0.5)'); g.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle = g; ctx.fillRect(b0 - sw, 0, sw, H);
+    g = ctx.createLinearGradient(b1, 0, b1 + sw, 0); g.addColorStop(0,'rgba(0,0,0,0.5)'); g.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle = g; ctx.fillRect(b1, 0, sw, H);
+  }
+  requestAnimationFrame(teken);
+}
+const oudOpnieuw = opnieuw;
+opnieuw = function(){ oudOpnieuw(); landTijd = null; balloonyTijd = null; fonkelGedaan = false; flitsGedaan = false; maakPlan(); maakRockyPlan(); maakFungyPlan(); maakPluisPlan(); maakEgelPlan(); menuReset(); };
+document.getElementById('opnieuw').onclick = () => opnieuw();
+maakPluisPlan();
+// (v0.45) Opstarten. Kom je terug uit het spel (spel.html), dan staat in 'oelieboelie_uitkomst' welk level je hebt
+// gehaald; dat wordt hier in je boek gezet. Met ?boek=1 (uit het spel) ga je meteen naar dat boek, met
+// ?plek=huisje (uit de editor) meteen naar het huisje.
+function verwerkUitkomst(){
+  let u = null; try{ u = JSON.parse(localStorage.getItem('oelieboelie_uitkomst') || 'null'); localStorage.removeItem('oelieboelie_uitkomst'); }catch(e){}
+  if(!u || !u.gehaald || !BOEKEN[u.boek]) return null;
+  const B = BOEKEN[u.boek], uit = { nr: u.nr, nieuw: false, krijt: false };
+  if(B.joker === u.nr){ B.joker = null; uit.krijt = true; }
+  else if(u.nr === B.gehaald + 1){ B.gehaald = u.nr; uit.nieuw = true; }
+  bewaarBoeken(); return uit;
+}
+Promise.all([laadLevels(), ...Object.values(IMG).map(i => i.decode ? i.decode().catch(()=>{}) : null)]).then(() => {
+  start = performance.now();
+  const q = new URLSearchParams(location.search), uit = verwerkUitkomst();
+  const b = q.has('boek') ? +q.get('boek') : null, T0 = 60;
+  if(b !== null && BOEKEN[b] && BOEKEN[b].naam){
+    start = performance.now() - T0*1000;   // het begin (inkleuren, logo, wegwijzer) is al voorbij
+    menuKeuze = 'spelen'; keuzeTijd = T0 - 3; plekIn = T0 - 2; kiesBoek(b, T0 - 0.7);
+    const nr = +q.get('level') || (uit && uit.nr) || 0;
+    if(nr) kaartNr = Math.min(KAARTEN.length - 1, Math.floor((nr - 1)/PER_KAART));
+    if(uit && uit.nieuw) kleurAnim = { nr: uit.nr, t: T0 + 0.6 };
+    if(uit && uit.krijt){ jokerAnim = { nr: uit.nr, t: T0 + 0.9, soort: 'terug' }; setTimeout(() => jokerGeluid(true), 900); }
+  } else if(q.get('plek') === 'huisje' || q.get('plek') === 'mijn'){
+    start = performance.now() - T0*1000; menuKeuze = 'maken'; keuzeTijd = T0 - 3; huisIn = T0 - 2;
+    if(q.get('plek') === 'mijn'){ mijnT = T0 - 1; MIJN = mijnLevels(); }   // (v0.47) terug uit een eigen level: meteen bij je muur
+  }
+  if(q.toString()) history.replaceState(null, '', location.pathname);   // bij verversen gewoon weer bij het begin
+  requestAnimationFrame(teken);
+});
+</script>
+</body>
+</html>

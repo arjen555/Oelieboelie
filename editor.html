@@ -1,0 +1,1827 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Oelieboelie Editor v1.48</title>
+<style>
+  :root{ --bg:#16202b; --panel:#1f2b38; --panel2:#263445; --rand:#334457; --text:#e8eef5; --muted:#93a4b6; --accent:#7fb2ff; }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+    font-family:"Segoe UI",system-ui,-apple-system,sans-serif;font-size:14px}
+  body{display:grid;grid-template-rows:auto 1fr auto;grid-template-columns:230px 1fr;height:100vh}
+  header{grid-column:1/3;display:flex;align-items:center;gap:14px;padding:10px 16px;
+    background:var(--panel);border-bottom:1px solid var(--rand);flex-wrap:wrap}
+  header h1{margin:0;font-size:18px;font-weight:700;white-space:nowrap}
+  header h1 span{color:var(--muted);font-weight:400;font-size:13px;margin-left:6px}
+  .veld{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted)}
+  .veld input,.veld select{background:var(--panel2);color:var(--text);border:1px solid var(--rand);
+    border-radius:6px;padding:5px 7px;font-size:14px;font-family:inherit}
+  .veld input[type=number]{width:72px}
+  .veld input[type=text]{width:180px}
+  .veld input.typeaantal{width:58px}
+  #achtergrond{max-width:170px}
+  .scheiding{width:1px;align-self:stretch;background:var(--rand);margin:0 2px}
+  .rechts{margin-left:auto;display:flex;gap:8px}
+  button{background:#2b3b4d;color:var(--text);border:1px solid #3a4d63;border-radius:8px;
+    padding:7px 12px;font-size:14px;cursor:pointer;font-family:inherit}
+  button:hover{background:#34475c}
+  button.hoofd{background:var(--accent);color:#0d1620;border-color:var(--accent);font-weight:600}
+  aside{background:var(--panel);border-right:1px solid var(--rand);padding:12px;overflow-y:auto}
+  aside h2{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:14px 0 8px}
+  aside h2:first-child{margin-top:0}
+  .keuzes{display:flex;flex-direction:column;gap:5px}
+  .keuze{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:7px 9px;border-radius:8px;
+    background:transparent;border:1px solid transparent}
+  .keuze:hover{background:var(--panel2)}
+  .keuze.aan{background:var(--panel2);border-color:var(--accent)}
+  .keuze .staal{width:22px;height:22px;border-radius:4px;flex:none;border:1px solid rgba(255,255,255,.15)}
+  .keuze kbd{margin-left:auto}
+  #levellijst{max-height:220px;overflow-y:auto}
+  #levellijst .keuze{padding:5px 9px}
+  #levellijst .nr{display:inline-block;min-width:26px;font-weight:700;color:var(--accent)}
+  .rij{display:flex;gap:5px;flex-wrap:wrap}
+  .rij button{flex:1;padding:6px 0}
+  .rij button.aan{background:var(--panel2);border-color:var(--accent)}
+  kbd{background:#2b3b4d;border:1px solid #3a4d63;border-radius:4px;padding:0 5px;font-size:11px;color:var(--muted);font-family:inherit}
+  #werkvlak{position:relative;overflow-x:auto;overflow-y:hidden;background:#0f161e}
+  #werkvlak canvas{display:block}
+  footer{grid-column:1/3;display:flex;gap:18px;align-items:center;padding:7px 16px;background:var(--panel);
+    border-top:1px solid var(--rand);font-size:12px;color:var(--muted);flex-wrap:wrap}
+  #melding{color:#ffd27f;margin-left:auto}
+  .uitleg{font-size:12px;color:var(--muted);line-height:1.5;margin-top:6px}
+  input[type=file]{display:none}
+  button.proefknop{background:#3f7d4a;border-color:#52a060;font-weight:600}
+  button.proefknop:hover{background:#4a9157}
+  #proefLaag{position:fixed;inset:0;z-index:50;display:none;flex-direction:column;background:#0f161e}
+  #proefLaag.open{display:flex}
+  #proefBalk{display:flex;align-items:center;gap:12px;padding:6px 14px;background:#3f7d4a;color:#fff;font-size:13px}
+  #proefBalk b{font-weight:700}
+  #proefBalk button{margin-left:auto;background:#fff;color:#1f3d26;border-color:#fff;font-weight:600;padding:5px 12px}
+  #proefFrame{flex:1;border:0;width:100%;background:#16202b}
+  /* uitschuifmenu Objecten */
+  .objmenu{position:relative;align-self:flex-end}
+  #objKnop{white-space:nowrap}
+  #objKnop.aan{border-color:var(--accent);background:var(--panel2)}
+  #objPaneel{position:absolute;top:calc(100% + 6px);left:0;z-index:40;display:none;background:var(--panel);
+    border:1px solid var(--rand);border-radius:10px;padding:10px 14px 12px;box-shadow:0 14px 34px rgba(0,0,0,.5);
+    width:max-content;max-width:min(620px,92vw);overflow-y:auto;overscroll-behavior:contain}
+  #objPaneel.open{display:block}
+  #objPaneel h3{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:8px 0 4px}
+  #objPaneel h3:first-child{margin-top:0}
+  .objrij{display:grid;grid-template-columns:120px 1fr;gap:12px;align-items:center;padding:7px 0;border-top:1px solid var(--rand)}
+  .objrij .naam b{display:block;font-size:13px;margin-bottom:2px}
+  .objrij .naam small{color:var(--muted);font-size:11px;line-height:1.35;display:block}
+  .objopties{display:flex;gap:6px;flex-wrap:wrap}
+  .objoptie{display:flex;flex-direction:column;align-items:center;gap:3px;padding:5px 6px 4px;font-size:11px;
+    background:var(--panel2);border:1px solid transparent;border-radius:8px;color:var(--text)}
+  .objoptie:hover{border-color:#4a607a}
+  .objoptie.aan{border-color:var(--accent);box-shadow:0 0 0 2px rgba(127,178,255,.25)}
+  .kleurrooster{display:grid;grid-template-columns:repeat(8,1fr);gap:4px}
+  .kleurstaal{height:22px;padding:0;border-radius:5px;border:2px solid rgba(255,255,255,.18)}
+  .kleurstaal:hover{border-color:#6f86a3}
+  .kleurstaal.aan{border-color:var(--accent);box-shadow:0 0 0 2px rgba(127,178,255,.45)}
+  .objoptie canvas{width:64px;height:40px;display:block}
+  #objPaneel .tip{font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5}
+</style>
+</head>
+<body>
+<header>
+  <h1>Oelieboelie Editor<span>v1.48</span><span id="stand"></span></h1>
+  <label class="veld">Levelnummer<input id="nummer" type="number" min="1" max="100" value="1"></label>
+  <label class="veld">Naam<input id="naam" type="text" value="Mijn eerste level"></label>
+  <label class="veld">Breedte
+    <select id="breedte">
+      <option value="1">1 scherm</option><option value="1.5">1½ scherm</option>
+      <option value="2">2 schermen</option><option value="2.5">2½ scherm</option><option value="3">3 schermen</option>
+    </select></label>
+  <label class="veld">Achtergrond<select id="achtergrond" title="De achtergrondafbeelding van dit level"></select></label>
+  <input id="achtergrondBestand" type="file" accept="image/*">
+  <label class="veld">Oelieboelies<input id="aantal" type="number" min="1" max="100" value="10"></label>
+  <label class="veld">Moeten er in<input id="teRedden" type="number" min="1" max="100" value="5"></label>
+  <span class="scheiding"></span>
+  <label class="veld" title="Hoeveel Buildy's de speler in dit level mag maken (0 = geen)">Buildy<input id="aantal_buildy" class="typeaantal" type="number" min="0" max="99" value="5"></label>
+  <label class="veld" title="Hoeveel Fungy's de speler in dit level mag maken (0 = geen)">Fungy<input id="aantal_fungy" class="typeaantal" type="number" min="0" max="99" value="5"></label>
+  <label class="veld" title="Hoeveel Balloony's de speler in dit level mag maken (0 = geen)">Balloony<input id="aantal_balloony" class="typeaantal" type="number" min="0" max="99" value="5"></label>
+  <label class="veld" title="Hoeveel Bomby's de speler in dit level mag maken (0 = geen)">Bomby<input id="aantal_bomby" class="typeaantal" type="number" min="0" max="99" value="5"></label>
+  <label class="veld" title="Hoeveel Rocky's de speler in dit level mag maken (0 = geen)">Rocky<input id="aantal_rocky" class="typeaantal" type="number" min="0" max="99" value="5"></label>
+  <label class="veld" title="Hoeveel Roby's de speler in dit level mag maken (0 = geen)">Roby<input id="aantal_roby" class="typeaantal" type="number" min="0" max="99" value="5"></label>
+  <label class="veld" title="Hoeveel Hooky's de speler in dit level mag maken (0 = geen)">Hooky<input id="aantal_hooky" class="typeaantal" type="number" min="0" max="99" value="5"></label>
+  <span class="scheiding"></span>
+  <div class="objmenu">
+    <button id="objKnop" title="Kant-en-klare objecten om in het level te zetten (O)">Objecten ▾</button>
+    <div id="objPaneel"></div>
+  </div>
+  <div class="rechts">
+    <button id="proef" class="proefknop" title="Speel dit level meteen uit (T)">▶ Proefspelen</button>
+    <button id="naarHuisje" title="Terug naar het huisje in Oelieboelieland">⌂ Huisje</button>
+    <button id="alsBestand" title="Je levels als bestand op je computer of tablet bewaren (zo raak je ze nooit kwijt)">Als bestand…</button>
+    <button id="openen" title="Een levelboek openen, of één los levelbestand toevoegen">Openen…</button>
+    <button id="opslaan" class="hoofd" title="Het hele levelboek opslaan als levelboek.json (Ctrl+S)">Opslaan</button>
+    <input id="bestand" type="file" accept=".json,application/json">
+  </div>
+</header>
+
+<aside>
+  <h2>Levelboek</h2>
+  <div class="keuzes" id="levellijst"></div>
+  <div class="rij" style="margin-top:6px">
+    <button id="nieuw" title="Een nieuw, leeg level aan het boek toevoegen">+ Nieuw level</button>
+    <button id="verwijder" title="Dit level uit het boek halen">Verwijderen</button>
+  </div>
+  <div class="rij" style="margin-top:5px">
+    <button id="omhoog" title="Dit level één plek naar voren (lager nummer)">▲ Naar voren</button>
+    <button id="omlaag" title="Dit level één plek naar achteren (hoger nummer)">▼ Naar achteren</button>
+  </div>
+  <div class="rij" style="margin-top:5px">
+    <button id="leegmaken" title="Het veld van dit level terug naar de beginstand (met Terug ongedaan te maken)">Leegmaken</button>
+  </div>
+  <h2>Blokjes</h2>
+  <div class="keuzes" id="blokkeuzes"></div>
+  <h2>Speciale plekken</h2>
+  <div class="keuzes" id="plekkeuzes"></div>
+  <h2>Gereedschap</h2>
+  <div class="rij" id="gereedschap">
+    <button data-g="penseel" class="aan" title="Vrij tekenen (P)">Penseel</button>
+    <button data-g="rechthoek" title="Rechthoek vullen (R)">Rechthoek</button>
+    <button data-g="stempel" title="Stukje terrein kopiëren en steeds opnieuw neerzetten (S)">Stempel</button>
+  </div>
+  <h2>Penseelgrootte</h2>
+  <div class="rij" id="groottes">
+    <button data-s="1">1</button><button data-s="2" class="aan">2</button><button data-s="4">4</button><button data-s="8">8</button>
+  </div>
+  <h2>Weergave</h2>
+  <div class="rij">
+    <button id="rasterKnop" class="aan">Raster (G)</button>
+    <button id="ongedaan" title="Ctrl+Z">↶ Terug</button>
+    <button id="opnieuwKnop" title="Ctrl+Y">↷</button>
+  </div>
+  <h2>Kleurvlakken</h2>
+  <div class="kleurrooster" id="kleurkeuzes"></div>
+  <div class="keuzes" id="kleurgumkeuze" style="margin-top:5px"></div>
+  <p class="uitleg" style="margin-top:4px">Alleen voor het uiterlijk: dekt de achtergrond af. De o's lopen erdoorheen en blijven ervoor.</p>
+  <p class="uitleg">
+    <b>Linkermuis:</b> tekenen<br>
+    <b>Rechtermuis:</b> gummen (de gum haalt ook objecten weg)<br>
+    <b>Potlood / wolk:</b> klik om te plaatsen, sleep om te verschuiven.<br>
+    <b>Objecten (O):</b> kies er een in het menu bovenin, klik om te plaatsen, sleep om te verschuiven. Rechtermuis op een object, of de gum, haalt het weg. Achtergrond-objecten zie je vervaagd: de o's lopen erlangs.<br>
+    <b>Stempel (S):</b> trek een rechthoek om een stukje terrein (objecten die er helemaal in staan gaan mee). Elke klik zet een kopie neer; bij de muis zie je hoeveel blokjes je van de vorige kopie af zit. Shift = recht onder/naast de vorige. Lege vakjes in het stempel maken een gat (lucht); houd Alt ingedrukt om ze over te slaan. Rechtermuis = ander stukje kiezen.<br>
+    <b>Meetlat (M):</b> houd M ingedrukt en sleep met de linkermuis.<br>
+    <b>Kleurvlakken:</b> kies een kleur en teken met penseel of rechthoek. Rechtermuis of de kleurgum haalt alleen kleur weg, het terrein blijft staan.<br>
+    <b>T of ▶ Proefspelen:</b> speel het level meteen uit, Esc brengt je terug.<br>
+    Het lichte poppetje onder het potlood laat zien hoe groot een oelieboelie is.
+  </p>
+</aside>
+
+<div id="werkvlak"><canvas id="doek"></canvas></div>
+
+<footer>
+  <span id="positie">Blokje: –</span>
+  <span id="formaat"></span>
+  <span id="melding"></span>
+</footer>
+
+<div id="proefLaag">
+  <div id="proefBalk"><span>▶ <b>Proefspelen</b> · <span id="proefNaam"></span></span><span>Esc = terug naar de editor</span><button id="terug">Terug naar editor</button></div>
+  <iframe id="proefFrame" title="Proefspel"></iframe>
+</div>
+<script>window.OELIE_EDITOR = true;</script>
+<script>
+// =====================================================================
+// INSTELLINGEN
+// =====================================================================
+const BLOK = 8;                 // één blokje is 8 × 8 spelpixels
+const HOOGTE = 112;             // een level is altijd 112 blokjes hoog (896 spelpixels)
+const SCHERM_BREED = 200;       // één scherm is 200 blokjes breed
+const FIGUUR_HOOGTE = 48;       // een oelieboelie is 48 spelpixels hoog (6 blokjes)
+const POTLOOD_HOOGTE = 69, WOLK_BREEDTE = 146; // groeien mee met de oelieboelie
+const OPSLAG_SLEUTEL = 'oelieboelie_editor_concept_v2';
+
+// De soorten blokjes. 'teken' is de letter waarmee een blokje in het levelbestand staat.
+const SOORTEN = [
+  { id:0, teken:'.', naam:'Leeg' },
+  { id:1, teken:'S', naam:'Steen',        uitleg:'gaat nooit kapot',     kleur:'#8a929c', toets:'1' },
+  { id:2, teken:'G', naam:'Zachte grond', uitleg:'kan weggegraven',     kleur:'#8a5a34', toets:'2' },
+  { id:3, teken:'M', naam:'Zwakke muur',  uitleg:'kan doorgebroken',    kleur:'#b8653f', toets:'3' },
+  { id:4, teken:'W', naam:'Water',        uitleg:'gevaar',              kleur:'#3b8fe6', toets:'4' },
+  { id:5, teken:'V', naam:'Vuur',         uitleg:'gevaar',              kleur:'#ff7a1a', toets:'5' },
+  { id:6, teken:'R', naam:'Rots',         uitleg:'als steen, maar natuurlijk', kleur:'#9c8f84', toets:'6' },   // v0.90: werkt in het spel precies als steen
+  // (v1.38) nieuwe materialen, elk met een eigen trucje in het spel
+  { id:7, teken:'P', naam:'Planeet',      uitleg:'als zachte grond, veerkrachtig', kleur:'#b44fc4', toets:'7' },
+  { id:8, teken:'Z', naam:'Snoep',        uitleg:'als zachte grond',    kleur:'#e0904a', toets:'8' },
+  { id:9, teken:'C', naam:'Printplaat',   uitleg:'Bomby wel, Rocky: schok', kleur:'#2f9a3f', toets:'9' },
+  { id:10, teken:'I', naam:'IJs',         uitleg:'als steen, maar glad', kleur:'#e6eeee', toets:'0' }
+];
+const GUM = 0;
+// Kleurvlakken (v0.88): een eigen laagje tussen de achtergrond en het terrein. Alleen voor het uiterlijk.
+// In de keuze tellen ze vanaf KLEUR_BASIS: 101 = de eerste kleur, ... ; KLEURGUM (100) haalt kleur weg.
+const KLEUREN = [
+  { teken:'a', naam:'Wit', kleur:'#ffffff' },
+  { teken:'b', naam:'Lichtgrijs', kleur:'#c8c8c8' },
+  { teken:'c', naam:'Middengrijs', kleur:'#8c8c8c' },
+  { teken:'d', naam:'Donkergrijs', kleur:'#4a4a4a' },
+  { teken:'e', naam:'Zwart', kleur:'#000000' },
+  { teken:'f', naam:'Zandkleur', kleur:'#d8c08a' },
+  { teken:'g', naam:'Bruin', kleur:'#8b5a2b' },
+  { teken:'h', naam:'Donkerbruin', kleur:'#4a2c17' },
+  { teken:'i', naam:'Rood', kleur:'#d03030' },
+  { teken:'j', naam:'Donkerrood', kleur:'#7a1414' },
+  { teken:'k', naam:'Oranje', kleur:'#ee8a22' },
+  { teken:'l', naam:'Geel', kleur:'#f2d43a' },
+  { teken:'m', naam:'Groen', kleur:'#4caf50' },
+  { teken:'n', naam:'Donkergroen', kleur:'#1f5e2a' },
+  { teken:'o', naam:'Blauw', kleur:'#3a7bd5' },
+  { teken:'p', naam:'Donkerblauw', kleur:'#1a2f66' },
+];
+const KLEUR_BASIS = 100, KLEURGUM = 100;
+const kleurModus = () => soortKeuze !== null && soortKeuze >= KLEUR_BASIS;
+function zetVak(i, soort){ if(soort >= KLEUR_BASIS) level.kleur[i] = soort - KLEUR_BASIS; else level.raster[i] = soort; }
+
+// De figuurtypes die de speler per level mag gebruiken (alleen de types die al in het spel werken)
+const TYPEN = ['buildy', 'fungy', 'balloony', 'bomby', 'rocky', 'roby', 'hooky'];
+const STANDAARD_AANTAL = 5;     // zoveel staat er ingevuld bij een nieuw level, of bij een oud bestand zonder aantallen
+function leesTypen(){ const t = {}; for(const type of TYPEN) t[type] = Math.max(0, Math.round(+$('aantal_'+type).value || 0)); return t; }
+function zetTypen(t){ for(const type of TYPEN) $('aantal_'+type).value = t ? (t[type] ?? 0) : STANDAARD_AANTAL; }
+
+// ---- Plaatjes ----
+const potloodImg = new Image(); potloodImg.src = "plaatjes/potloodimg.webp";
+const POTLOOD_W = 264, POTLOOD_H = 240, PUNT_X = 34, PUNT_Y = 238;
+const wolkImg = new Image(); wolkImg.src = "plaatjes/wolkimg.webp";
+const WOLK_W = 340, WOLK_H = 222;
+const poppetjeImg = new Image(); poppetjeImg.src = "plaatjes/poppetjeimg.webp";
+
+</script>
+<script src="gedeeld.js"></script>
+<script>
+// =====================================================================
+// HET LEVEL
+// =====================================================================
+let level;
+function leegLevel(schermen){
+  const breed = Math.round(SCHERM_BREED*schermen);
+  const raster = new Uint8Array(breed*HOOGTE);
+  // begin met een simpele grondlaag, zodat het vel niet leeg is
+  for(let y=HOOGTE-8;y<HOOGTE;y++) for(let x=0;x<breed;x++) raster[y*breed+x] = 2;
+  return {
+    breed, raster, schermen, objecten: [], kleur: new Uint8Array(breed*HOOGTE),
+    potlood: { x: Math.round(breed*0.12)*BLOK, y: (HOOGTE-8)*BLOK - FIGUUR_HOOGTE*2.6 },
+    wolk:    { x: (breed-14)*BLOK, y: (HOOGTE-8)*BLOK - 43 }
+  };
+}
+const $ = id => document.getElementById(id);
+const blok = (x,y) => (x<0||y<0||x>=level.breed||y>=HOOGTE) ? 0 : level.raster[y*level.breed+x];
+
+// ---- Terugdraaien ----
+let terug = [], vooruit = [];
+function momentopname(){ return { raster: level.raster.slice(), kleur: level.kleur.slice(), breed: level.breed, schermen: level.schermen,
+  potlood:{...level.potlood}, wolk:{...level.wolk}, objecten: level.objecten.map(o => ({...o})) }; }
+function bewaarStap(){ terug.push(momentopname()); if(terug.length>100) terug.shift(); vooruit = []; }
+function zetTerug(s){ level.raster = s.raster; level.kleur = s.kleur; level.breed = s.breed; level.schermen = s.schermen;
+  level.potlood = s.potlood; level.wolk = s.wolk; level.objecten = s.objecten; $('breedte').value = String(s.schermen); pasMaatAan(); vernieuwVast(); markeerGewijzigd(); }
+function ongedaan(){ if(!terug.length) return; vooruit.push(momentopname()); zetTerug(terug.pop()); }
+function herhaal(){ if(!vooruit.length) return; terug.push(momentopname()); zetTerug(vooruit.pop()); }
+
+// =====================================================================
+// TEKENEN OP HET SCHERM
+// =====================================================================
+const doek = $('doek'), ctx = doek.getContext('2d');
+const vast = document.createElement('canvas'), vctx = vast.getContext('2d'); // stilstaande blokjes
+const VAST_SCHAAL = 2;
+// ---- textuur van de zwakke muur (getekend met ChatGPT: muur.png) ----
+// 192 x 192 pixels = 12 rijen stenen; in het spel 96 x 96 spelpixels, dus 1 rij stenen per blokje
+const muurImg = new Image(); muurImg.src = "plaatjes/muurimg.webp";
+let muurPatroon = null;
+function maakMuurPatroon(c){
+  muurPatroon = c.createPattern(muurImg, 'repeat');
+  muurPatroon.setTransform(new DOMMatrix().scale(0.5));
+}
+muurImg.addEventListener('load', () => { maakMuurPatroon(vctx); if(level){ vernieuwVast(); } });
+// ---- textuur van de zachte grond (getekend met ChatGPT: grond.png, iets bruiner gemaakt) ----
+// 256 x 256 pixels = 128 x 128 spelpixels (16 blokjes)
+const grondImg = new Image(); grondImg.src = "plaatjes/grondimg.webp";
+let grondPatroon = null;
+function maakGrondPatroon(c){
+  grondPatroon = c.createPattern(grondImg, 'repeat');
+  grondPatroon.setTransform(new DOMMatrix().scale(0.5));
+}
+grondImg.addEventListener('load', () => { maakGrondPatroon(vctx); if(level){ vernieuwVast(); } });
+// ---- textuur van steen (getekend met ChatGPT: steen.png, grijzer gemaakt) ----
+// 256 x 256 pixels = 128 x 128 spelpixels (16 blokjes)
+const steenImg = new Image(); steenImg.src = "plaatjes/steenimg.webp";
+let steenPatroon = null;
+function maakSteenPatroon(c){
+  steenPatroon = c.createPattern(steenImg, 'repeat');
+  steenPatroon.setTransform(new DOMMatrix().scale(0.5));
+}
+steenImg.addEventListener('load', () => { maakSteenPatroon(vctx); if(level){ vernieuwVast(); } });
+// ---- (v1.38) texturen van de nieuwe materialen (zelfde plaatjes als in het spel) ----
+const MAT_BRON = {"planeet": "plaatjes/planeet.webp", "snoep": "plaatjes/snoep.webp", "chip": "plaatjes/chip.webp", "ijs": "plaatjes/ijs.webp"};
+const matPatroon = {};
+for(const [naam, src] of Object.entries(MAT_BRON)){
+  const img = new Image();
+  img.addEventListener('load', () => { matPatroon[naam] = vctx.createPattern(img, 'repeat'); matPatroon[naam].setTransform(new DOMMatrix().scale(0.5)); if(level){ vernieuwVast(); } });
+  img.src = src;
+}
+let schaal = 1;
+
+function pasMaatAan(){
+  const vlak = $('werkvlak');
+  const beschikbaar = vlak.clientHeight - 16; // ruimte voor schuifbalk
+  // zo groot mogelijk, maar één scherm breed past altijd helemaal in beeld
+  schaal = Math.max(0.3, Math.min(beschikbaar / (HOOGTE*BLOK), (vlak.clientWidth - 4) / (SCHERM_BREED*BLOK)));
+  const dpr = window.devicePixelRatio || 1;
+  const bw = level.breed*BLOK*schaal, bh = HOOGTE*BLOK*schaal;
+  doek.style.width = bw+'px'; doek.style.height = bh+'px';
+  doek.width = Math.round(bw*dpr); doek.height = Math.round(bh*dpr);
+  ctx.setTransform(dpr*schaal,0,0,dpr*schaal,0,0);
+  vast.width = level.breed*BLOK*VAST_SCHAAL; vast.height = HOOGTE*BLOK*VAST_SCHAAL;
+  vctx.setTransform(VAST_SCHAAL,0,0,VAST_SCHAAL,0,0);
+  if(muurImg.complete && muurImg.width && !muurPatroon) maakMuurPatroon(vctx);
+  if(grondImg.complete && grondImg.width && !grondPatroon) maakGrondPatroon(vctx);
+  if(steenImg.complete && steenImg.width && !steenPatroon) maakSteenPatroon(vctx);
+  $('formaat').textContent = `Level: ${level.breed} × ${HOOGTE} blokjes`;
+}
+window.addEventListener('resize', () => { pasMaatAan(); vernieuwVast(); });
+
+// kleine, vaste 'toevalswaarde' per plek, zodat blokjes niet allemaal gelijk ogen
+function ruis(x,y){ const s = Math.sin(x*127.1 + y*311.7)*43758.5453; return s - Math.floor(s); }
+
+const steenAchtig = s => s === 1 || s === 6;   // rots grenst naadloos aan steen
+function tekenVastBlok(x,y,soort){
+  const px = x*BLOK, py = y*BLOK, r = ruis(x,y), boven = blok(x,y-1);
+  const c = vctx;
+  if(soort === 1 && steenPatroon){ // steen: getekende textuur
+    c.fillStyle = steenPatroon; c.fillRect(px,py,BLOK,BLOK);
+    if(!steenAchtig(boven)){ c.fillStyle = 'rgba(255,255,255,.35)'; c.fillRect(px,py,BLOK,0.75); }
+    if(!steenAchtig(blok(x,y+1))){ c.fillStyle = 'rgba(20,20,20,.35)'; c.fillRect(px,py+BLOK-0.75,BLOK,0.75); }
+    if(!steenAchtig(blok(x-1,y))){ c.fillStyle = 'rgba(20,20,20,.22)'; c.fillRect(px,py,0.75,BLOK); }
+    if(!steenAchtig(blok(x+1,y))){ c.fillStyle = 'rgba(20,20,20,.3)'; c.fillRect(px+BLOK-0.75,py,0.75,BLOK); }
+  } else if(soort === 1){ // steen
+    const l = 128 + Math.floor(r*22);
+    c.fillStyle = `rgb(${l},${l+6},${l+14})`; c.fillRect(px,py,BLOK,BLOK);
+    c.fillStyle = 'rgba(0,0,0,.18)'; c.fillRect(px,py+BLOK-1,BLOK,1); c.fillRect(px+BLOK-1,py,1,BLOK);
+    if(!steenAchtig(boven)){ c.fillStyle = 'rgba(255,255,255,.35)'; c.fillRect(px,py,BLOK,1); }
+  } else if(soort === 2){ // zachte grond
+    if(grondPatroon){
+      c.fillStyle = grondPatroon; c.fillRect(px,py,BLOK,BLOK);
+      if(!grondAchtig(x,y+1)){ c.fillStyle = 'rgba(40,22,10,.35)'; c.fillRect(px,py+BLOK-0.75,BLOK,0.75); }
+      if(!grondAchtig(x-1,y)){ c.fillStyle = 'rgba(40,22,10,.25)'; c.fillRect(px,py,0.75,BLOK); }
+      if(!grondAchtig(x+1,y)){ c.fillStyle = 'rgba(40,22,10,.3)'; c.fillRect(px+BLOK-0.75,py,0.75,BLOK); }
+    } else {
+      const l = Math.floor(r*16);
+      c.fillStyle = `rgb(${128+l},${84+l},${48+l/2})`; c.fillRect(px,py,BLOK,BLOK);
+    }
+    if(boven === 0 && !objBezet[(y-1)*level.breed + x] && !inHellingVak(level.objecten, x, y-1)){ // gras bovenop (niet onder een object, net als in het spel)
+      c.fillStyle = '#5f9e43'; c.fillRect(px,py,BLOK,3);
+      c.fillStyle = '#7dbb55'; c.fillRect(px,py,BLOK,1);
+      if(r>0.5){ c.fillStyle = '#5f9e43'; c.fillRect(px+Math.floor(r*6),py-2,1,2); }
+    }
+  } else if(soort === 9){ // (v1.38) printplaat: strakke randen
+    c.fillStyle = matPatroon.chip || '#2f9a3f'; c.fillRect(px,py,BLOK,BLOK);
+    if(boven !== 9){ c.fillStyle = 'rgba(220,255,200,.5)'; c.fillRect(px,py,BLOK,0.75); }
+    if(blok(x,y+1) !== 9){ c.fillStyle = 'rgba(10,40,10,.45)'; c.fillRect(px,py+BLOK-0.75,BLOK,0.75); }
+    if(blok(x-1,y) !== 9){ c.fillStyle = 'rgba(10,40,10,.3)'; c.fillRect(px,py,0.75,BLOK); }
+    if(blok(x+1,y) !== 9){ c.fillStyle = 'rgba(10,40,10,.4)'; c.fillRect(px+BLOK-0.75,py,0.75,BLOK); }
+  } else if(soort === 3 && muurPatroon){ // zwakke muur: getekende textuur
+    c.fillStyle = muurPatroon; c.fillRect(px,py,BLOK,BLOK);
+    if(boven !== 3){ c.fillStyle = 'rgba(255,225,190,.45)'; c.fillRect(px,py,BLOK,0.75); }
+    if(blok(x,y+1) !== 3){ c.fillStyle = 'rgba(60,25,10,.35)'; c.fillRect(px,py+BLOK-0.75,BLOK,0.75); }
+    if(blok(x-1,y) !== 3){ c.fillStyle = 'rgba(60,25,10,.25)'; c.fillRect(px,py,0.75,BLOK); }
+    if(blok(x+1,y) !== 3){ c.fillStyle = 'rgba(60,25,10,.35)'; c.fillRect(px+BLOK-0.75,py,0.75,BLOK); }
+  } else if(soort === 3){ // zwakke muur: baksteentjes
+    c.fillStyle = '#d9c2a3'; c.fillRect(px,py,BLOK,BLOK); // voeg
+    const verschuif = (y%2) ? 4 : 0;
+    const l = Math.floor(r*18);
+    c.fillStyle = `rgb(${176+l},${92+l/2},${58})`;
+    for(let i=-1;i<2;i++){ const bx = px + i*BLOK + verschuif; c.fillRect(Math.max(px,bx+1), py+1, Math.min(px+BLOK,bx+BLOK) - Math.max(px,bx+1), BLOK-2); }
+    if(r > 0.82){ c.strokeStyle = 'rgba(60,25,10,.7)'; c.lineWidth = 1; c.beginPath(); c.moveTo(px+2,py+1); c.lineTo(px+4,py+4); c.lineTo(px+3,py+7); c.stroke(); }
+  }
+}
+// welke blokjes door een vast object bezet zijn (zelfde regel als in het spel): daar groeit geen gras onder
+const vormHulpVast = document.createElement('canvas').getContext('2d');
+let objBezet = new Uint8Array(0);
+function bepaalObjBezet(){
+  objBezet = new Uint8Array(level.breed*HOOGTE);
+  for(const o of level.objecten || []){
+    if(!objectIsVast(o)) continue;
+    const m = objectMaat(o), p = objectPad(o);
+    for(let by = o.y; by < o.y + m.h; by++) for(let bx = o.x; bx < o.x + m.b; bx++)
+      if(bx >= 0 && by >= 0 && bx < level.breed && by < HOOGTE && vormHulpVast.isPointInPath(p, (bx+0.5)*BLOK, (by+0.5)*BLOK)) objBezet[by*level.breed + bx] = o.soort === 'helling' ? 2 : 1;
+  }
+}
+// grond of een helling (die ook van grond is): daartussen geen donker randje
+function grondAchtig(x,y){ return blok(x,y) === 2 || (x >= 0 && y >= 0 && x < level.breed && y < HOOGTE && objBezet[y*level.breed + x] === 2); }
+
+// =====================================================================
+// ZACHTE RANDEN (v1.6): zachte grond en rots krijgen afgeronde randen in plaats van trappetjes.
+// Alleen het uiterlijk: de spelregels kijken nog steeds naar de blokjes.
+// Werkwijze: per spelpixel een 'vervaagd' veld van de blokjes uitrekenen en de vorm tekenen waar dat veld
+// boven de helft komt. Rechte vloeren en wanden blijven recht, hoeken worden rond, trappetjes worden glooiingen.
+// Rots krijgt een vast toevalspatroon over de rand heen, zodat hij hoekig en brokkelig oogt.
+// =====================================================================
+const ZACHT_ROND = 0.5;    // hoe rond de randen worden (in blokjes); groter = ronder
+const ROTS_RUW = 0.45;     // hoe brokkelig de rand van rots is (0 = net zo glad als grond)
+const ZACHT_W = (() => {   // gewichten van de buurblokjes (links, zelf, rechts) voor elke spelpixel in een blokje
+  const erf = x => { const t = 1/(1 + 0.3275911*Math.abs(x)), y = 1 - (((((1.061405429*t - 1.453152027)*t) + 1.421413741)*t - 0.284496736)*t + 0.254829592)*t*Math.exp(-x*x); return x >= 0 ? y : -y; };
+  const F = x => 0.5*(1 + erf(x/Math.SQRT2)), uit = [];
+  for(let k = 0; k < BLOK; k++){
+    const p = (k + 0.5)/BLOK, w = [-1, 0, 1].map(d => F((d + 1 - p)/ZACHT_ROND) - F((d - p)/ZACHT_ROND)), s = w[0] + w[1] + w[2];
+    uit.push(w.map(v => v/s));
+  }
+  return uit;
+})();
+function zachtRuis(i, j){   // vaste 'toevalswaarde' per stukje rand: grove brokken plus fijne korreltjes
+  const h = (a, b) => { const s = Math.sin(a*127.1 + b*311.7)*43758.5453; return s - Math.floor(s); };
+  return 0.6*h(Math.floor(i/3), Math.floor(j/3)) + 0.4*h(Math.floor(i/7) + 911, Math.floor(j/7) + 37);
+}
+// (v1.38) materialen met zachte randen: 0 = grond, 1 = rots, 2 = planeet, 3 = snoep, 4 = ijs (zachtSoort geeft dat + 1)
+const ZACHT_MAT = 5, ZACHT_RUW = [1, 4];   // rots en ijs krijgen een brokkelige rand
+const zachtGewicht = new Float32Array(ZACHT_MAT);
+// het veld op spelpixel (i, j): uit[m] per materiaal (vanaf 0.5 = binnen de vorm)
+function zachtVeld(i, j, uit){
+  const bx = Math.floor(i/BLOK), by = Math.floor(j/BLOK), wx = ZACHT_W[i - bx*BLOK], wy = ZACHT_W[j - by*BLOK];
+  let S = 0, eigen = 0, soorten = 0;
+  const zg = zachtGewicht; zg[0] = zg[1] = zg[2] = zg[3] = zg[4] = 0;
+  for(let dy = -1; dy <= 1; dy++) for(let dx = -1; dx <= 1; dx++){
+    const s = zachtSoort(bx + dx, by + dy);
+    if(dx === 0 && dy === 0) eigen = s;
+    if(!s) continue;
+    const w = wx[dx + 1]*wy[dy + 1]; S += w; if(s <= ZACHT_MAT){ zg[s - 1] += w; soorten |= 1 << (s - 1); }
+  }
+  uit[0] = uit[1] = uit[2] = uit[3] = uit[4] = 0;
+  if(eigen >= 1 && eigen <= ZACHT_MAT) uit[eigen - 1] = S;
+  else if(eigen === 0 && S > 0.25){   // een hoekje opvullen (met het materiaal dat er het meest omheen ligt)
+    let som = 0, beste = -1, bw = 0;
+    for(let m = 0; m < ZACHT_MAT; m++){ som += zachtGewicht[m]; if(zachtGewicht[m] > bw){ bw = zachtGewicht[m]; beste = m; } }
+    if(beste >= 0 && bw >= S - som) uit[beste] = S;
+  }
+  if(soorten & 0b10010){ if(uit[1]) uit[1] += ROTS_RUW*(zachtRuis(i, j) - 0.5); if(uit[4]) uit[4] += ROTS_RUW*(zachtRuis(i, j) - 0.5); }   // rots en ijs: brokkelig (ZACHT_RUW)
+}
+// grond en rots tekenen voor de blokjes k0..k1 (kolommen) en r0..r1 (rijen)
+function tekenZacht(c, k0, r0, k1, r1, H){
+  const nieuw = () => Array.from({ length: ZACHT_MAT }, () => new Path2D());
+  const vorm = nieuw(), boven = nieuw(), rand = nieuw();
+  const N = BLOK + 2, waarden = Array.from({ length: ZACHT_MAT }, () => new Float32Array(N*N)), v = new Float32Array(ZACHT_MAT);
+  const hoek = [[0,0],[1,0],[1,1],[0,1]];
+  for(let by = Math.max(0, r0); by <= Math.min(H - 1, r1); by++) for(let bx = Math.max(0, k0); bx <= Math.min(level.breed - 1, k1); bx++){
+    const eigen = zachtSoort(bx, by);
+    if(eigen > ZACHT_MAT) continue;
+    let heeft = 0, vol = true;
+    for(let dy = -1; dy <= 1; dy++) for(let dx = -1; dx <= 1; dx++){ const s = zachtSoort(bx + dx, by + dy); if(s >= 1 && s <= ZACHT_MAT) heeft |= 1 << (s - 1); if(!s) vol = false; }
+    if(!heeft) continue;
+    if(vol && eigen){ vorm[eigen - 1].rect(bx*BLOK, by*BLOK, BLOK, BLOK); continue; }   // helemaal binnen: gewoon een vierkant
+    // aan de rand: het veld uitrekenen op de spelpixels van dit blokje (plus één rondom)
+    const i0 = bx*BLOK - 1, j0 = by*BLOK - 1;
+    for(let b = 0; b < N; b++) for(let a = 0; a < N; a++){ zachtVeld(i0 + a, j0 + b, v); for(let m = 0; m < ZACHT_MAT; m++) if(heeft & (1 << m)) waarden[m][b*N + a] = v[m]; }
+    for(let m = 0; m < ZACHT_MAT; m++){
+      if(!(heeft & (1 << m))) continue;
+      const w = waarden[m], p = vorm[m];
+      for(let b = 0; b < N - 1; b++){
+        let loop = -1;   // een rijtje volle vakjes wordt één rechthoek
+        for(let a = 0; a < N - 1; a++){
+          const q = [w[b*N + a], w[b*N + a + 1], w[(b + 1)*N + a + 1], w[(b + 1)*N + a]];
+          const vol4 = q[0] >= 0.5 && q[1] >= 0.5 && q[2] >= 0.5 && q[3] >= 0.5;
+          if(vol4){ if(loop < 0) loop = a; continue; }
+          if(loop >= 0){ p.rect(i0 + loop + 0.5, j0 + b + 0.5, a - loop, 1); loop = -1; }
+          if(q[0] < 0.5 && q[1] < 0.5 && q[2] < 0.5 && q[3] < 0.5) continue;
+          // vakje half binnen, half buiten: de vorm erin (marching squares)
+          const pt = [], kruis = [];
+          for(let n = 0; n < 4; n++){
+            const n2 = (n + 1)%4, x = i0 + a + 0.5 + hoek[n][0], y = j0 + b + 0.5 + hoek[n][1];
+            if(q[n] >= 0.5) pt.push([x, y]);
+            if((q[n] >= 0.5) !== (q[n2] >= 0.5)){
+              const f = (0.5 - q[n])/(q[n2] - q[n]), x2 = i0 + a + 0.5 + hoek[n2][0], y2 = j0 + b + 0.5 + hoek[n2][1];
+              const k = [x + (x2 - x)*f, y + (y2 - y)*f]; pt.push(k); kruis.push({ k, uit: q[n] >= 0.5 });
+            }
+          }
+          p.moveTo(pt[0][0], pt[0][1]); for(let n = 1; n < pt.length; n++) p.lineTo(pt[n][0], pt[n][1]);   // (geen closePath: dat maakt het heel traag; vullen sluit vanzelf)
+          // de rand zelf (alleen voor de vakjes van dit blokje, anders dubbel)
+          if(a < 1 || b < 1) continue;
+          const gx = (q[1] + q[2]) - (q[0] + q[3]), gy = (q[2] + q[3]) - (q[0] + q[1]);
+          for(let n = 0; n < kruis.length; n++){
+            if(!kruis[n].uit) continue;
+            const s = kruis[n].k, e = kruis[(n + 1)%kruis.length].k;
+            let bovenkant = gy > 0 && gy > 0.35*Math.abs(gx);
+            if(bovenkant && (m === 0 || m === 3)){ const mx = (s[0] + e[0])/2, my = (s[1] + e[1])/2 - 1.5; bovenkant = zachtGras(Math.floor(mx/BLOK), Math.floor(my/BLOK)); }
+            const doel = bovenkant ? boven[m] : rand[m];
+            doel.moveTo(s[0], s[1]); doel.lineTo(e[0], e[1]);
+          }
+        }
+        if(loop >= 0) p.rect(i0 + loop + 0.5, j0 + b + 0.5, N - 1 - loop, 1);
+      }
+    }
+  }
+  const stijl = [
+    { vul: grondPatroon || '#8a5a34', boven: [[6, '#5f9e43'], [2, '#7dbb55']], rand: 'rgba(40,22,10,.35)' },   // gras bovenop, donker randje
+    { vul: steenPatroon || '#8a929c', boven: [[1.5, 'rgba(255,255,255,.35)']], rand: 'rgba(20,20,20,.32)' },
+    { vul: matPatroon.planeet || '#b44fc4', boven: [[3, 'rgba(255,190,250,.7)'], [1, 'rgba(200,255,110,.85)']], rand: 'rgba(55,10,65,.4)' },
+    { vul: matPatroon.snoep || '#e0904a', boven: [[5, '#ffd3e6'], [2, '#ffffff']], rand: 'rgba(90,40,10,.35)' },
+    { vul: matPatroon.ijs || '#e6eeee', boven: [[2, 'rgba(255,255,255,.9)']], rand: 'rgba(60,95,95,.35)' }
+  ];
+  for(let m = 0; m < ZACHT_MAT; m++){
+    const st = stijl[m];
+    c.fillStyle = st.vul; c.fill(vorm[m]);
+    c.save(); c.clip(vorm[m]); c.lineCap = 'round'; c.lineJoin = 'round';
+    c.strokeStyle = st.rand; c.lineWidth = 1.5; c.stroke(rand[m]);
+    for(const [d, k] of st.boven){ c.strokeStyle = k; c.lineWidth = d; c.stroke(boven[m]); }
+    c.restore();
+  }
+}
+// 0 = leeg, 1 = zachte grond, 2 = rots, 3 = planeet, 4 = snoep, 5 = ijs (v1.38), 9 = iets anders vasts (ook water, vuur en vaste objecten).
+// Buiten het level: het blokje aan de rand.
+const ZACHT_VAN = { 2: 1, 6: 2, 7: 3, 8: 4, 10: 5 };
+function zachtSoort(bx, by){
+  bx = bx < 0 ? 0 : bx >= level.breed ? level.breed - 1 : bx; by = by < 0 ? 0 : by >= HOOGTE ? HOOGTE - 1 : by;
+  const i = by*level.breed + bx, s = level.raster[i];
+  return s === 0 ? (objBezet[i] ? 9 : 0) : ZACHT_VAN[s] || 9;
+}
+function zachtGras(bx, by){ return blok(bx, by) === 0 && !(bx >= 0 && by >= 0 && bx < level.breed && by < HOOGTE && objBezet[by*level.breed + bx]) && !inHellingVak(level.objecten, bx, by); }
+const kleurDoek = document.createElement('canvas'), kleurCtx = kleurDoek.getContext('2d');   // één pixel per blokje
+function vernieuwKleur(){
+  kleurDoek.width = level.breed; kleurDoek.height = HOOGTE;
+  kleurCtx.clearRect(0,0,level.breed,HOOGTE);
+  for(let y=0;y<HOOGTE;y++) for(let x=0;x<level.breed;x++){ const k = level.kleur[y*level.breed+x]; if(k){ kleurCtx.fillStyle = KLEUREN[k-1].kleur; kleurCtx.fillRect(x,y,1,1); } }
+}
+function vernieuwVast(){
+  vernieuwKleur();
+  bepaalObjBezet();
+  vctx.clearRect(0,0,vast.width/VAST_SCHAAL,vast.height/VAST_SCHAAL);
+  for(let y=0;y<HOOGTE;y++) for(let x=0;x<level.breed;x++){
+    const s = level.raster[y*level.breed+x]; if(s === 1 || s === 3 || s === 9) tekenVastBlok(x,y,s);   // grond, rots, planeet, snoep en ijs: zie tekenZacht
+    else if(s === 5) tekenKolen(vctx, x*BLOK, y*BLOK);
+  }
+  tekenZacht(vctx, 0, 0, level.breed - 1, HOOGTE - 1, HOOGTE);
+  maakVuurVlakken();
+}
+
+// ---- vlammen bovenop het vuur (getekend met ChatGPT: vlam.png, 8 beeldjes) ----
+const vlamImg = new Image(); vlamImg.src = "plaatjes/vlamimg.webp";
+const VLAM_CEL = 65, VLAM_CH = 104, VLAM_ANKER_X = 32.5, VLAM_ANKER_Y = 103.25, VLAM_BEELDEN = 8;
+const VLAM_HOOGTE = 26;      // hoogte van de grootste vlam in spelpixels (een o is 48)
+const VLAM_AFSTAND = 2;      // om de zoveel blokjes staat er een vlam
+const VLAM_FPS = 10;         // tempo van het flakkeren
+// één vlam tekenen; elke plek krijgt zijn eigen grootte, moment in de beweging en kijkrichting
+function tekenVlam(c, x, y, t, r1, r2, r3){
+  if(!vlamImg.complete || !vlamImg.width) return;
+  const beeld = Math.floor(t*VLAM_FPS + r2*VLAM_BEELDEN) % VLAM_BEELDEN;
+  const s = VLAM_HOOGTE/99 * (0.8 + r1*0.4);
+  c.save(); c.translate(x, y); c.scale(r3 < 0.5 ? -s : s, s);
+  c.drawImage(vlamImg, beeld*VLAM_CEL, 0, VLAM_CEL, VLAM_CH, -VLAM_ANKER_X, -VLAM_ANKER_Y, VLAM_CEL, VLAM_CH);
+  c.restore();
+}
+// ---- het vuur zelf: getekende gloeiende kolen (kolen.png) met beweging uit de code ----
+const kolenImg = new Image(); kolenImg.src = "plaatjes/kolenimg.webp";
+let kolenPatroon = null, kolenGloed = null;
+function kolenPatronen(c){
+  if(!kolenPatroon && kolenImg.complete && kolenImg.width){
+    kolenPatroon = c.createPattern(kolenImg, 'repeat'); kolenGloed = c.createPattern(kolenImg, 'repeat');
+  }
+  return !!kolenPatroon;
+}
+// één blokje vuur: kolen, daaroverheen een tweede laag die langzaam opstijgt en zacht pulseert (hitte),
+// en bovenaan, waar de vlammen staan, een felle gloed
+// v0.76: de kolen veranderen nooit en worden één keer vooraf op het vaste vel getekend;
+// alleen de gloed beweegt en wordt per beeldje over hele vlakken tegelijk gelegd (zelfde aanpak als in het spel)
+function tekenKolen(c, px, py){
+  if(!kolenPatronen(c)){ c.fillStyle = '#e0561c'; c.fillRect(px,py,BLOK,BLOK); return; }
+  kolenPatroon.setTransform(new DOMMatrix().scale(0.5));
+  c.fillStyle = kolenPatroon; c.fillRect(px,py,BLOK,BLOK);
+}
+kolenImg.addEventListener('load', () => { if(level) vernieuwVast(); });
+// (v0.90) tijdens het penselen alleen het stukje rond het penseel opnieuw tekenen: dat scheelt veel bij brede levels
+function vernieuwGebied(x0, y0, x1, y1){
+  const c = vctx;
+  c.save(); c.beginPath(); c.rect((x0 - 2)*BLOK, (y0 - 2)*BLOK, (x1 - x0 + 5)*BLOK, (y1 - y0 + 5)*BLOK); c.clip();
+  c.clearRect((x0 - 2)*BLOK, (y0 - 2)*BLOK, (x1 - x0 + 5)*BLOK, (y1 - y0 + 5)*BLOK);
+  for(let y = Math.max(0, y0 - 3); y <= Math.min(HOOGTE - 1, y1 + 3); y++) for(let x = Math.max(0, x0 - 3); x <= Math.min(level.breed - 1, x1 + 3); x++){
+    const s = level.raster[y*level.breed + x]; if(s === 1 || s === 3 || s === 9) tekenVastBlok(x, y, s);
+    else if(s === 5) tekenKolen(c, x*BLOK, y*BLOK);
+  }
+  tekenZacht(c, x0 - 3, y0 - 3, x1 + 3, y1 + 3, HOOGTE);
+  c.restore(); vernieuwKleur(); maakVuurVlakken();
+}
+function vernieuwStreek(a, b, weg){   // weg = er zijn objecten weggegumd: dan alles opnieuw
+  if(weg){ vernieuwVast(); return; }
+  const n = penseel, o = Math.floor((n - 1)/2);
+  vernieuwGebied(Math.min(a.x, b.x) - o, Math.min(a.y, b.y) - o, Math.max(a.x, b.x) - o + n - 1, Math.max(a.y, b.y) - o + n - 1);
+}
+const VUUR_STROOK = 2;
+let vuurVlakken = [], vuurRanden = [];
+function maakVuurVlakken(){
+  vuurVlakken = []; vuurRanden = [];
+  const open = {};
+  for(let y = 0; y < HOOGTE; y++){
+    for(let x0 = 0; x0 < level.breed; x0 += VUUR_STROOK){
+      let x = x0;
+      const eind = Math.min(level.breed, x0 + VUUR_STROOK);
+      while(x < eind){
+        if(level.raster[y*level.breed + x] !== 5){ x++; continue; }
+        let x2 = x; while(x2 < eind && level.raster[y*level.breed + x2] === 5) x2++;
+        const sleutel = x + '|' + x2, v = open[sleutel];
+        if(v && v.y2 === y) v.y2 = y + 1;
+        else { const n = { x, x2, y, y2: y + 1 }; vuurVlakken.push(n); open[sleutel] = n; }
+        x = x2;
+      }
+    }
+    for(let x = 0; x < level.breed; x++) if(level.raster[y*level.breed + x] === 5 && blok(x, y-1) !== 5) vuurRanden.push({ x, y });
+  }
+}
+function tekenVuurGloed(c, t, k0, k1){
+  if(!kolenPatronen(c)) return;
+  kolenGloed.setTransform(new DOMMatrix().translate(37, -((t*7) % 128)).scale(0.5));
+  c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = kolenGloed;
+  const basis = 0.22 + 0.10*Math.sin(t*2.3);
+  for(const v of vuurVlakken){
+    if(v.x2 < k0 || v.x > k1) continue;
+    c.globalAlpha = basis + 0.06*Math.sin(t*5.1 + v.x*BLOK*0.02);
+    c.fillRect(v.x*BLOK, v.y*BLOK, (v.x2 - v.x)*BLOK, (v.y2 - v.y)*BLOK);
+  }
+  c.restore();
+  for(const r of vuurRanden){
+    if(r.x < k0 || r.x > k1) continue;
+    const px = r.x*BLOK, py = r.y*BLOK;
+    const g = c.createLinearGradient(0, py, 0, py + BLOK*1.2);
+    g.addColorStop(0, 'rgba(255,215,110,.55)'); g.addColorStop(1, 'rgba(255,150,40,0)');
+    c.fillStyle = g; c.fillRect(px, py, BLOK, BLOK);
+  }
+}
+// opstijgende vonkjes bij een deel van de vlammen (zonder geheugen: alles volgt uit de tijd)
+function tekenVonkjes(c, x, y, t, r){
+  if(r < 0.55) return;
+  for(let i=0;i<2;i++){
+    const fase = (t*0.45 + r*7 + i*0.5) % 1;
+    if(fase > 0.6) continue;
+    const f = fase/0.6, vx = Math.sin((t + i)*3 + r*20)*3;
+    c.fillStyle = `rgba(255,${200 - f*80|0},80,${(1-f)*0.9})`;
+    c.beginPath(); c.arc(x + vx + (r-0.5)*8, y - 10 - f*34, 0.9*(1-f*0.5), 0, Math.PI*2); c.fill();
+  }
+}
+// ---- water: getekend water (uit water.png, één rustig beeldje) dat zachtjes deint ----
+const waterImg = new Image(); waterImg.src = "plaatjes/waterimg.webp";
+const WATER_PERIODE = 448;               // na zoveel plaatjespixels herhaalt het water zich (het plaatje is 2 keer zo breed)
+const WATER_CH = 281;                    // hoogte van het plaatje
+const WATER_ANKER = 75;                  // deze rij van het plaatje valt op de bovenkant van het water
+const WATER_SCHAAL = 48/224;             // van plaatjespixels naar spelpixels (kleinere golfjes)
+const WATER_WIEG = 6;                    // zo ver wiegt het water heen en weer (spelpixels)
+const WATER_DEIN = 1;                    // zo hoog gaat het oppervlak op en neer (spelpixels)
+const WATER_DIEP = 'rgb(1,86,168)';      // kleur voor water dat dieper is dan het plaatje
+const WATER_ACHTER_HOOG = 3;             // zoveel hoger ligt de achterste golflaag (spelpixels)
+// de achterste golflaag: hetzelfde water, een tikje donkerder (één keer klaargemaakt)
+let waterAchterImg = null;
+function maakWaterAchter(){
+  if(waterAchterImg || !waterImg.complete || !waterImg.width) return waterAchterImg;
+  const cv = document.createElement('canvas'); cv.width = waterImg.width; cv.height = waterImg.height;
+  const x = cv.getContext('2d'); x.drawImage(waterImg, 0, 0);
+  const d = x.getImageData(0, 0, cv.width, cv.height), p = d.data;
+  for(let i=0;i<p.length;i+=4){ p[i] *= 0.62; p[i+1] *= 0.78; p[i+2] *= 0.88; }
+  x.putImageData(d, 0, 0);
+  waterAchterImg = cv; return cv;
+}
+// heen en weer wiegen: twee trage bewegingen door elkaar, zodat het nooit precies herhaalt
+function waterWieg(t){ return Math.sin(t*0.55)*WATER_WIEG + Math.sin(t*0.31 + 1.7)*WATER_WIEG*0.5; }
+// op en neer deinen van het oppervlak op plek x: twee golfjes die elk een andere kant op lopen
+function waterDein(x, t){ return (Math.sin(x*0.085 + t*1.5)*0.6 + Math.sin(x*0.047 - t*1.05 + 2)*0.5)*WATER_DEIN; }
+// één kolom water tekenen, van de bovenste waterrij (yBoven) t/m de onderste (yOnder)
+function tekenWaterKolom(c, x, yBoven, yOnder, t){
+  const px = x*BLOK, top = yBoven*BLOK, bodem = (yOnder+1)*BLOK;
+  if(!waterImg.complete || !waterImg.width){
+    c.fillStyle = 'rgba(52,140,230,.82)'; c.fillRect(px, top, BLOK, bodem-top); return;
+  }
+  const s = WATER_SCHAAL, wieg = waterWieg(t);
+  const plaatjeOnder = top + (WATER_CH - WATER_ANKER)*s;  // tot hier reikt het plaatje (zonder deinen)
+  // achterste golflaag: wiegt de andere kant op en deint in een eigen ritme; alleen de golfkopjes zijn te zien
+  const achter = maakWaterAchter();
+  if(achter){
+    const wiegA = -waterWieg(t*0.85 + 7) + 37;
+    c.globalAlpha = 0.9;
+    for(let h=0; h<2; h++){
+      const rx = px + h*BLOK/2, rw = BLOK/2, dy = waterDein(rx + rw/2 + 53, t*0.8 + 3) - WATER_ACHTER_HOOG;
+      const sx = (((rx + wiegA)/s) % WATER_PERIODE + WATER_PERIODE) % WATER_PERIODE;
+      const sh = WATER_ANKER + Math.min(10, bodem - top)/s;
+      c.drawImage(achter, sx, 0, rw/s, sh, rx, top + dy - WATER_ANKER*s, rw + 0.4, sh*s);
+    }
+    c.globalAlpha = 1;
+  }
+  // voorste laag, in twee smalle reepjes zodat het deinen vloeiend oogt
+  for(let h=0; h<2; h++){
+    const rx = px + h*BLOK/2, rw = BLOK/2, dy = waterDein(rx + rw/2, t);
+    const sx = (((rx + wieg)/s) % WATER_PERIODE + WATER_PERIODE) % WATER_PERIODE;
+    const tot = Math.min(bodem, plaatjeOnder + dy);
+    const sh = WATER_ANKER + (tot - top - dy)/s;
+    c.drawImage(waterImg, sx, 0, rw/s, sh, rx, top + dy - WATER_ANKER*s, rw + 0.4, sh*s);
+  }
+  if(bodem > plaatjeOnder - 18){
+    // onderkant van het plaatje zacht laten overlopen in egaal diep water
+    const van = Math.max(top + 5, plaatjeOnder - 18);
+    const g = c.createLinearGradient(0, van, 0, plaatjeOnder - 2);
+    g.addColorStop(0, 'rgba(1,86,168,0)'); g.addColorStop(1, WATER_DIEP);
+    c.fillStyle = g; c.fillRect(px, van, BLOK + 0.4, Math.min(bodem, plaatjeOnder - 2) - van);
+    if(bodem > plaatjeOnder - 2){ c.fillStyle = WATER_DIEP; c.fillRect(px, plaatjeOnder - 2.5, BLOK + 0.4, bodem - plaatjeOnder + 2.5); }
+  }
+  // af en toe een belletje dat opstijgt, en af en toe een glinsteringetje aan het oppervlak
+  const diepte = bodem - top;
+  const L = 5 + ruis(x, 3)*6, fase = t + ruis(x, 9)*L, ronde = Math.floor(fase/L), v = fase - ronde*L;
+  if(diepte > 10 && v < 2.2 && ruis(x, ronde + 17) < 0.45){
+    const k = v/2.2, van2 = Math.min(diepte - 3, 10 + ruis(x, ronde)*26);
+    const by = top + van2*(1 - k) + 2, bx = px + 2 + ruis(x+5, ronde)*4 + Math.sin(v*5)*0.8;
+    const r = 0.7 + ruis(x+9, ronde)*0.6;
+    c.globalAlpha = k > 0.85 ? (1 - k)/0.15 : 1;
+    c.fillStyle = 'rgba(210,240,255,.25)'; c.strokeStyle = 'rgba(235,250,255,.75)'; c.lineWidth = 0.35;
+    c.beginPath(); c.arc(bx, by, r, 0, Math.PI*2); c.fill(); c.stroke();
+    c.fillStyle = 'rgba(255,255,255,.9)'; c.fillRect(bx - r*0.45, by - r*0.5, 0.35, 0.35);
+    c.globalAlpha = 1;
+  }
+  const L2 = 4 + ruis(x, 41)*5, f2 = t + ruis(x, 43)*L2, r2 = Math.floor(f2/L2), v2 = f2 - r2*L2;
+  if(v2 < 0.7 && ruis(x, r2 + 61) < 0.12){
+    const a = Math.sin(Math.PI*v2/0.7), gx = px + 1.5 + ruis(x+3, r2)*5, gy = top + waterDein(gx, t) + 1 + ruis(x+7, r2)*2;
+    const m = 1.6*a;
+    c.globalAlpha = 0.8*a; c.fillStyle = '#ffffff';
+    c.beginPath(); c.moveTo(gx, gy - m); c.lineTo(gx + m*0.22, gy); c.lineTo(gx, gy + m); c.lineTo(gx - m*0.22, gy); c.closePath(); c.fill();
+    c.beginPath(); c.moveTo(gx - m, gy); c.lineTo(gx, gy + m*0.22); c.lineTo(gx + m, gy); c.lineTo(gx, gy - m*0.22); c.closePath(); c.fill();
+    c.globalAlpha = 1;
+  }
+}
+function tekenBewegend(t){
+  // water en vuur bewegen, die tekenen we elk beeldje opnieuw
+  // alleen wat (bijna) in beeld is van het werkvlak
+  const vlak = $('werkvlak'), links = vlak.scrollLeft/schaal, rechts = (vlak.scrollLeft + vlak.clientWidth)/schaal;
+  const k0 = Math.max(0, Math.floor(links/BLOK) - 3), k1 = Math.min(level.breed - 1, Math.ceil(rechts/BLOK) + 3);
+  for(let y=0;y<HOOGTE;y++) for(let x=k0;x<=k1;x++){
+    if(level.raster[y*level.breed+x] !== 4 || blok(x,y-1) === 4) continue;
+    let y2 = y; while(blok(x,y2+1) === 4) y2++; tekenWaterKolom(ctx, x, y, y2, t);
+  }
+  tekenVuurGloed(ctx, t, k0, k1);
+  for(let y=0;y<HOOGTE;y++) for(let x=k0 - (k0 % VLAM_AFSTAND);x<=k1;x+=VLAM_AFSTAND){
+    if(level.raster[y*level.breed+x] !== 5 || blok(x,y-1) === 5) continue;
+    const midden = (x + (blok(x+1,y) === 5 ? 1 : 0.5))*BLOK;
+    tekenVlam(ctx, midden, y*BLOK + 2, t, ruis(x,y), ruis(x+31,y+7), ruis(x+5,y+53));
+    tekenVonkjes(ctx, midden, y*BLOK, t, ruis(x+13,y+3));
+  }
+}
+
+function tekenRaster(){
+  if(!rasterAan) return;
+  ctx.lineWidth = 1/schaal;
+  ctx.strokeStyle = 'rgba(255,255,255,.06)';
+  ctx.beginPath();
+  for(let x=0;x<=level.breed;x++){ ctx.moveTo(x*BLOK,0); ctx.lineTo(x*BLOK,HOOGTE*BLOK); }
+  for(let y=0;y<=HOOGTE;y++){ ctx.moveTo(0,y*BLOK); ctx.lineTo(level.breed*BLOK,y*BLOK); }
+  ctx.stroke();
+  // schermgrenzen
+  ctx.strokeStyle = 'rgba(127,178,255,.45)'; ctx.setLineDash([6/schaal,6/schaal]);
+  ctx.beginPath();
+  for(let x=SCHERM_BREED;x<level.breed;x+=SCHERM_BREED){ ctx.moveTo(x*BLOK,0); ctx.lineTo(x*BLOK,HOOGTE*BLOK); }
+  ctx.stroke(); ctx.setLineDash([]);
+}
+
+function tekenPotlood(){
+  const p = level.potlood, s = POTLOOD_HOOGTE/POTLOOD_H;
+  // maatpoppetje: zo groot wordt een oelieboelie, op de plek waar hij getekend wordt
+  if(poppetjeImg.complete){
+    const fw = FIGUUR_HOOGTE*101/128;
+    ctx.globalAlpha = 0.35; ctx.drawImage(poppetjeImg, p.x-fw/2, p.y+6, fw, FIGUUR_HOOGTE); ctx.globalAlpha = 1;
+    // stippellijn naar beneden: hier vallen ze
+    ctx.strokeStyle = 'rgba(200,225,255,.35)'; ctx.lineWidth = 1/schaal; ctx.setLineDash([3/schaal,4/schaal]);
+    ctx.beginPath(); ctx.moveTo(p.x, p.y+6+FIGUUR_HOOGTE); ctx.lineTo(p.x, HOOGTE*BLOK); ctx.stroke(); ctx.setLineDash([]);
+  }
+  if(potloodImg.complete) ctx.drawImage(potloodImg, p.x - PUNT_X*s, p.y - PUNT_Y*s, POTLOOD_W*s, POTLOOD_H*s);
+}
+function wolkVak(){ const h = WOLK_H*WOLK_BREEDTE/WOLK_W; return { x: level.wolk.x - WOLK_BREEDTE/2, y: level.wolk.y - h/2, b: WOLK_BREEDTE, h }; }
+function tekenWolk(){ const v = wolkVak(); if(wolkImg.complete) ctx.drawImage(wolkImg, v.x, v.y, v.b, v.h); }
+
+function tekenVoorbeeld(t){
+  // rechthoek die je aan het slepen bent, of de penseelrand onder de muis
+  if(!muis.binnen || gereedschap === 'stempel' || meetAan) return;
+  if(objectKeuze){
+    if(muis.sleeptObj) return;
+    const i = objectOnder(muis.wereld);
+    ctx.save(); ctx.lineWidth = 1.5/schaal; ctx.setLineDash([4/schaal,3/schaal]);
+    if(i >= 0){   // bestaand object onder de muis: laten zien dat je het kunt pakken
+      ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.stroke(objectPad(level.objecten[i]));
+    } else {      // schaduw van het nieuwe object
+      const o = nieuwObjectOp(muis.wereld);
+      ctx.globalAlpha = 0.55; tekenObject(ctx, o, t); ctx.globalAlpha = 1;
+      ctx.strokeStyle = 'rgba(127,178,255,.9)'; ctx.stroke(objectPad(o));
+    }
+    ctx.restore(); return;
+  }
+  if(soortKeuze === null && !plekKeuze){   // niets gekozen: laten zien wat je kunt pakken
+    if(muis.sleeptObj || muis.sleept) return;
+    const i = objectOnder(muis.wereld);
+    if(i >= 0){ ctx.save(); ctx.lineWidth = 1.5/schaal; ctx.setLineDash([4/schaal,3/schaal]); ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.stroke(objectPad(level.objecten[i])); ctx.restore(); }
+    return;
+  }
+  if(gereedschap === 'rechthoek' && muis.sleepStart && soortKeuze !== null){
+    const r = rechthoekVan(muis.sleepStart, muis.blok);
+    ctx.fillStyle = muis.gummen ? 'rgba(255,90,90,.25)' : 'rgba(127,178,255,.25)';
+    ctx.fillRect(r.x0*BLOK, r.y0*BLOK, (r.x1-r.x0+1)*BLOK, (r.y1-r.y0+1)*BLOK);
+  } else if(soortKeuze !== null){
+    const n = gereedschap === 'rechthoek' ? 1 : penseel, o = Math.floor((n-1)/2);
+    ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.lineWidth = 1.5/schaal;
+    ctx.strokeRect((muis.blok.x-o)*BLOK, (muis.blok.y-o)*BLOK, n*BLOK, n*BLOK);
+  }
+}
+
+function teken(tijd){
+  // tijdens het proefspelen ligt het spel over de editor heen: dan hoeft de editor niets te tekenen
+  if($('proefLaag').classList.contains('open')){ requestAnimationFrame(teken); return; }
+  const t = tijd/1000;
+  const B = level.breed*BLOK, H = HOOGTE*BLOK;
+  const g = ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#24384d'); g.addColorStop(1,'#3b5a72');
+  ctx.fillStyle = g; ctx.fillRect(0,0,B,H);
+  tekenAchtergrond(ctx, achtergrondPlaatje(achtergrondNaam), B, H);
+  ctx.imageSmoothingEnabled = false; ctx.drawImage(kleurDoek,0,0,B,H); ctx.imageSmoothingEnabled = true;   // kleurvlakken
+  for(const o of level.objecten) if(isDecor(o)) tekenObject(ctx, o, t);   // decor: achter de grond langs
+  ctx.drawImage(vast,0,0,B,H);
+  tekenBewegend(t);
+  for(const o of kistenOpVolgorde(level.objecten)) if(!isDecor(o)) tekenObject(ctx, o, t);   // (v1.35) onderste kisten eerst
+  tekenRaster();
+  tekenWolk();
+  tekenPotlood();
+  tekenVoorbeeld(t);
+  tekenStempel(t);
+  tekenMeetlat();
+  requestAnimationFrame(teken);
+}
+
+// =====================================================================
+// BEDIENING
+// =====================================================================
+let objectKeuze = null, soortKeuze = 1, plekKeuze = null, gereedschap = 'penseel', penseel = 2, rasterAan = true;
+const muis = { binnen:false, blok:{x:0,y:0}, wereld:{x:0,y:0}, bezig:false, gummen:false, sleepStart:null, sleept:null, sleeptObj:null, sleepOff:null, rechtsTijd:0, rechtsDeed:false };
+const DUBBEL_RECHTS = 400;
+// stempel: { b, h, vakjes (Uint8Array b*h), objecten (met x,y vanaf linksboven), vorige:{x,y} } ; meetlat: { a:{x,y}, z:{x,y} }
+let stempel = null, meetAan = false, meting = null;   // binnen zoveel milliseconden twee keer rechtsklikken = alles loslaten
+
+function bouwKeuzes(){
+  const bk = $('blokkeuzes');
+  for(const s of SOORTEN.slice(1)){
+    const b = document.createElement('button'); b.className = 'keuze'; b.dataset.soort = s.id;
+    b.innerHTML = `<span class="staal" style="background:${s.kleur}"></span><span>${s.naam}<br><small style="color:var(--muted)">${s.uitleg}</small></span><kbd>${s.toets}</kbd>`;
+    b.onclick = () => kiesSoort(s.id); bk.appendChild(b);
+  }
+  const gum = document.createElement('button'); gum.className = 'keuze'; gum.dataset.soort = GUM;
+  gum.innerHTML = `<span class="staal" style="background:repeating-linear-gradient(45deg,#2b3b4d 0 4px,#1f2b38 4px 8px)"></span><span>Gum<br><small style="color:var(--muted)">maakt leeg</small></span><kbd>E</kbd>`;
+  gum.onclick = () => kiesSoort(GUM); bk.appendChild(gum);
+  const kk = $('kleurkeuzes');
+  KLEUREN.forEach((k, i) => {
+    const b = document.createElement('button'); b.className = 'kleurstaal'; b.dataset.soort = KLEUR_BASIS + i + 1;
+    b.style.background = k.kleur; b.title = `Kleurvlak: ${k.naam}`;
+    b.onclick = () => kiesSoort(KLEUR_BASIS + i + 1); kk.appendChild(b);
+  });
+  const kg = document.createElement('button'); kg.className = 'keuze'; kg.dataset.soort = KLEURGUM;
+  kg.innerHTML = `<span class="staal" style="background:repeating-linear-gradient(45deg,#000 0 4px,#fff 4px 8px)"></span><span>Kleurgum<br><small style="color:var(--muted)">haalt alleen kleur weg</small></span>`;
+  kg.onclick = () => kiesSoort(KLEURGUM); $('kleurgumkeuze').appendChild(kg);
+  const pk = $('plekkeuzes');
+  for(const [id,naam,uitleg] of [['potlood','Tover-potlood','hier verschijnen ze'],['wolk','Toverwolk','het doel']]){
+    const b = document.createElement('button'); b.className = 'keuze'; b.dataset.plek = id;
+    b.innerHTML = `<span class="staal" style="background:${id==='potlood'?'#f2b233':'linear-gradient(135deg,#f7c6e8,#b9a6ff)'}"></span><span>${naam}<br><small style="color:var(--muted)">${uitleg}</small></span>`;
+    b.onclick = () => kiesPlek(id); pk.appendChild(b);
+  }
+  markeer();
+}
+function markeer(){
+  document.querySelectorAll('[data-soort]').forEach(b => b.classList.toggle('aan', soortKeuze !== null && +b.dataset.soort === soortKeuze));
+  document.querySelectorAll('[data-plek]').forEach(b => b.classList.toggle('aan', b.dataset.plek === plekKeuze));
+  document.querySelectorAll('#gereedschap button').forEach(b => b.classList.toggle('aan', b.dataset.g === gereedschap));
+  document.querySelectorAll('#groottes button').forEach(b => b.classList.toggle('aan', +b.dataset.s === penseel));
+  $('rasterKnop').classList.toggle('aan', rasterAan);
+  document.querySelectorAll('.objoptie').forEach(b => b.classList.toggle('aan', !!objectKeuze && b.dataset.sleutel === objSleutel(objectKeuze)));
+  $('objKnop').classList.toggle('aan', !!objectKeuze);
+  $('objKnop').textContent = objectKeuze ? `Objecten: ${objectKeuze.label} ▾` : 'Objecten ▾';
+}
+function kiesSoort(id){ if(gereedschap === 'stempel') gereedschap = 'penseel'; soortKeuze = id; plekKeuze = null; objectKeuze = null; markeer(); }
+function kiesPlek(id){ if(gereedschap === 'stempel') gereedschap = 'penseel'; plekKeuze = id; soortKeuze = null; objectKeuze = null; markeer(); }
+document.querySelectorAll('#gereedschap button').forEach(b => b.onclick = () => kiesGereedschap(b.dataset.g));
+document.querySelectorAll('#groottes button').forEach(b => b.onclick = () => { penseel = +b.dataset.s; markeer(); });
+$('rasterKnop').onclick = () => { rasterAan = !rasterAan; markeer(); };
+$('ongedaan').onclick = ongedaan; $('opnieuwKnop').onclick = herhaal;
+
+// =====================================================================
+// HET OBJECTENMENU (uitschuifmenu in de bovenbalk)
+// =====================================================================
+const OBJ_MENU = [
+  { groep: 'Bouwvormen', rijen: [
+    { naam: 'Boog', uitleg: 'Vast. Eroverheen lopen, of eronderdoor als je tussen de poten zit.', opties: [
+      { soort:'boog', maat:'klein', label:'klein' }, { soort:'boog', maat:'groot', label:'groot' } ] },
+    { naam: 'Helling', uitleg: 'Flauw: gewoon op en af lopen. Steil: te steil om op te lopen, wel om vanaf te glijden.', opties: [
+      { soort:'helling', maat:'flauw', richting:1, label:'flauw ↗' }, { soort:'helling', maat:'flauw', richting:-1, label:'flauw ↖' },
+      { soort:'helling', maat:'steil', richting:1, label:'steil ↗' }, { soort:'helling', maat:'steil', richting:-1, label:'steil ↖' } ] },
+    { naam: 'Balk liggend', uitleg: 'Dik en stevig.', opties: ['kort','middel','lang'].map(m => ({ soort:'balk', maat:m, stand:'horizontaal', label:m })) },
+    { naam: 'Balk staand', uitleg: 'Een paal of muurtje.', opties: ['kort','middel','lang'].map(m => ({ soort:'balk', maat:m, stand:'verticaal', label:m })) },
+    { naam: 'Plank', uitleg: 'Dun, voor loopstukken.', opties: ['kort','middel','lang'].map(m => ({ soort:'plank', maat:m, label:m })) }
+  ]},
+  { groep: 'Werkende objecten', rijen: [
+    { naam: 'Parachute', uitleg: 'De eerste o die erdoorheen loopt, zweeft één keer veilig naar beneden.', opties: [
+      { soort:'parachute', label:'parachute' } ] }
+  ]},
+  { groep: "Spullen waar de o's op reageren", rijen: [
+    { naam: 'Bomen', uitleg: "De o's lopen tegen de stam en draaien om. Door de kruin val je heen.", opties: [ { soort:'boom', label:'boom' },
+      { soort:'boom', maat:'spar', label:'spar' }, { soort:'boom', maat:'appel', label:'appelboom' }, { soort:'boom', maat:'berk', label:'berk' } ] },
+    { naam: 'Waterput', uitleg: "De o's lopen ertegenaan en draaien om.", opties: [ { soort:'put', label:'put' } ] },
+    { naam: 'Houten kist', uitleg: "Een opstapje: de o's stappen erop en eroverheen. Je kunt kisten stapelen: als trapje klimmen de o's erop, twee hoog zonder trapje is een muurtje.", opties: [ { soort:'kist', label:'kist' } ] },
+    { naam: 'Hond', uitleg: "Slaapt, schrikt wakker als er een o aankomt en blaft hem terug.", opties: [ { soort:'hond', label:'hond' } ] },
+    { naam: 'Cactussen', uitleg: 'Au! Wie erin loopt of valt, loopt leeg als een ballon.', opties: [ { soort:'cactus', label:'cactussen' } ] },
+    { naam: 'Stevige spullen', uitleg: "Ertegenaan lopen = omdraaien. Erop vallen = erop landen, eroverheen lopen en er weer af.", opties: [
+      { soort:'boeken', label:'boeken' }, { soort:'blokken', label:'blokken' }, { soort:'stronk', label:'stronk' },
+      { soort:'ton', label:'regenton' }, { soort:'cadeau', label:'cadeau' }, { soort:'theepot', label:'theepot' } ] }
+  ]},
+  { groep: "Achtergrond (de o's lopen erlangs)", rijen: [
+    { naam: 'Windmolen', uitleg: 'De wieken draaien vanzelf.', opties: [ { soort:'molen', label:'molen' } ] },
+    { naam: 'Huisje', uitleg: 'Met een rokende schoorsteen.', opties: [ { soort:'huis', label:'huisje' } ] },
+    { naam: 'Struiken en bloemen', uitleg: 'Drie soorten.', opties: [
+      { soort:'struik', maat:'rond', label:'struik' }, { soort:'struik', maat:'bloei', label:'bloeiend' }, { soort:'struik', maat:'bloemen', label:'bloemen' } ] },
+    { naam: 'Lantaarnpaal', uitleg: 'Ouderwets en sierlijk.', opties: [ { soort:'lantaarn', label:'lantaarn' } ] },
+    { naam: 'Bankje', uitleg: 'Een houten parkbankje.', opties: [ { soort:'bank', label:'bankje' } ] },
+    { naam: 'Op het erf', uitleg: 'Vogelverschrikker, wegwijzer, brievenbus, vogelhuisje en kruiwagen.', opties: [
+      { soort:'vogelverschrikker', label:'vogelverschrikker' }, { soort:'wegwijzer', label:'wegwijzer' }, { soort:'brievenbus', label:'brievenbus' },
+      { soort:'vogelhuisje', label:'vogelhuisje' }, { soort:'kruiwagen', label:'kruiwagen' } ] },
+    { naam: 'Neergestorte ufo', uitleg: 'Schuin in de grond geboord.', opties: [ { soort:'ufo', label:'ufo' } ] },
+    { naam: 'Struisvogels', uitleg: 'Drie houdingen: rechtop, pikkend en nieuwsgierig.', opties: [
+      { soort:'struisvogel', maat:'staan', label:'rechtop' }, { soort:'struisvogel', maat:'pik', label:'pikt' }, { soort:'struisvogel', maat:'kijk', label:'kijkt' } ] },
+    { naam: 'Glijbaan', uitleg: 'Uit de speeltuin.', opties: [ { soort:'glijbaan', label:'glijbaan' } ] },
+    { naam: 'Windmolentje', uitleg: 'Draait vanzelf, het ene moment wat harder dan het andere.', opties: [ { soort:'molentje', label:'molentje' } ] },
+    { naam: 'Banaan', uitleg: 'Een reuzenbanaan, zo groot als de glijbaan.', opties: [ { soort:'banaan', label:'banaan' } ] },
+    { naam: 'Raceauto', uitleg: 'Een formule 1-wagen.', opties: [ { soort:'f1', label:'raceauto' } ] },
+    { naam: 'Racefiets', uitleg: 'Zoals in de Tour de France.', opties: [ { soort:'racefiets', label:'racefiets' } ] },
+    { naam: 'Voetbal', uitleg: 'Ligt op de grond.', opties: [ { soort:'voetbal', label:'voetbal' } ] },
+    { naam: 'Tablet', uitleg: 'Een reuzentablet met een zon en een regenboog.', opties: [ { soort:'tablet', label:'tablet' } ] },
+    { naam: 'Stoommachine', uitleg: 'Het vliegwiel draait en er komt stoom uit de schoorsteen.', opties: [ { soort:'stoommachine', label:'stoommachine' } ] },
+    { naam: 'Ridder', uitleg: 'In harnas, met een rode pluim.', opties: [ { soort:'ridder', label:'ridder' } ] },
+    { naam: 'Vlag', uitleg: 'Wappert vanzelf in de wind. Mooi op een kasteeltoren.', opties: [ { soort:'vlag', label:'vlag' } ] },
+    { naam: 'Koe', uitleg: 'Met een belletje om.', opties: [ { soort:'koe', label:'koe' } ] },
+    { naam: 'Hart', uitleg: 'Een glanzend hart met fonkeltjes.', opties: [ { soort:'hart', label:'hart' } ] },
+    { naam: 'Betonmolen', uitleg: 'Oranje betonmolen op wieltjes.', opties: [ { soort:'betonmolen', label:'betonmolen' } ] },
+    { naam: 'Bouwvakker', uitleg: 'Met helm en boormachine.', opties: [ { soort:'bouwvakker', label:'bouwvakker' } ] },
+    { naam: 'Bouwkraan', uitleg: 'Een grote gele torenkraan met haak.', opties: [ { soort:'kraan', label:'kraan' } ] },
+    { naam: 'Hangmat', uitleg: 'Gestreepte hangmat tussen twee palen.', opties: [ { soort:'hangmat', label:'hangmat' } ] },
+    { naam: 'Ruimtemannetje', uitleg: 'Een vrolijk groen mannetje met voelsprieten.', opties: [ { soort:'ruimtemannetje', label:'ruimtemannetje' } ] },
+    { naam: 'Planeetplant', uitleg: 'Vreemde plant die zacht wiegt; de knoppen gloeien.', opties: [ { soort:'planeetplant', label:'planeetplant' } ] },
+    { naam: 'Raketje', uitleg: 'Geland raketje; het lampje op de antenne knippert.', opties: [ { soort:'raketje', label:'raketje' } ] },
+    { naam: 'Kristallen', uitleg: 'Gloeiende kristallen met af en toe een fonkeling.', opties: [ { soort:'kristal', label:'kristal' } ] },
+    { naam: 'Rookpluim', uitleg: 'Donkere rook voor een schoorsteen in de achtergrond. Zet het rondje op de bovenkant van de schoorsteen. In het spel zie je alleen de rook.', opties: [
+      { soort:'rook', maat:'klein', label:'klein' }, { soort:'rook', maat:'middel', label:'middel' }, { soort:'rook', maat:'groot', label:'groot' } ] }
+  ]}
+];
+const objSleutel = o => [o.soort, o.maat || '', o.stand || '', o.richting || ''].join('|');
+function labelVan(o){
+  const naam = { boog:'Boog', helling:'Helling', balk: o.stand === 'verticaal' ? 'Balk staand' : 'Balk liggend', plank:'Plank', parachute:'Parachute',
+                 boom:'Boom', put:'Waterput', kist:'Houten kist', hond:'Hond', cactus:'Cactussen', molen:'Windmolen', huis:'Huisje',
+                 struik:'Struik', lantaarn:'Lantaarnpaal', bank:'Bankje', vogelverschrikker:'Vogelverschrikker', wegwijzer:'Wegwijzer',
+                 brievenbus:'Brievenbus', vogelhuisje:'Vogelhuisje', kruiwagen:'Kruiwagen',
+                 ufo:'Neergestorte ufo', struisvogel:'Struisvogel', glijbaan:'Glijbaan', molentje:'Windmolentje', banaan:'Banaan',
+                 f1:'Raceauto', racefiets:'Racefiets', voetbal:'Voetbal', tablet:'Tablet', stoommachine:'Stoommachine', ridder:'Ridder', vlag:'Vlag', koe:'Koe', hart:'Hart', betonmolen:'Betonmolen', bouwvakker:'Bouwvakker', kraan:'Bouwkraan', hangmat:'Hangmat', ruimtemannetje:'Ruimtemannetje', planeetplant:'Planeetplant', raketje:'Raketje', kristal:'Kristallen', rook:'Rookpluim',
+                 boeken:'Stapel boeken', blokken:'Speelgoedblokken', stronk:'Boomstronk', ton:'Regenton', cadeau:'Cadeaupakket', theepot:'Theepot' }[o.soort];
+  if(o.soort === 'boom') return { spar:'Spar', appel:'Appelboom', berk:'Berk' }[o.maat] || naam;
+  if(o.soort === 'struisvogel') return { staan:'Struisvogel (rechtop)', pik:'Struisvogel (pikt)', kijk:'Struisvogel (kijkt)' }[o.maat] || naam;
+  if(o.soort === 'rook') return { klein:'Rookpluim (klein)', middel:'Rookpluim (middel)', groot:'Rookpluim (groot)' }[o.maat] || naam;
+  if(o.soort === 'struik') return { rond:'Struik', bloei:'Bloeiende struik', bloemen:'Bloemen' }[o.maat] || naam;
+  return (o.soort === 'parachute' || isDing(o) || isDecor(o)) ? naam : `${naam} ${o.label}`;
+}
+function bouwObjectMenu(){
+  const paneel = $('objPaneel'); paneel.innerHTML = '';
+  for(const g of OBJ_MENU){
+    const h = document.createElement('h3'); h.textContent = g.groep; paneel.appendChild(h);
+    for(const rij of g.rijen){
+      const r = document.createElement('div'); r.className = 'objrij';
+      r.innerHTML = `<div class="naam"><b>${rij.naam}</b><small>${rij.uitleg}</small></div><div class="objopties"></div>`;
+      for(const opt of rij.opties){
+        const b = document.createElement('button'); b.className = 'objoptie'; b.dataset.sleutel = objSleutel(opt);
+        const c = document.createElement('canvas'); c.width = 128; c.height = 80;
+        tekenMiniatuur(c, opt);
+        b.appendChild(c); const s = document.createElement('span'); s.textContent = opt.label; b.appendChild(s);
+        b.onclick = () => kiesObject(opt);
+        r.querySelector('.objopties').appendChild(b);
+      }
+      paneel.appendChild(r);
+    }
+  }
+  const tip = document.createElement('div'); tip.className = 'tip';
+  tip.innerHTML = 'Klik in het level om te plaatsen · sleep om te verschuiven · rechtermuis = weghalen<br>Wijs een object aan om het te verschuiven (slepen) of weg te halen (rechtermuis).';
+  paneel.appendChild(tip);
+}
+function tekenMiniatuur(c, opt){
+  const g = c.getContext('2d'), o = { ...opt, x:0, y:0 }, m = objectMaat(o);
+  const s = Math.min(112/(m.b*BLOK), 66/(m.h*BLOK), 3);
+  g.setTransform(s, 0, 0, s, (c.width - m.b*BLOK*s)/2, (c.height - m.h*BLOK*s)/2);
+  tekenObject(g, o, 0);
+}
+function kiesObject(opt){
+  if(gereedschap === 'stempel') gereedschap = 'penseel';
+  objectKeuze = { ...opt, label: opt.label }; objectKeuze.label = labelVan(opt);
+  soortKeuze = null; plekKeuze = null;
+  sluitObjectMenu(); markeer();
+  meld(`${objectKeuze.label}: klik in het level om te plaatsen. Rechtermuis op een object haalt het weg.`);
+}
+// het menu altijd helemaal in beeld houden (ook als de knop rechts in de balk staat)
+function plaatsObjectMenu(){
+  const pn = $('objPaneel'); pn.style.left = '0px';
+  pn.style.maxHeight = Math.max(200, window.innerHeight - pn.getBoundingClientRect().top - 12) + 'px';   // nooit langer dan het scherm: alleen de lijst scrollt
+  const r = pn.getBoundingClientRect();
+  let schuif = 0;
+  if(r.right > window.innerWidth - 8) schuif = window.innerWidth - 8 - r.right;
+  if(r.left + schuif < 8) schuif = 8 - r.left;
+  pn.style.left = schuif + 'px';
+}
+function wisselObjectMenu(){ $('objPaneel').classList.toggle('open'); if($('objPaneel').classList.contains('open')) plaatsObjectMenu(); }
+function sluitObjectMenu(){ $('objPaneel').classList.remove('open'); }
+$('objKnop').onclick = e => { e.stopPropagation(); wisselObjectMenu(); };
+$('objPaneel').addEventListener('click', e => e.stopPropagation());
+document.addEventListener('click', sluitObjectMenu);
+
+// ---- objecten in het level: zoeken, plaatsen en verschuiven ----
+const vormHulp = document.createElement('canvas').getContext('2d');
+function objectOnder(w){   // het bovenste object onder de muis (-1 = geen)
+  for(let i = level.objecten.length - 1; i >= 0; i--){
+    const o = level.objecten[i], m = objectMaat(o);
+    if(w.x < o.x*BLOK - 3 || w.x > (o.x + m.b)*BLOK + 3 || w.y < o.y*BLOK - 3 || w.y > (o.y + m.h)*BLOK + 3) continue;
+    if(!objectIsVast(o) || m.h <= 2 || m.b <= 2) return i;   // dunne dingen: het hele vak telt
+    vormHulp.lineWidth = 6;
+    if(vormHulp.isPointInPath(objectPad(o), w.x, w.y) || vormHulp.isPointInStroke(objectPad(o), w.x, w.y)) return i;
+  }
+  return -1;
+}
+// raakt object o het vak van blokje (x0,y0) t/m (x1,y1)?
+function objectRaakt(o, x0, y0, x1, y1){
+  const m = objectMaat(o);
+  if(x1 < o.x || x0 > o.x + m.b - 1 || y1 < o.y || y0 > o.y + m.h - 1) return false;
+  if(!objectIsVast(o) || m.h <= 2 || m.b <= 2) return true;   // dunne dingen: het hele vak telt
+  vormHulp.lineWidth = 6;
+  const pad = objectPad(o);
+  const ax = Math.max(x0, o.x), bx = Math.min(x1, o.x + m.b - 1), ay = Math.max(y0, o.y), by = Math.min(y1, o.y + m.h - 1);
+  for(let y = ay; y <= by; y++) for(let x = ax; x <= bx; x++){
+    const px = (x + 0.5)*BLOK, py = (y + 0.5)*BLOK;
+    if(vormHulp.isPointInPath(pad, px, py) || vormHulp.isPointInStroke(pad, px, py)) return true;
+  }
+  return false;
+}
+// de gum haalt alle objecten weg die hij raakt
+function gumObjecten(x0, y0, x1, y1){
+  let n = 0;
+  for(let i = level.objecten.length - 1; i >= 0; i--)
+    if(objectRaakt(level.objecten[i], x0, y0, x1, y1)){ level.objecten.splice(i, 1); n++; }
+  if(n) meld(n === 1 ? 'Object weggehaald (Ctrl+Z zet het terug).' : `${n} objecten weggehaald (Ctrl+Z zet ze terug).`);
+  return n;
+}
+function gumPenseel(bx, by){ const o = Math.floor((penseel - 1)/2); return gumObjecten(bx - o, by - o, bx - o + penseel - 1, by - o + penseel - 1); }
+function gumLijn(a, b){ // ook tussenliggende plekken bij snel slepen
+  const stappen = Math.max(Math.abs(b.x-a.x), Math.abs(b.y-a.y), 1); let n = 0;
+  for(let i=0;i<=stappen;i++) n += gumPenseel(Math.round(a.x+(b.x-a.x)*i/stappen), Math.round(a.y+(b.y-a.y)*i/stappen));
+  return n;
+}
+function legObjectBinnen(o){   // niet buiten het level
+  const m = objectMaat(o);
+  o.x = Math.max(0, Math.min(level.breed - m.b, o.x)); o.y = Math.max(0, Math.min(HOOGTE - m.h, o.y));
+  return o;
+}
+// (v1.35) kisten mogen elkaar raken (strak op elkaar en strak naast elkaar), maar niet door elkaar heen
+function kistBotst(o){
+  if(o.soort !== 'kist') return false;
+  for(const k of level.objecten){
+    if(k === o || k.soort !== 'kist') continue;
+    if(o.x < k.x + 4 && k.x < o.x + 4 && o.y < k.y + 3 && k.y < o.y + 3) return true;
+  }
+  return false;
+}
+function nieuwObjectOp(w){
+  const o = { soort: objectKeuze.soort };
+  for(const k of ['maat','stand','richting']) if(objectKeuze[k] !== undefined) o[k] = objectKeuze[k];
+  const m = objectMaat(o);
+  o.x = Math.round(w.x/BLOK - m.b/2); o.y = Math.round(w.y/BLOK - m.h/2);
+  return legObjectBinnen(o);
+}
+
+// ---- Stempel en meetlat (editor v0.62) ----
+function kiesGereedschap(g){
+  gereedschap = g;
+  if(g === 'stempel'){
+    objectKeuze = null; plekKeuze = null; sluitObjectMenu();
+    meld(stempel ? 'Stempel: klik om nog een kopie neer te zetten. Rechtermuis = ander stukje kiezen.'
+                 : 'Stempel: trek een rechthoek om het stukje terrein dat je wilt kopiëren.');
+  }
+  markeer();
+}
+function pakStempel(r){
+  const b = r.x1 - r.x0 + 1, h = r.y1 - r.y0 + 1, vakjes = new Uint8Array(b*h), kleuren = new Uint8Array(b*h);
+  let vol = 0;
+  for(let y=0;y<h;y++) for(let x=0;x<b;x++){ const i = (r.y0+y)*level.breed + r.x0+x, s = level.raster[i]; vakjes[y*b+x] = s; kleuren[y*b+x] = level.kleur[i]; if(s || level.kleur[i]) vol++; }
+  const objecten = level.objecten.filter(o => { const m = objectMaat(o); return o.soort !== 'schuin' && o.x >= r.x0 && o.y >= r.y0 && o.x + m.b - 1 <= r.x1 && o.y + m.h - 1 <= r.y1; })
+                                 .map(o => ({ ...o, x: o.x - r.x0, y: o.y - r.y0 }));
+  if(!vol && !objecten.length){ meld('Daar staat niets: trek de rechthoek om een stukje terrein.'); return; }
+  stempel = { b, h, vakjes, kleuren, objecten, vorige: { x: r.x0, y: r.y0 } };
+  meld(`Stempel van ${b}×${h} blokjes${objecten.length ? ` (met ${objecten.length} object${objecten.length > 1 ? 'en' : ''})` : ''}. Klik om een kopie neer te zetten; Shift = recht onder of naast de vorige; Alt = lucht overslaan.`);
+}
+function stempelPlek(shift){   // linksboven van de kopie, gecentreerd op de muis
+  if(!stempel) return null;
+  let x = muis.blok.x - Math.floor(stempel.b/2), y = muis.blok.y - Math.floor(stempel.h/2);
+  if(shift){ const v = stempel.vorige; if(Math.abs(x - v.x) < Math.abs(y - v.y)) x = v.x; else y = v.y; }
+  return { x, y };
+}
+function zetStempel(p, alt){
+  bewaarStap();
+  const s = stempel;   // lege vakjes worden lucht (v0.83); met Alt ingedrukt slaat hij ze over (zoals vroeger)
+  for(let y=0;y<s.h;y++) for(let x=0;x<s.b;x++){
+    const v = s.vakjes[y*s.b+x], bx = p.x + x, by = p.y + y;
+    if((v || !alt) && bx >= 0 && by >= 0 && bx < level.breed && by < HOOGTE) level.raster[by*level.breed + bx] = v;
+    const k = s.kleuren ? s.kleuren[y*s.b+x] : 0;   // kleurvlakken gaan mee; waar het stempel geen kleur heeft, blijft de kleur eronder staan
+    if(k && bx >= 0 && by >= 0 && bx < level.breed && by < HOOGTE) level.kleur[by*level.breed + bx] = k;
+  }
+  for(const o of s.objecten){
+    const n = { ...o, x: p.x + o.x, y: p.y + o.y }, m = objectMaat(n);
+    if(n.x < 0 || n.y < 0 || n.x + m.b > level.breed || n.y + m.h > HOOGTE || kistBotst(n)) continue;
+    level.objecten.push(n);
+  }
+  const dx = p.x - s.vorige.x, dy = p.y - s.vorige.y;
+  s.vorige = { ...p };
+  vernieuwVast(); markeerGewijzigd();
+  meld(`Kopie neergezet (${afstandTekst(dx, dy)} van de vorige). Ctrl+Z haalt hem weg.`);
+}
+function afstandTekst(dx, dy){
+  const d = [];
+  if(dy) d.push(`${dy > 0 ? '↓' : '↑'} ${Math.abs(dy)}`);
+  if(dx) d.push(`${dx > 0 ? '→' : '←'} ${Math.abs(dx)}`);
+  return d.length ? d.join('  ') : 'zelfde plek';
+}
+function tekenLabel(tekst, wx, wy){   // een leesbaar labeltje, even groot bij elke zoom
+  ctx.save();
+  const fs = 13/schaal; ctx.font = `600 ${fs}px system-ui, sans-serif`;
+  const w = ctx.measureText(tekst).width + 10/schaal, h = fs + 8/schaal;
+  let x = wx + 10/schaal, y = wy - h - 6/schaal;
+  if(y < 0) y = wy + 14/schaal;
+  ctx.fillStyle = 'rgba(15,22,30,.88)'; ctx.strokeStyle = 'rgba(127,178,255,.9)'; ctx.lineWidth = 1/schaal;
+  ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x, y, w, h, 4/schaal) : ctx.rect(x, y, w, h); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#e8f1ff'; ctx.textBaseline = 'middle'; ctx.fillText(tekst, x + 5/schaal, y + h/2 + 0.5/schaal);
+  ctx.restore();
+}
+function tekenStempel(t){
+  if(gereedschap !== 'stempel' || !muis.binnen || meetAan) return;
+  ctx.save();
+  if(!stempel){
+    if(muis.sleepStart){
+      const r = rechthoekVan(muis.sleepStart, muis.blok);
+      ctx.fillStyle = 'rgba(255,214,110,.18)'; ctx.fillRect(r.x0*BLOK, r.y0*BLOK, (r.x1-r.x0+1)*BLOK, (r.y1-r.y0+1)*BLOK);
+      ctx.strokeStyle = 'rgba(255,214,110,.95)'; ctx.lineWidth = 1.5/schaal; ctx.setLineDash([4/schaal,3/schaal]);
+      ctx.strokeRect(r.x0*BLOK, r.y0*BLOK, (r.x1-r.x0+1)*BLOK, (r.y1-r.y0+1)*BLOK);
+      tekenLabel(`${r.x1-r.x0+1} × ${r.y1-r.y0+1}`, muis.wereld.x, muis.wereld.y);
+    } else {
+      ctx.strokeStyle = 'rgba(255,214,110,.8)'; ctx.lineWidth = 1.5/schaal; ctx.strokeRect(muis.blok.x*BLOK, muis.blok.y*BLOK, BLOK, BLOK);
+    }
+    ctx.restore(); return;
+  }
+  const p = stempelPlek(muis.shift), s = stempel;
+  // waar de vorige kopie staat
+  ctx.strokeStyle = 'rgba(255,214,110,.45)'; ctx.lineWidth = 1/schaal; ctx.setLineDash([3/schaal,3/schaal]);
+  ctx.strokeRect(s.vorige.x*BLOK, s.vorige.y*BLOK, s.b*BLOK, s.h*BLOK);
+  ctx.setLineDash([]);
+  ctx.globalAlpha = 0.55;
+  for(let y=0;y<s.h;y++) for(let x=0;x<s.b;x++){
+    const v = s.vakjes[y*s.b+x], k = s.kleuren ? s.kleuren[y*s.b+x] : 0;
+    if(k){ ctx.fillStyle = KLEUREN[k-1].kleur; ctx.fillRect((p.x+x)*BLOK, (p.y+y)*BLOK, BLOK, BLOK); if(!v) continue; }
+    if(!v){   // lucht: donker ruitje (wordt een gat), behalve met Alt
+      if(muis.alt) continue;
+      ctx.fillStyle = 'rgba(10,16,24,.75)'; ctx.fillRect((p.x+x)*BLOK, (p.y+y)*BLOK, BLOK, BLOK);
+      if((x + y) % 2 === 0){ ctx.fillStyle = 'rgba(255,255,255,.12)'; ctx.fillRect((p.x+x)*BLOK + BLOK*0.3, (p.y+y)*BLOK + BLOK*0.3, BLOK*0.4, BLOK*0.4); }
+      continue;
+    }
+    ctx.fillStyle = SOORTEN[v].kleur; ctx.fillRect((p.x+x)*BLOK, (p.y+y)*BLOK, BLOK, BLOK);
+  }
+  for(const o of s.objecten) tekenObject(ctx, { ...o, x: p.x + o.x, y: p.y + o.y }, t);
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = 'rgba(255,214,110,.95)'; ctx.lineWidth = 1.5/schaal; ctx.setLineDash([4/schaal,3/schaal]);
+  ctx.strokeRect(p.x*BLOK, p.y*BLOK, s.b*BLOK, s.h*BLOK);
+  ctx.restore();
+  tekenLabel(afstandTekst(p.x - s.vorige.x, p.y - s.vorige.y), (p.x + s.b)*BLOK, p.y*BLOK);
+}
+function tekenMeetlat(){
+  if(!meting) return;
+  const a = meting.a, z = meting.z;
+  const ax = (a.x+0.5)*BLOK, ay = (a.y+0.5)*BLOK, zx = (z.x+0.5)*BLOK, zy = (z.y+0.5)*BLOK;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,240,120,.95)'; ctx.lineWidth = 2/schaal;
+  if(a.x !== z.x && a.y !== z.y){   // hulplijnen: eerst omlaag/omhoog, dan opzij
+    ctx.setLineDash([3/schaal,3/schaal]); ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(ax, zy); ctx.lineTo(zx, zy); ctx.stroke(); ctx.setLineDash([]);
+  }
+  ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(zx, zy); ctx.stroke();
+  ctx.fillStyle = 'rgba(255,240,120,.35)';
+  for(const p of [a, z]){ ctx.fillRect(p.x*BLOK, p.y*BLOK, BLOK, BLOK); ctx.strokeRect(p.x*BLOK, p.y*BLOK, BLOK, BLOK); }
+  ctx.restore();
+  tekenLabel(meetTekst(z.x - a.x, z.y - a.y), zx, zy);
+}
+// de meetlat telt blokjes (v0.84): van blokje 1 tot en met blokje 5 = 5 blokjes
+function meetTekst(dx, dy){
+  const d = [];
+  if(dy) d.push(`${dy > 0 ? '↓' : '↑'} ${Math.abs(dy) + 1}`);
+  if(dx) d.push(`${dx > 0 ? '→' : '←'} ${Math.abs(dx) + 1}`);
+  return d.length ? d.join('  ') : '1 blokje';
+}
+function muisPositie(e){
+  const r = doek.getBoundingClientRect();
+  const wx = (e.clientX - r.left)/schaal, wy = (e.clientY - r.top)/schaal;
+  muis.wereld = { x:wx, y:wy };
+  muis.blok = { x: Math.floor(wx/BLOK), y: Math.floor(wy/BLOK) };
+  muis.shift = e.shiftKey; muis.alt = e.altKey;
+  let tekst = `Blokje: ${muis.blok.x}, ${muis.blok.y}`;
+  const oi = objectOnder(muis.wereld);
+  if(oi >= 0){ const o = level.objecten[oi], m = objectMaat(o); tekst += ` · ${o.soort === 'schuin' ? 'Schuine balk' : labelVan(o)}: ${m.b} breed × ${m.h} hoog`; }
+  $('positie').textContent = tekst;
+}
+function verf(bx,by,soort){
+  const n = penseel, o = Math.floor((n-1)/2);
+  for(let y=by-o;y<by-o+n;y++) for(let x=bx-o;x<bx-o+n;x++)
+    if(x>=0 && y>=0 && x<level.breed && y<HOOGTE) zetVak(y*level.breed+x, soort);
+}
+function verfLijn(a,b,soort){ // ook tussenliggende blokjes bij snel slepen
+  const stappen = Math.max(Math.abs(b.x-a.x), Math.abs(b.y-a.y), 1);
+  for(let i=0;i<=stappen;i++) verf(Math.round(a.x+(b.x-a.x)*i/stappen), Math.round(a.y+(b.y-a.y)*i/stappen), soort);
+}
+function rechthoekVan(a,b){ return { x0:Math.max(0,Math.min(a.x,b.x)), y0:Math.max(0,Math.min(a.y,b.y)),
+  x1:Math.min(level.breed-1,Math.max(a.x,b.x)), y1:Math.min(HOOGTE-1,Math.max(a.y,b.y)) }; }
+function opWolk(w){ const v = wolkVak(); return w.x>=v.x && w.x<=v.x+v.b && w.y>=v.y && w.y<=v.y+v.h; }
+function opPotlood(w){ const p = level.potlood; return w.x>=p.x-10 && w.x<=p.x+75 && w.y>=p.y-85 && w.y<=p.y+FIGUUR_HOOGTE+8; }
+function rond(v){ return Math.round(v/BLOK)*BLOK; } // op het raster laten vallen
+
+doek.addEventListener('contextmenu', e => e.preventDefault());
+doek.addEventListener('pointerdown', e => {
+  muisPositie(e); doek.setPointerCapture(e.pointerId);
+  const w = muis.wereld;
+  if(meetAan && e.button === 0){ meting = { a: {...muis.blok}, z: {...muis.blok} }; muis.meet = true; return; }
+  // twee keer snel rechtsklikken: alles loslaten (wat de eerste klik eventueel weghaalde, komt terug)
+  if(e.button === 2){
+    const nu = performance.now();
+    if(nu - muis.rechtsTijd < DUBBEL_RECHTS){
+      muis.rechtsTijd = 0;
+      if(muis.rechtsDeed) ongedaan();
+      muis.rechtsDeed = false;
+      soortKeuze = null; plekKeuze = null; objectKeuze = null; stempel = null; if(gereedschap === 'stempel') gereedschap = 'penseel';
+      sluitObjectMenu(); markeer();
+      meld('Niets gekozen. Klik en sleep om een object, het potlood of de wolk te verschuiven.');
+      return;
+    }
+    muis.rechtsTijd = nu; muis.rechtsDeed = false;
+  }
+  if(gereedschap === 'stempel'){
+    if(e.button === 2){ if(stempel){ stempel = null; meld('Stempel leeg: trek een rechthoek om een ander stukje.'); } return; }
+    if(e.button !== 0) return;
+    if(stempel) zetStempel(stempelPlek(e.shiftKey), e.altKey);
+    else muis.sleepStart = {...muis.blok};
+    return;
+  }
+  if(soortKeuze === null && !plekKeuze && !objectKeuze){   // niets gekozen: alleen verschuiven
+    if(e.button !== 0) return;
+    for(const pak of ['potlood', 'wolk']){
+      if(pak === 'potlood' ? opPotlood(w) : opWolk(w)){
+        bewaarStap(); muis.sleept = pak; muis.sleepOff = { x: level[pak].x - w.x, y: level[pak].y - w.y }; return;
+      }
+    }
+    const i = objectOnder(w);
+    if(i >= 0){ bewaarStap(); const o = level.objecten[i]; muis.sleeptObj = { o, dx: w.x/BLOK - o.x, dy: w.y/BLOK - o.y }; }
+    return;
+  }
+  // potlood of wolk vastpakken om te verschuiven (lukt altijd, welk gereedschap ook)
+  const pak = plekKeuze; // gekozen speciale plek: klikken = plaatsen, slepen = verschuiven
+  if(pak && e.button === 0){
+    bewaarStap(); muis.sleept = pak;
+    level[pak] = { x: rond(w.x), y: rond(w.y) }; return;
+  }
+  if(objectKeuze){
+    const i = objectOnder(w);
+    if(e.button === 2){
+      if(i >= 0){ bewaarStap(); muis.rechtsDeed = true; level.objecten.splice(i, 1); vernieuwVast(); markeerGewijzigd(); meld('Object weggehaald (Ctrl+Z zet het terug).'); }
+      return;
+    }
+    if(e.button !== 0) return;
+    bewaarStap();
+    let n = i;
+    if(n < 0){
+      const nieuw = nieuwObjectOp(w);
+      if(kistBotst(nieuw)){ meld('Kisten kunnen niet door elkaar heen.'); return; }
+      level.objecten.push(nieuw); n = level.objecten.length - 1;
+    }
+    const o = level.objecten[n];
+    muis.sleeptObj = { o, dx: w.x/BLOK - o.x, dy: w.y/BLOK - o.y };
+    return;
+  }
+  if(soortKeuze === null) return;
+  bewaarStap(); if(e.button === 2) muis.rechtsDeed = true;
+  muis.bezig = true; muis.gummen = e.button === 2 || soortKeuze === GUM || soortKeuze === KLEURGUM; muis.kleur = kleurModus();
+  const soort = muis.gummen ? (muis.kleur ? KLEURGUM : 0) : soortKeuze;
+  if(gereedschap === 'rechthoek'){ muis.sleepStart = {...muis.blok}; }
+  else { verf(muis.blok.x, muis.blok.y, soort); const weg = (muis.gummen && !muis.kleur) ? gumPenseel(muis.blok.x, muis.blok.y) : 0; vernieuwStreek(muis.blok, muis.blok, weg); muis.vorige = {...muis.blok}; }
+});
+doek.addEventListener('pointermove', e => {
+  muisPositie(e); muis.binnen = true;
+  if(muis.meet && meting){ meting.z = {...muis.blok}; return; }
+  if(muis.sleept){ const off = muis.sleepOff || { x: 0, y: 0 }; level[muis.sleept] = { x: rond(muis.wereld.x + off.x), y: rond(muis.wereld.y + off.y) }; return; }
+  if(muis.sleeptObj){
+    const s = muis.sleeptObj, ox = s.o.x, oy = s.o.y;
+    s.o.x = Math.round(muis.wereld.x/BLOK - s.dx); s.o.y = Math.round(muis.wereld.y/BLOK - s.dy); legObjectBinnen(s.o);
+    if(kistBotst(s.o)){ s.o.x = ox; s.o.y = oy; }   // niet op een andere kist
+    return;
+  }
+  if(muis.bezig && gereedschap === 'penseel'){
+    verfLijn(muis.vorige, muis.blok, muis.gummen ? (muis.kleur ? KLEURGUM : 0) : soortKeuze); const weg = (muis.gummen && !muis.kleur) ? gumLijn(muis.vorige, muis.blok) : 0; vernieuwStreek(muis.vorige, muis.blok, weg); muis.vorige = {...muis.blok};
+  }
+});
+doek.addEventListener('pointerup', () => {
+  if(muis.meet){ muis.meet = false; return; }   // de meting blijft staan tot je M loslaat
+  if(gereedschap === 'stempel' && !stempel && muis.sleepStart){
+    pakStempel(rechthoekVan(muis.sleepStart, muis.blok)); muis.sleepStart = null; return;
+  }
+  if(muis.bezig && gereedschap === 'rechthoek' && muis.sleepStart){
+    const r = rechthoekVan(muis.sleepStart, muis.blok), soort = muis.gummen ? (muis.kleur ? KLEURGUM : 0) : soortKeuze;
+    for(let y=r.y0;y<=r.y1;y++) for(let x=r.x0;x<=r.x1;x++) zetVak(y*level.breed+x, soort);
+    if(muis.gummen && !muis.kleur) gumObjecten(r.x0, r.y0, r.x1, r.y1);
+    vernieuwVast();
+  }
+  if(muis.sleeptObj) vernieuwVast();
+  if(muis.bezig && ruimLosseBlokjesOp()) vernieuwVast();   // (v1.29) losse restjes van het gummen weg
+  if(muis.bezig || muis.sleept || muis.sleeptObj) markeerGewijzigd();
+  muis.bezig = false; muis.sleepStart = null; muis.sleept = null; muis.sleeptObj = null; muis.sleepOff = null;
+});
+doek.addEventListener('pointerleave', () => { muis.binnen = false; $('positie').textContent = 'Blokje: –'; });
+
+window.addEventListener('keydown', e => {
+  if(e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+  const k = e.key.toLowerCase();
+  if((e.ctrlKey||e.metaKey) && k === 'z'){ e.preventDefault(); e.shiftKey ? herhaal() : ongedaan(); return; }
+  if((e.ctrlKey||e.metaKey) && k === 'y'){ e.preventDefault(); herhaal(); return; }
+  if((e.ctrlKey||e.metaKey) && k === 's'){ e.preventDefault(); opslaan(); return; }
+  const s = SOORTEN.find(s => s.toets === k); if(s) kiesSoort(s.id);
+  if(k === 'e') kiesSoort(GUM);
+  if(k === 'p'){ gereedschap = 'penseel'; markeer(); }
+  if(k === 'r'){ gereedschap = 'rechthoek'; markeer(); }
+  if(k === 's' && !(e.ctrlKey||e.metaKey)) kiesGereedschap('stempel');
+  if(k === 'm' && !e.repeat){ meetAan = true; meting = null; doek.style.cursor = 'crosshair'; meld('Meetlat: sleep met de linkermuis. Laat M los om de meting weg te halen.'); }
+  if(e.key === 'Shift') muis.shift = true;
+  if(e.key === 'Alt'){ muis.alt = true; if(gereedschap === 'stempel') e.preventDefault(); }
+  if(k === 'g'){ rasterAan = !rasterAan; markeer(); }
+  if(k === 'o' && !(e.ctrlKey||e.metaKey)) wisselObjectMenu();
+  if(k === 't' && !$('proefLaag').classList.contains('open')) proefspelen();
+  if(e.key === 'Escape' && $('proefLaag').classList.contains('open')) terugNaarEditor();
+  else if(e.key === 'Escape'){ sluitObjectMenu(); if(stempel){ stempel = null; meld('Stempel leeg.'); } }
+});
+window.addEventListener('keyup', e => {
+  if(e.key.toLowerCase() === 'm'){ meetAan = false; meting = null; muis.meet = false; doek.style.cursor = ''; }
+  if(e.key === 'Shift') muis.shift = false;
+  if(e.key === 'Alt'){ muis.alt = false; e.preventDefault(); }
+});
+window.addEventListener('blur', () => { muis.alt = false; meetAan = false; meting = null; muis.meet = false; doek.style.cursor = ''; });
+
+// ---- Breedte veranderen (bestaande blokjes blijven staan) ----
+$('breedte').onchange = () => {
+  bewaarStap();
+  const schermen = +$('breedte').value, nieuw = Math.round(SCHERM_BREED*schermen);
+  const r = new Uint8Array(nieuw*HOOGTE);
+  for(let y=0;y<HOOGTE;y++) for(let x=0;x<Math.min(nieuw,level.breed);x++) r[y*nieuw+x] = level.raster[y*level.breed+x];
+  // grondlaag doortrekken als het level breder wordt
+  for(let y=0;y<HOOGTE;y++) for(let x=level.breed;x<nieuw;x++) r[y*nieuw+x] = level.raster[y*level.breed+level.breed-1];
+  const kl = new Uint8Array(nieuw*HOOGTE);
+  for(let y=0;y<HOOGTE;y++) for(let x=0;x<Math.min(nieuw,level.breed);x++) kl[y*nieuw+x] = level.kleur[y*level.breed+x];
+  level.raster = r; level.kleur = kl; level.breed = nieuw; level.schermen = schermen;
+  level.objecten = level.objecten.filter(o => o.x + objectMaat(o).b <= nieuw);
+  level.wolk.x = Math.min(level.wolk.x, nieuw*BLOK - 20); level.potlood.x = Math.min(level.potlood.x, nieuw*BLOK - 20);
+  pasMaatAan(); vernieuwVast(); markeerGewijzigd();
+  $('breedte').blur(); // zodat sneltoetsen (zoals Ctrl+Z) daarna meteen weer werken
+};
+
+// =====================================================================
+// OPSLAAN EN OPENEN
+// =====================================================================
+// (v1.29) Een los blokje zachte grond of rots, met boven, onder, links en rechts alleen lucht, zie je niet
+// (de randen worden glad getekend), maar in het spel telde het wel als vaste grond. Zo'n restje van het
+// gummen ruimen we vanzelf op: na elke penseelstreek, bij het openen en bij het opslaan. (Het spel doet hetzelfde.)
+function ruimLosseBlokjesOp(){
+  const b = level.breed, leeg = (x, y) => x < 0 || y < 0 || x >= b || y >= HOOGTE || level.raster[y*b + x] === 0;
+  let weg = 0;
+  for(let y = 0; y < HOOGTE; y++) for(let x = 0; x < b; x++){
+    const s = level.raster[y*b + x];
+    if((s === 2 || s === 6 || s === 7 || s === 8 || s === 10) && leeg(x-1, y) && leeg(x+1, y) && leeg(x, y-1) && leeg(x, y+1)){ level.raster[y*b + x] = 0; weg++; }
+  }
+  return weg;
+}
+function naarBestand(){
+  ruimLosseBlokjesOp();
+  const rijen = [];
+  for(let y=0;y<HOOGTE;y++){ let r = ''; for(let x=0;x<level.breed;x++) r += SOORTEN[level.raster[y*level.breed+x]].teken; rijen.push(r); }
+  return {
+    soort: 'oelieboelie-level', versie: 2,
+    nummer: +$('nummer').value, naam: $('naam').value,
+    oelieboelies: +$('aantal').value, moetenErIn: +$('teRedden').value,
+    typen: leesTypen(),
+    achtergrond: achtergrondNaam || null,
+    blokGrootte: BLOK, breedte: level.breed, hoogte: HOOGTE, schermen: level.schermen,
+    potlood: level.potlood, toverwolk: level.wolk,
+    objecten: level.objecten.map(o => ({...o})),
+    tekens: Object.fromEntries(SOORTEN.map(s => [s.teken, s.naam])),
+    raster: rijen,
+    ...(level.kleur.some(k => k) ? { kleurvlakken: Array.from({length: HOOGTE}, (_, y) => { let r = ''; for(let x=0;x<level.breed;x++){ const k = level.kleur[y*level.breed+x]; r += k ? KLEUREN[k-1].teken : '.'; } return r; }) } : {})
+  };
+}
+function vanBestand(d){
+  if(d.soort !== 'oelieboelie-level' || !Array.isArray(d.raster)) throw new Error('Dit is geen Oelieboelie-levelbestand.');
+  if(d.hoogte !== HOOGTE) throw new Error('dit level is gemaakt met een oudere editor (andere maat).');
+  const breed = d.breedte, r = new Uint8Array(breed*HOOGTE);
+  d.raster.forEach((rij,y) => { for(let x=0;x<breed && y<HOOGTE;x++){ const s = SOORTEN.find(s => s.teken === rij[x]); r[y*breed+x] = s ? s.id : 0; } });
+  const kl = new Uint8Array(breed*HOOGTE);
+  if(Array.isArray(d.kleurvlakken)) d.kleurvlakken.forEach((rij,y) => { for(let x=0;x<breed && y<HOOGTE;x++){ const i = KLEUREN.findIndex(k => k.teken === rij[x]); if(i >= 0) kl[y*breed+x] = i + 1; } });
+  level = { breed, raster:r, kleur: kl, schermen: d.schermen || breed/SCHERM_BREED, potlood: d.potlood, wolk: d.toverwolk,
+    objecten: (d.objecten || []).map(o => ({...o})) };
+  ruimLosseBlokjesOp();   // (v1.29)
+  $('nummer').value = d.nummer; $('naam').value = d.naam; $('aantal').value = d.oelieboelies; $('teRedden').value = d.moetenErIn;
+  zetTypen(d.typen);
+  achtergrondNaam = (d.achtergrond && achtergronden[d.achtergrond]) ? d.achtergrond : null;
+  vulAchtergrondKeuze();
+  $('breedte').value = String(level.schermen);
+}
+// =====================================================================
+// HET LEVELBOEK: alle levels samen in één bestand
+// =====================================================================
+// Het boek is een lijst levels (in bestandsvorm), op nummer gesorteerd. Het level dat je aan het
+// tekenen bent, staat 'open'; bij wisselen wordt het eerst in het boek teruggezet.
+// (v1.47) Twee standen. MAKERSSTAND (Arjen, via Start Oelieboelie op zijn eigen computer): het officiële levelboek
+// uit de map, Opslaan schrijft in website\levels\levelboek.json. SPELERSSTAND (online, of met ?speler in het adres):
+// alleen je eigen levels, bewaard in deze browser (en als bestand); de officiële levels zie je hier niet.
+const ADRES = new URLSearchParams(location.search);
+const MAKER = ['localhost', '127.0.0.1'].includes(location.hostname) && !ADRES.has('speler');
+const BOEK_SLEUTEL = MAKER ? 'oelieboelie_editor_levelboek_v1' : 'oelieboelie_spelerboek_v1';
+let boek = [], huidigNr = 1, gewijzigd = false;
+
+function sorteerBoek(){ boek.sort((a,b) => a.nummer - b.nummer); }
+function bewaarHuidig(){
+  // altijd bewaren onder het nummer van het level dat open staat (niet wat er net in het vakje getypt is:
+  // een nieuw nummer wordt pas verwerkt door hernummer, anders kunnen er twee levels met hetzelfde nummer ontstaan)
+  const d = naarBestand(); d.nummer = huidigNr;
+  const i = boek.findIndex(l => l.nummer === huidigNr);
+  if(i >= 0) boek[i] = d; else boek.push(d);
+  huidigNr = d.nummer; sorteerBoek();
+}
+function vernieuwLijst(){
+  const lijst = $('levellijst'); lijst.innerHTML = '';
+  for(const l of boek){
+    const b = document.createElement('button'); b.className = 'keuze' + (l.nummer === huidigNr ? ' aan' : '');
+    b.innerHTML = `<span><span class="nr">${l.nummer}</span>${(l.naam || '').replace(/</g,'&lt;')}</span>`;
+    b.onclick = () => { if(l.nummer !== huidigNr) kiesLevel(l.nummer); };
+    lijst.appendChild(b);
+  }
+  const aan = lijst.querySelector('.aan'); if(aan) aan.scrollIntoView({block:'nearest'});
+}
+function toonLevel(d){
+  vanBestand(d); huidigNr = d.nummer;
+  terug = []; vooruit = [];          // Terug/Opnieuw geldt per level
+  pasMaatAan(); vernieuwVast(); vernieuwLijst();
+}
+function kiesLevel(n){
+  bewaarHuidig();
+  const d = boek.find(l => l.nummer === n); if(!d) return;
+  toonLevel(d); bewaarConcept(); meld(`Level ${n} geopend.`);
+}
+// Twee levels met hetzelfde nummer (kon in oudere editors gebeuren)? Het tweede komt achteraan in het boek.
+let dubbelMelding = '';
+function herstelDubbel(){
+  const gezien = new Set(), verplaatst = [];
+  for(const l of boek){
+    if(!gezien.has(l.nummer)){ gezien.add(l.nummer); continue; }
+    let n = Math.max(...boek.map(m => m.nummer)) + 1;   // achteraan in het boek
+    verplaatst.push(`level ${l.nummer}${l.naam ? ' ("' + l.naam + '")' : ''} is nu level ${n}`);
+    l.nummer = n; gezien.add(n);
+  }
+  if(!verplaatst.length) return false;
+  sorteerBoek();
+  dubbelMelding = 'Er stonden twee levels met hetzelfde nummer in het boek: ' + verplaatst.join('; ') + '. Bekijk ze allebei en verwijder het level dat je niet wilt houden.';
+  return true;
+}
+function vrijNummer(){ let n = 1; while(boek.some(l => l.nummer === n)) n++; return n; }
+function nieuwLevel(){
+  bewaarHuidig();
+  const n = vrijNummer();
+  level = leegLevel(1);
+  $('nummer').value = n; $('naam').value = 'Level ' + n; $('aantal').value = 10; $('teRedden').value = 5;
+  $('breedte').value = '1'; zetTypen(null);
+  // achtergrondNaam blijft staan: een nieuw level krijgt dezelfde achtergrond als het level waar je was
+  huidigNr = n; bewaarHuidig();
+  toonLevel(boek.find(l => l.nummer === n)); markeerGewijzigd(); meld(`Nieuw level ${n} toegevoegd.`);
+}
+function verwijderLevel(){
+  if(!confirm(`Level ${huidigNr} ("${$('naam').value}") uit het levelboek halen?`)) return;
+  boek = boek.filter(l => l.nummer !== huidigNr);
+  if(!boek.length){ level = leegLevel(1); $('nummer').value = 1; $('naam').value = 'Level 1'; zetTypen(null); huidigNr = 1; bewaarHuidig(); }
+  toonLevel(boek[0]); markeerGewijzigd(); meld('Level verwijderd.');
+}
+// Levelnummer veranderen = dit level een ander nummer geven (niet: een ander level openen)
+function hernummer(){
+  const n = Math.round(+$('nummer').value);
+  if(!(n >= 1 && n <= 100)){ $('nummer').value = huidigNr; meld('Kies een levelnummer van 1 tot en met 100.'); return; }
+  if(n === huidigNr) return;
+  if(boek.some(l => l.nummer === n)){
+    $('nummer').value = huidigNr;
+    meld(`Level ${n} bestaat al. Wil je dat level zien? Klik het aan in de lijst links.`); return;
+  }
+  const oud = huidigNr;
+  boek = boek.filter(l => l.nummer !== oud); huidigNr = n; bewaarHuidig();
+  vernieuwLijst(); markeerGewijzigd(); meld(`Dit level heeft nu nummer ${n}.`);
+}
+
+// ---- Levels naar voren / naar achteren schuiven (wisselt van nummer met de buur) ----
+function verschuif(stap){
+  bewaarHuidig();
+  const i = boek.findIndex(l => l.nummer === huidigNr), j = i + stap;
+  if(j < 0 || j >= boek.length){ meld(stap < 0 ? 'Dit is al het eerste level.' : 'Dit is al het laatste level.'); return; }
+  const a = boek[i], b = boek[j], na = b.nummer;
+  b.nummer = a.nummer; a.nummer = na;
+  huidigNr = na; $('nummer').value = na; sorteerBoek();
+  vernieuwLijst(); markeerGewijzigd(); meld(`Dit level is nu level ${na}.`);
+}
+$('omhoog').onclick = () => verschuif(-1);
+// ---- Leegmaken: het veld terug naar de beginstand; nummer, naam, achtergrond en aantallen blijven ----
+function leegmaken(){
+  if(!confirm(`Het veld van level ${huidigNr} leegmaken? Alleen de grondlaag onderaan blijft staan. (Met Terug maak je dit ongedaan.)`)) return;
+  bewaarStap();
+  level = leegLevel(level.schermen);
+  pasMaatAan(); vernieuwVast(); markeerGewijzigd();
+  meld('Het veld is leeggemaakt. Terug (Ctrl+Z) zet alles terug.');
+}
+$('leegmaken').onclick = leegmaken;
+$('omlaag').onclick = () => verschuif(+1);
+
+// ---- Achtergronden: plaatjes worden één keer in het boek bewaard; een level verwijst ernaar met een naam ----
+const ACHTERGROND_HOOGTE = 896;   // = hoogte van een level in spelpixels
+let achtergronden = {}, achtergrondNaam = null;
+// (v1.48) De plaatjes van de achtergronden zijn groot. Die bewaren we niet in het kleine laatje van de browser
+// (localStorage, ca. 5 MB) maar in de grote opslag (IndexedDB). In het laatje staan alleen de levels.
+// Spelersstand: Arjens achtergronden komen steeds uit levels/levelboek.json (OFFICIEEL) en worden niet bewaard;
+// alleen eigen plaatjes van de speler gaan de grote opslag in.
+const OFFICIEEL = {};
+const OPSLAG_DB = (() => { let p = null; return () => p || (p = new Promise((ok, mis) => {
+  const r = indexedDB.open('oelieboelie', 1); r.onupgradeneeded = () => r.result.createObjectStore('opslag');
+  r.onsuccess = () => ok(r.result); r.onerror = () => mis(r.error); })); })();
+async function idbZet(sleutel, waarde){ try{ const db = await OPSLAG_DB(); await new Promise((ok, mis) => {
+  const tx = db.transaction('opslag', 'readwrite'); tx.objectStore('opslag').put(waarde, sleutel); tx.oncomplete = ok; tx.onerror = () => mis(tx.error); }); return true; }
+  catch(e){ meld('Let op: je browser kon de plaatjes niet bewaren. Bewaar je levels ook als bestand.'); return false; } }
+async function idbHaal(sleutel){ try{ const db = await OPSLAG_DB(); return await new Promise((ok, mis) => {
+  const r = db.transaction('opslag').objectStore('opslag').get(sleutel); r.onsuccess = () => ok(r.result); r.onerror = () => mis(r.error); }); }
+  catch(e){ return undefined; } }
+const ACHTERGROND_SLEUTEL = BOEK_SLEUTEL + '_achtergronden';
+function eigenAchtergronden(){ return Object.fromEntries(Object.entries(achtergronden).filter(([n, v]) => MAKER || OFFICIEEL[n] !== v)); }
+function bewaarAchtergronden(){ idbZet(ACHTERGROND_SLEUTEL, eigenAchtergronden()); }
+async function laadAchtergronden(){
+  if(!MAKER){ try{ const r = await fetch('levels/levelboek.json', { cache: 'no-store' });
+    if(r.ok){ const d = await r.json(); Object.assign(OFFICIEEL, d.achtergronden || {}); } }catch(e){} }
+  const eigen = await idbHaal(ACHTERGROND_SLEUTEL);
+  achtergronden = { ...OFFICIEEL, ...achtergronden, ...(eigen || {}) };
+}
+const achtergrondCache = {};
+function achtergrondPlaatje(naam){
+  if(!naam || !achtergronden[naam]) return null;
+  let c = achtergrondCache[naam];
+  if(!c || c.src !== achtergronden[naam]){ c = new Image(); c.src = achtergronden[naam]; achtergrondCache[naam] = c; }
+  return c;
+}
+// even hoog als het level; is het level breder dan het plaatje, dan herhaalt het zich naar rechts
+// De achtergrond iets vlakker en minder fel maken, zodat de voorgrond (o's, terrein, wolk) eruit springt.
+// 1 = precies zoals getekend; lager = minder contrast / minder kleur. Wordt per plaatje één keer uitgerekend.
+const ACHTERGROND_CONTRAST = 0.45;
+const ACHTERGROND_VERZADIGING = 0.9;
+function zachteAchtergrond(img){
+  if(img._zacht) return img._zacht;
+  if(ACHTERGROND_CONTRAST === 1 && ACHTERGROND_VERZADIGING === 1) return img;
+  const c = document.createElement('canvas'); c.width = img.naturalWidth || img.width; c.height = img.naturalHeight || img.height;
+  const g = c.getContext('2d'); g.drawImage(img, 0, 0);
+  try {
+    const d = g.getImageData(0, 0, c.width, c.height), p = d.data, k = ACHTERGROND_CONTRAST, s = ACHTERGROND_VERZADIGING;
+    let som = 0;   // gemiddelde helderheid: daar omheen wordt het contrast kleiner, zodat het beeld niet donkerder of lichter wordt
+    for(let i = 0; i < p.length; i += 4) som += 0.299*p[i] + 0.587*p[i+1] + 0.114*p[i+2];
+    const m = som/(p.length/4);
+    for(let i = 0; i < p.length; i += 4){
+      const l = 0.299*p[i] + 0.587*p[i+1] + 0.114*p[i+2];
+      for(let j = 0; j < 3; j++) p[i+j] = (l + (p[i+j] - l)*s - m)*k + m;
+    }
+    g.putImageData(d, 0, 0);
+  } catch(e){ return img; }   // lukt het niet, dan gewoon het origineel
+  img._zacht = c; return c;
+}
+function tekenAchtergrond(c, img, B, H){
+  if(!img || !img.complete || !img.width) return;
+  const w = img.width*H/img.height;
+  c.save(); c.beginPath(); c.rect(0, 0, B, H); c.clip();   // niet buiten de bladzijde
+  const bron = zachteAchtergrond(img);
+  for(let x=0; x<B; x+=w) c.drawImage(bron, x, 0, w, H);
+  c.restore();
+}
+function vulAchtergrondKeuze(){
+  const k = $('achtergrond'); k.innerHTML = '';
+  const optie = (waarde, tekst) => { const o = document.createElement('option'); o.value = waarde; o.textContent = tekst; k.appendChild(o); };
+  optie('', 'Geen');
+  if(MAKER) for(const naam of Object.keys(achtergronden).sort()) optie(naam, naam);
+  else {   // (v1.48) spelers: eerst Arjens achtergronden, dan hun eigen plaatjes
+    const groep = (titel, namen) => { if(!namen.length) return; const g = document.createElement('optgroup'); g.label = titel;
+      for(const n of namen){ const o = document.createElement('option'); o.value = n; o.textContent = n; g.appendChild(o); } k.appendChild(g); };
+    const alle = Object.keys(achtergronden).sort((a, b) => a.localeCompare(b, 'nl', { numeric: true }));
+    groep('Van Oelieboelie', alle.filter(n => OFFICIEEL[n] === achtergronden[n]));
+    groep('Mijn plaatjes', alle.filter(n => OFFICIEEL[n] !== achtergronden[n]));
+  }
+  optie('__laden', 'Afbeelding laden…');
+  k.value = achtergrondNaam || '';
+}
+$('achtergrond').onchange = () => {
+  const w = $('achtergrond').value;
+  if(w === '__laden'){ $('achtergrond').value = achtergrondNaam || ''; $('achtergrondBestand').click(); return; }
+  achtergrondNaam = w || null; markeerGewijzigd(); $('achtergrond').blur();
+};
+$('achtergrondBestand').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ''; if(!f) return;
+  try{
+    const img = new Image(); img.src = URL.createObjectURL(f); await img.decode();
+    // verkleinen tot levelhoogte, zodat het levelboek niet onnodig groot wordt
+    const h = Math.min(ACHTERGROND_HOOGTE, img.height), w = Math.round(img.width*h/img.height);
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    c.getContext('2d').drawImage(img, 0, 0, w, h); URL.revokeObjectURL(img.src);
+    let naam = f.name.replace(/\.[^.]+$/, '');
+    if(!MAKER && OFFICIEEL[naam]) naam += ' (eigen)';   // (v1.48) nooit een achtergrond van Oelieboelie overschrijven
+    achtergronden[naam] = c.toDataURL('image/webp', 0.85);
+    bewaarAchtergronden();
+    achtergrondNaam = naam; vulAchtergrondKeuze(); markeerGewijzigd();
+    meld(`Achtergrond "${naam}" geladen voor dit level. Kies hem bij andere levels in de lijst Achtergrond.`);
+  }catch(err){ meld('Deze afbeelding kon niet geladen worden.'); }
+};
+function gebruikteAchtergronden(){
+  const in_gebruik = new Set(boek.map(l => l.achtergrond).filter(Boolean));
+  return Object.fromEntries(Object.entries(achtergronden).filter(([n]) => in_gebruik.has(n)));
+}
+
+function opslaan(){
+  bewaarHuidig();
+  if(!MAKER){   // (v1.47) spelersstand: bewaren in deze browser; je vindt je levels in het huisje aan de muur
+    gewijzigd = false; bewaarConcept();
+    meld(`Bewaard! Je ${boek.length === 1 ? 'level hangt' : boek.length + ' levels hangen'} in het huisje aan de muur (Mijn levels).`);
+    return;
+  }
+  const fouten = [];
+  for(const l of boek) if(l.moetenErIn > l.oelieboelies) fouten.push(`level ${l.nummer}: er moeten er meer in de wolk dan er getekend worden`);
+  achtergronden = gebruikteAchtergronden(); vulAchtergrondKeuze(); bewaarAchtergronden();   // ongebruikte plaatjes gaan er niet mee in
+  const tekst = JSON.stringify({ soort: 'oelieboelie-levelboek', versie: 1, achtergronden, levels: boek }, null, 1);
+  const klaar = waar => {
+    gewijzigd = false; bewaarConcept();
+    meld(fouten.length ? 'Opgeslagen, maar let op: ' + fouten.join('; ') + '.'
+                       : `Levelboek opgeslagen ${waar} (${boek.length} level${boek.length===1?'':'s'}).`);
+  };
+  // Via 'Start Oelieboelie' schrijft de minisite het boek meteen in website\levels\levelboek.json;
+  // lukt dat niet (bijv. de editor los geopend), dan gaat het zoals vroeger naar Downloads.
+  fetch('opslaan/levelboek', { method: 'POST', headers: {'Content-Type':'application/json'}, body: tekst })
+    .then(r => { if(!r.ok) throw new Error(r.status); klaar('in je map (website\\levels\\levelboek.json)'); })
+    .catch(() => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([tekst], {type:'application/json'}));
+      a.download = 'levelboek.json'; a.click(); URL.revokeObjectURL(a.href);
+      klaar('als levelboek.json in je map Downloads');
+    });
+}
+$('opslaan').onclick = opslaan;
+$('alsBestand').onclick = () => {   // (v1.47) het hele boek als bestand (in Downloads)
+  bewaarHuidig();
+  const tekst = JSON.stringify({ soort: 'oelieboelie-levelboek', versie: 1, achtergronden: gebruikteAchtergronden(), levels: boek }, null, 1);
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([tekst], {type:'application/json'}));
+  a.download = MAKER ? 'levelboek.json' : 'mijn-oelieboelie-levels.json'; a.click(); URL.revokeObjectURL(a.href);
+  meld('Bewaard als bestand in je map Downloads. Met Openen… haal je het later weer terug.');
+};
+$('naarHuisje').onclick = () => { location.href = 'index.html?plek=huisje'; };   // (v1.46) terug naar het openingsscherm (niet opgeslagen werk: de browser vraagt het eerst)
+$('openen').onclick = () => $('bestand').click();
+$('bestand').onchange = async e => {
+  const f = e.target.files[0]; if(!f) return;
+  try{
+    const d = JSON.parse(await f.text());
+    if(d.soort === 'oelieboelie-levelboek'){
+      if(!Array.isArray(d.levels) || !d.levels.length) throw new Error('dit levelboek is leeg.');
+      if(!confirm(`Het levelboek in de editor vervangen door ${f.name} (${d.levels.length} levels)?`)) return;
+      const bewaar = level; d.levels.forEach(l => vanBestand(l)); level = bewaar;   // eerst controleren of alle levels kloppen
+      achtergronden = MAKER ? (d.achtergronden || {}) : { ...OFFICIEEL, ...(d.achtergronden || {}) }; bewaarAchtergronden();
+      boek = d.levels.map(l => ({...l})); sorteerBoek();
+      const dubbel = herstelDubbel();
+      toonLevel(boek[0]); gewijzigd = dubbel; bewaarConcept(); meld(dubbel ? dubbelMelding : `${f.name} geopend: ${boek.length} levels.`, dubbel ? 30000 : 0);
+    } else {
+      // één los levelbestand: toevoegen aan het boek
+      bewaarHuidig();
+      const bewaar = level; vanBestand(d); level = bewaar;
+      if(boek.some(l => l.nummer === d.nummer) && !confirm(`Level ${d.nummer} staat al in het boek. Vervangen door ${f.name}?`)){ toonLevel(boek.find(l => l.nummer === huidigNr)); return; }
+      boek = boek.filter(l => l.nummer !== d.nummer); boek.push(d); sorteerBoek();
+      toonLevel(d); markeerGewijzigd(); meld(`${f.name} toegevoegd als level ${d.nummer}.`);
+    }
+  }
+  catch(err){ meld('Openen lukte niet: ' + err.message); toonLevel(boek.find(l => l.nummer === huidigNr) || boek[0]); }
+  finally{ e.target.value = ''; }
+};
+$('nieuw').onclick = nieuwLevel;
+$('verwijder').onclick = verwijderLevel;
+$('nummer').addEventListener('change', hernummer);
+$('naam').addEventListener('change', () => { bewaarHuidig(); vernieuwLijst(); markeerGewijzigd(); });
+['aantal','teRedden', ...TYPEN.map(t => 'aantal_'+t)].forEach(id => $(id).addEventListener('change', () => { markeerGewijzigd(); }));
+
+let meldTimer;
+function meld(t, duur){ $('melding').textContent = t; clearTimeout(meldTimer); meldTimer = setTimeout(() => $('melding').textContent = '', duur || 7000); }
+
+// Tussentijds bewaren in de browser, zodat je werk niet weg is als je het venster per ongeluk sluit
+function markeerGewijzigd(){ gewijzigd = true; bewaarConcept(); }
+function bewaarConcept(){
+  try{ bewaarHuidig(); localStorage.setItem(BOEK_SLEUTEL, JSON.stringify({ boek, huidigNr, gewijzigd })); }   // (v1.48) plaatjes staan in de grote opslag
+  catch(e){ if(!bewaarConcept.gemeld){ bewaarConcept.gemeld = true; meld('Let op: je browser kan het boek niet meer tussentijds bewaren (te groot). Sla regelmatig op!'); } }
+}
+function laadConcept(){
+  try{
+    const t = localStorage.getItem(BOEK_SLEUTEL);
+    if(t){ const c = JSON.parse(t); if(Array.isArray(c.boek) && c.boek.length){ boek = c.boek; huidigNr = c.huidigNr; gewijzigd = !!c.gewijzigd; achtergronden = c.achtergronden || {}; if(herstelDubbel()) gewijzigd = true; return true; } }
+    const oud = localStorage.getItem(OPSLAG_SLEUTEL);   // werk uit een oudere editor (één level)
+    if(oud){ boek = [JSON.parse(oud)]; huidigNr = boek[0].nummer; gewijzigd = true; return true; }
+  }catch(e){}
+  return false;
+}
+window.addEventListener('beforeunload', e => { if(MAKER && gewijzigd){ e.preventDefault(); e.returnValue = ''; } });   // (v1.47) spelers: alles wordt toch steeds bewaard
+
+// =====================================================================
+// PROEFSPELEN: het spel zit in de editor en speelt het level dat je nu aan het tekenen bent
+// =====================================================================
+
+let spelGeladen = false, wachtendLevel = null;
+function proefspelen(){
+  if(!level.potlood || !level.wolk){ meld('Zet eerst een tover-potlood en een toverwolk in het level.'); return; }
+  if(typeof bewaarHuidig === 'function') bewaarHuidig();
+  const d = { level: naarBestand(), boek: (typeof boek !== 'undefined') ? boek : [], achtergronden: (typeof achtergronden !== 'undefined') ? achtergronden : {} };
+  $('proefNaam').textContent = `Level ${d.level.nummer}: ${d.level.naam}`;
+  $('proefLaag').classList.add('open');
+  const f = $('proefFrame');
+  if(!f.getAttribute('src')) f.src = 'spel.html';   // de eerste keer: het spel (index.html, naast de editor) opstarten
+  if(spelGeladen) f.contentWindow.postMessage({ soort: 'proefspelen', ...d }, '*');
+  else wachtendLevel = d;
+  setTimeout(() => f.focus(), 50);
+}
+function terugNaarEditor(){
+  $('proefLaag').classList.remove('open');
+  const f = $('proefFrame');
+  if(spelGeladen) f.contentWindow.postMessage({ soort: 'pauze' }, '*'); // het spel stilzetten zolang je tekent
+  doek.focus && doek.focus();
+}
+window.addEventListener('message', e => {
+  const b = e.data || {};
+  if(b.soort === 'spelKlaar'){ spelGeladen = true; if(wachtendLevel){ $('proefFrame').contentWindow.postMessage({ soort: 'proefspelen', ...wachtendLevel }, '*'); wachtendLevel = null; } }
+  if(b.soort === 'terugNaarEditor') terugNaarEditor();
+});
+$('proef').onclick = proefspelen;
+$('terug').onclick = terugNaarEditor;
+
+// =====================================================================
+// START
+// =====================================================================
+bouwObjectMenu();
+naObjectPlaatjes(() => { bouwObjectMenu(); markeer(); });   // plaatjes in het menu zodra ze geladen zijn
+bouwKeuzes();
+level = leegLevel(1);
+vulAchtergrondKeuze();
+// (v1.44) Bij het starten: is er nog werk dat niet is opgeslagen, dan komt dat terug.
+// Anders opent de editor het levelboek uit de map (website\levels\levelboek.json).
+async function boekUitMap(){
+  try{
+    const r = await fetch('levels/levelboek.json', { cache: 'no-store' });
+    if(!r.ok) return false;
+    const d = await r.json();
+    if(d.soort !== 'oelieboelie-levelboek' || !Array.isArray(d.levels) || !d.levels.length) return false;
+    const bewaar = level; d.levels.forEach(l => vanBestand(l)); level = bewaar;   // eerst controleren of alle levels kloppen
+    achtergronden = d.achtergronden || {}; vulAchtergrondKeuze(); bewaarAchtergronden();
+    boek = d.levels.map(l => ({...l})); sorteerBoek(); gewijzigd = herstelDubbel();
+    const oud = boek.find(l => l.nummer === huidigNr);
+    toonLevel(oud || boek[0]); bewaarConcept();
+    meld(dubbelMelding || `Levelboek uit je map geopend: ${boek.length} levels.`, dubbelMelding ? 30000 : 0);
+    return true;
+  }catch(e){ return false; }
+}
+// (v1.47) stand tonen; in de spelersstand geen 'Opslaan' naar de map en meteen naar het gevraagde level (?level=3)
+$('stand').textContent = MAKER ? ' · makersstand' : '';
+if(!MAKER) $('opslaan').title = 'Bewaar je levels in deze browser (Ctrl+S)';
+(async () => {
+  const concept = laadConcept();
+  const oudePlaatjes = { ...achtergronden };   // werk uit een oudere versie had de plaatjes nog in het laatje
+  await laadAchtergronden();
+  if(Object.keys(oudePlaatjes).length){ achtergronden = { ...achtergronden, ...oudePlaatjes }; bewaarAchtergronden(); bewaarConcept(); }
+  vulAchtergrondKeuze();
+  if(!MAKER){
+    const nr = +ADRES.get('level');
+    if(concept){ const d = (nr && boek.find(l => l.nummer === nr)) || boek.find(l => l.nummer === huidigNr) || boek[0];
+      try{ toonLevel(d); vulAchtergrondKeuze(); meld(nr ? `Level ${d.nummer} geopend: bouw maar verder!` : 'Je levels zijn er weer.'); return; } catch(e){} }
+    boek = []; huidigNr = 1; level = leegLevel(1); $('naam').value = 'Mijn eerste level'; bewaarHuidig(); toonLevel(boek[0]);
+    meld('Welkom aan de werktafel! Teken je level, zet een tover-potlood en een toverwolk neer en druk op Opslaan.', 12000);
+    return;
+  }
+  if(concept && gewijzigd){
+    const d = boek.find(l => l.nummer === huidigNr) || boek[0];
+    try{ toonLevel(d); vulAchtergrondKeuze(); meld(dubbelMelding || 'Je vorige werk (nog niet opgeslagen) is teruggezet.', dubbelMelding ? 30000 : 0); if(dubbelMelding) bewaarConcept(); return; }
+    catch(e){ /* dan het boek uit de map */ }
+  }
+  if(await boekUitMap()) return;
+  if(concept){
+    const d = boek.find(l => l.nummer === huidigNr) || boek[0];
+    try{ toonLevel(d); vulAchtergrondKeuze(); meld('Je vorige werk is teruggezet.'); return; } catch(e){}
+  }
+  boek = []; huidigNr = 1; level = leegLevel(1); $('naam').value = 'Level 1'; bewaarHuidig(); toonLevel(boek[0]);
+})();
+requestAnimationFrame(teken);
+</script>
+</body>
+</html>
