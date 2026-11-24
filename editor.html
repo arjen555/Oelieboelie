@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Oelieboelie Editor v1.51</title>
+<title>Oelieboelie Editor v1.52</title>
 <style>
   :root{ --bg:#16202b; --panel:#1f2b38; --panel2:#263445; --rand:#334457; --text:#e8eef5; --muted:#93a4b6; --accent:#7fb2ff; }
   *{box-sizing:border-box}
@@ -96,7 +96,7 @@
 <body>
 <div id="opgeslagen" role="status" aria-live="polite"><div class="vink">✓</div><div class="kop">Opgeslagen!</div><div class="uitleg"></div></div>
 <header>
-  <h1>Oelieboelie Editor<span>v1.51</span><span id="stand"></span></h1>
+  <h1>Oelieboelie Editor<span>v1.52</span><span id="stand"></span></h1>
   <label class="veld">Levelnummer<input id="nummer" type="number" min="1" max="100" value="1"></label>
   <label class="veld">Naam<input id="naam" type="text" value="Mijn eerste level"></label>
   <label class="veld" id="klaarVeld" title="Alleen klare levels staan in het prentenboek van de spelers (onaffe levels altijd achteraan zetten)">Klaar<input id="klaar" type="checkbox"></label>
@@ -1682,6 +1682,7 @@ function opslaan(){
   const klaar = waar => {
     gewijzigd = false; bewaarConcept();
     toonOpgeslagen(waar.startsWith('in je map') ? `${boek.length} levels in je levelboek. Versturen gaat met GitHub Desktop.` : 'Het levelboek staat in je map Downloads.');
+    if(waar.startsWith('in je map')) setTimeout(maakDuimnagels, 1900);   // (v1.52) daarna de plaatjes voor het prentenboek
     meld(fouten.length ? 'Opgeslagen, maar let op: ' + fouten.join('; ') + '.'
                        : `Levelboek opgeslagen ${waar} (${boek.length} level${boek.length===1?'':'s'}).`);
   };
@@ -1787,9 +1788,52 @@ function terugNaarEditor(){
 }
 window.addEventListener('message', e => {
   const b = e.data || {};
-  if(b.soort === 'spelKlaar'){ spelGeladen = true; if(wachtendLevel){ $('proefFrame').contentWindow.postMessage({ soort: 'proefspelen', ...wachtendLevel }, '*'); wachtendLevel = null; } }
-  if(b.soort === 'terugNaarEditor') terugNaarEditor();
+  if(b.soort === 'spelKlaar' && e.source === $('proefFrame').contentWindow){ spelGeladen = true; if(wachtendLevel){ $('proefFrame').contentWindow.postMessage({ soort: 'proefspelen', ...wachtendLevel }, '*'); wachtendLevel = null; } }
+  if(b.soort === 'terugNaarEditor' && e.source === $('proefFrame').contentWindow) terugNaarEditor();
 });
+// =====================================================================
+// (v1.52) DUIMNAGELS VOOR HET PRENTENBOEK (alleen makersstand)
+// Na Opslaan maakt de editor zelf de plaatjes (plaatjes/levels/levelN.webp): voor elk level dat nieuw is,
+// veranderd is of een ander nummer heeft gekregen. Dat gebeurt in een verborgen spelvenstertje; de minisite
+// zet het plaatje in de map. Welke plaatjes al kloppen, staat in localStorage (DUIM_SLEUTEL: nummer -> vingerafdruk).
+// =====================================================================
+const DUIM_SLEUTEL = 'oelieboelie_duimnagels_v1';
+function levelVingerafdruk(l){ const { naam, klaar, nummer, ...rest } = l; const t = JSON.stringify(rest);
+  let h = 0; for(let i = 0; i < t.length; i++) h = (h*31 + t.charCodeAt(i)) | 0; return h + ':' + t.length; }
+let duimFrame = null, duimGeladen = null, duimBezig = false;
+function duimSpel(){
+  if(duimGeladen) return duimGeladen;
+  duimFrame = document.createElement('iframe');
+  duimFrame.setAttribute('aria-hidden', 'true'); duimFrame.tabIndex = -1;
+  duimFrame.style.cssText = 'position:fixed;left:-20000px;top:0;width:1600px;height:900px;border:0;pointer-events:none';
+  duimGeladen = new Promise(ok => { const f = e => { if(e.source === duimFrame.contentWindow && (e.data || {}).soort === 'spelKlaar'){ window.removeEventListener('message', f); ok(); } };
+    window.addEventListener('message', f); });
+  duimFrame.src = 'spel.html'; document.body.appendChild(duimFrame);
+  return duimGeladen;
+}
+async function maakDuimnagels(){
+  if(!MAKER || duimBezig) return;
+  let klaar = {}; try{ klaar = JSON.parse(localStorage.getItem(DUIM_SLEUTEL) || '{}'); }catch(e){}
+  const nodig = boek.filter(l => l.potlood && l.toverwolk && klaar[l.nummer] !== levelVingerafdruk(l));
+  if(!nodig.length) return;
+  duimBezig = true;
+  try{
+    await duimSpel(); const w = duimFrame.contentWindow;
+    w.postMessage({ soort: 'duimnagelBoek', boek, achtergronden }, '*');
+    let gelukt = 0;
+    for(let i = 0; i < nodig.length; i++){ const l = nodig[i];
+      meld(`Plaatjes voor het prentenboek maken… ${i + 1} van ${nodig.length}`, 60000);
+      const blob = await new Promise(ok => {
+        const f = e => { const d = e.data || {}; if(e.source === w && d.soort === 'duimnagelKlaar' && d.nummer === l.nummer){ window.removeEventListener('message', f); clearTimeout(t); ok(d.blob); } };
+        const t = setTimeout(() => { window.removeEventListener('message', f); ok(null); }, 10000);
+        window.addEventListener('message', f); w.postMessage({ soort: 'duimnagel', level: l }, '*'); });
+      if(!blob) continue;
+      const r = await fetch('opslaan/duimnagel?nr=' + l.nummer, { method: 'POST', body: blob }).catch(() => null);
+      if(r && r.ok){ gelukt++; klaar[l.nummer] = levelVingerafdruk(l); try{ localStorage.setItem(DUIM_SLEUTEL, JSON.stringify(klaar)); }catch(e){} }
+    }
+    meld(`Klaar: ${gelukt} plaatje${gelukt === 1 ? '' : 's'} voor het prentenboek bijgewerkt.`);
+  } finally { duimBezig = false; }
+}
 $('proef').onclick = proefspelen;
 $('terug').onclick = terugNaarEditor;
 

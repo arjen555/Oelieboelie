@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Oelieboelie v1.64</title>
+<title>Oelieboelie v1.65</title>
 <style>
   :root{ --bg:#16202b; --panel:#1f2b38; --text:#e8eef5; --muted:#93a4b6; --accent:#7fb2ff; }
   *{box-sizing:border-box}
@@ -229,7 +229,7 @@
 // =====================================================================
 const TEKST = {
   titel: 'Oelieboelie',
-  versie: 'v1.64 · eigen achtergronden in de grote opslag',
+  versie: 'v1.65 · duimnagels door de editor',
   uitlegTeller: { getekend: 'Getekend', wolk: nodig => `In de toverwolk · nodig: ${nodig}`, af: 'Af' },
   draaiScherm: 'Draai je scherm een kwartslag',
   gum: 'Uitgummen: wie nog rondloopt wordt uitgegumd en het level stopt (twee keer drukken)',
@@ -5688,6 +5688,22 @@ if(IN_EDITOR){
       catch(err){ meld(err.message); }
     }
     if(b.soort === 'pauze') zetPauze(true);   // terug in de editor: het spel staat stil
+    // (v1.65) De editor laat (in een verborgen venstertje) duimnagels voor het prentenboek maken:
+    // het begin van het level, het eerste scherm breed, verkleind tot 360×201.
+    if(b.soort === 'duimnagelBoek'){
+      if(Array.isArray(b.boek)){ LEVELLIJST.length = 0; LEVELLIJST.push(...b.boek); }
+      if(b.achtergronden) Object.assign(ACHTERGRONDEN, b.achtergronden);
+    }
+    if(b.soort === 'duimnagel'){
+      try{ laadLevel(b.level); staat.rondleiding = null; zetPauze(true); staat.camX = 0; }
+      catch(err){ e.source.postMessage({ soort: 'duimnagelKlaar', nummer: b.level && b.level.nummer, blob: null }, '*'); return; }
+      setTimeout(() => {
+        const c = $('doek'), w = Math.min(c.width, Math.round(1600*beeld.schaal*beeld.dpr)), h = c.height;
+        const k = document.createElement('canvas'); k.width = 360; k.height = 201;
+        const g = k.getContext('2d'); g.imageSmoothingQuality = 'high'; g.drawImage(c, 0, 0, w, h, 0, 0, 360, 201);
+        k.toBlob(blob => e.source.postMessage({ soort: 'duimnagelKlaar', nummer: b.level.nummer, blob }, '*'), 'image/webp', 0.82);
+      }, 900);   // even wachten tot de achtergrond klaar is
+    }
   });
   window.addEventListener('keydown', e => { if(e.code === 'Escape') window.parent.postMessage({ soort: 'terugNaarEditor' }, '*'); });
 }
