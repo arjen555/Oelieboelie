@@ -57,6 +57,9 @@
     font-family:'Sniglet',sans-serif;font-weight:800;text-shadow:0 2px 2px rgba(60,40,20,.18)}
   #titelbord .nummer{left:444px;top:371px;color:#5b2a9a;font-size:44px}
   #titelbord .naam{left:438px;top:452px;color:#163f8f;font-size:52px}
+  /* (v1.67) naam van de maker (levels die spelers instuurden): klein onder de levelnaam */
+  #titelbord .maker{left:452px;top:588px;color:#fff8e6;font-size:44px;font-weight:800;
+    text-shadow:0 0 3px #3a1d08,0 0 3px #3a1d08,0 3px 4px rgba(0,0,0,.6)}
   #speelveld{flex:1;min-height:300px;position:relative;overflow:hidden}
   canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
   .paneel{display:flex;flex-wrap:wrap;gap:14px 28px;align-items:center;
@@ -193,6 +196,7 @@
   <img class="bordje voor" src="plaatjes/bordje.webp" alt="">
   <div class="regel nummer" id="bordNummer"></div>
   <div class="regel naam" id="bordNaam"></div>
+  <div class="regel maker" id="bordMaker"></div>
 </div>
 <header>
   <h1 id="titel"></h1><span class="versie" id="versie"></span>
@@ -236,12 +240,13 @@
 // =====================================================================
 const TEKST = {
   titel: 'Oelieboelie',
-  versie: 'v1.66 · terugknop tijdens het spelen',
+  versie: 'v1.67 · naam van de maker op het bordje',
   uitlegTeller: { getekend: 'Getekend', wolk: nodig => `In de toverwolk · nodig: ${nodig}`, af: 'Af' },
   draaiScherm: 'Draai je scherm een kwartslag',
   gum: 'Uitgummen: wie nog rondloopt wordt uitgegumd en het level stopt (twee keer drukken)',
   gumNogEens: 'Nog een keer op de gum drukken om alles uit te gummen',
-  levelnaam: (nr, naam) => `Level ${nr} · ${naam}`,
+  levelnaam: (nr, naam, maker) => `Level ${nr} · ${naam}` + (maker ? ` · door ${maker}` : ''),
+  doorMaker: maker => `door ${maker}`,
   teller: (getekend, totaal, binnen, nodig, af) =>
     `Getekend: ${getekend} / ${totaal}   ·   In de toverwolk: ${binnen} (nodig: ${nodig})   ·   Af: ${af}`,
   typen: { buildy: 'Buildy', fungy: 'Fungy', balloony: 'Balloony', bomby: 'Bomby', rocky: 'Rocky', roby: 'Roby', hooky: 'Hooky' },
@@ -635,6 +640,7 @@ function maakLevel(d){
   return { breed, B: breed*BLOK, H: LEVEL_HOOGTE*BLOK, raster,
     potlood: {...d.potlood}, wolk: {...d.toverwolk},
     aantal: d.oelieboelies, nodig: d.moetenErIn, nummer: d.nummer, naam: d.naam,
+    maker: (typeof d.maker === 'string' && d.maker.trim()) ? d.maker.trim().slice(0, 20) : null,   // (v1.67)
     achtergrond: d.achtergrond || null, kleurBeeld: maakKleurBeeld(d, breed), rots: maakRots(d, breed), mat: maakMat(d, breed),
     typen: Object.fromEntries(ALLE_TYPEN.map(t => [t, Math.max(0, (d.typen || STANDAARD_TYPEN)[t] || 0)])),
     objecten: (d.objecten || []).map(o => ({...o})), objKaart: null, onder: new Map(), gang: new Set(), trapVan: new Map(), trapKant: new Map() };
@@ -1305,8 +1311,8 @@ function nieuwSpel(){
   // tekst alvast (onzichtbaar) invullen, zodat de ruimte voor de uitslag vanaf het begin klopt
   $('geredTxt').textContent = TEKST.gered(level.aantal);
   $('tijdTxt').textContent = TEKST.uitslagRegel(level.nodig, 0);
-  $('levelnaam').textContent = TEKST.levelnaam(level.nummer, level.naam);
-  vulTitelbord(level.nummer, level.naam);
+  $('levelnaam').textContent = TEKST.levelnaam(level.nummer, level.naam, level.maker);
+  vulTitelbord(level.nummer, level.naam, level.maker);
   // raster kan door Buildy veranderd zijn: opnieuw opbouwen vanuit het levelbestand
   if(levelData){ level = maakLevel(levelData); stempelObjecten(); vernieuwVast(); staat.voorraad = {...level.typen}; }
   // de parachutes die in dit level klaarhangen
@@ -5257,14 +5263,15 @@ function meld(t){ $('melding').textContent = t; $('melding').classList.add('zich
 $('titel').textContent = TEKST.titel; $('versie').textContent = TEKST.versie;
 // Levelnummer en -naam op het titelbordje zetten. Is de naam te lang, dan wordt de letter
 // stapje voor stapje kleiner tot hij op het bordje past.
-function vulTitelbord(nr, naam){
-  const regels = [[$('bordNummer'), 'Level ' + nr, 44, 210], [$('bordNaam'), naam || '', 52, 395]];
+function vulTitelbord(nr, naam, maker){
+  const regels = [[$('bordNummer'), 'Level ' + nr, 44, 210], [$('bordNaam'), naam || '', 52, 395],
+    [$('bordMaker'), maker ? TEKST.doorMaker(maker) : '', 44, 600]];   // (v1.67) leeg als het level geen maker heeft
   for(const [el, tekst, max, breed] of regels){
     el.textContent = tekst; let s = max; el.style.fontSize = s + 'px';
     while(el.scrollWidth > breed && s > 14){ s--; el.style.fontSize = s + 'px'; }
   }
 }
-if(document.fonts) document.fonts.ready.then(() => { if(level) vulTitelbord(level.nummer, level.naam); });
+if(document.fonts) document.fonts.ready.then(() => { if(level) vulTitelbord(level.nummer, level.naam, level.maker); });
 $('opnieuw').title = TEKST.opnieuw; $('opnieuw').setAttribute('aria-label', TEKST.opnieuw);
 $('uitslagOpnieuw').title = TEKST.opnieuw; $('uitslagOpnieuw').setAttribute('aria-label', TEKST.opnieuw);
 $('draaiTxt').textContent = TEKST.draaiScherm;

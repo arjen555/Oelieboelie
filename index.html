@@ -33,7 +33,7 @@
   #lvlPlaatje{width:100%;border-radius:10px;display:block;border:2px solid rgba(122,61,18,.35)}
   #lvlKaart.toekomst #lvlPlaatje{filter:grayscale(1) sepia(1) hue-rotate(170deg) saturate(1.4) brightness(1.25) contrast(.8)}
   #lvlKaart.mist #lvlPlaatje{filter:none}   /* (v0.46) verder weg dan 3 levels: een mistwolk in plaats van het plaatje */
-  #lvlNr{font-size:14px;margin-top:8px;color:#8a5a2a} #lvlNaam{font-size:21px;font-weight:700;line-height:1.15;margin:2px 0 4px}
+  #lvlNr{font-size:14px;margin-top:8px;color:#8a5a2a} #lvlNaam{font-size:21px;font-weight:700;line-height:1.15;margin:2px 0 4px} #lvlMaker{font-size:14px;font-style:italic;color:#8a5a2a;margin:-2px 0 4px} #lvlMaker:empty{display:none}
   #lvlStand{font-size:14px;color:#8a5a2a;min-height:18px}
   #lvlSpeel{margin-top:8px;font:700 18px "Trebuchet MS",system-ui,sans-serif;color:#fff;background:#2aa36b;border:0;border-radius:18px;padding:8px 26px;cursor:pointer;box-shadow:0 4px 0 #1d7a50}
   #lvlKaart.toekomst #lvlSpeel{display:none}
@@ -116,7 +116,7 @@
   <label class="rij"><span><b>Loep</b><small>maakt het speelveld groter; zoomen met het muiswieltje of door te knijpen</small></span><input type="checkbox" id="optLoep"><i></i></label>
   <label class="rij"><span><b>Hoog contrast</b><small>rustige achtergrond, de oelieboelies en gevaren duidelijk omlijnd</small></span><input type="checkbox" id="optContrast"><i></i></label>
   <div class="noot">Tik buiten dit kader om verder te gaan.</div></div>
-<div id="lvlKaart"><img id="lvlPlaatje" alt=""><div id="lvlNr"></div><div id="lvlNaam"></div><div id="lvlStand"></div><div id="lvlKnoppen"><button id="lvlSpeel">▶ Speel</button><button id="lvlJoker">✨ Joker</button></div><div id="lvlZeker">Weet je het zeker? Je hebt maar één toverkrijtje.<br><button id="zekerNee">Nee</button><button id="zekerJa">Ja, gebruik</button></div></div>
+<div id="lvlKaart"><img id="lvlPlaatje" alt=""><div id="lvlNr"></div><div id="lvlNaam"></div><div id="lvlMaker"></div><div id="lvlStand"></div><div id="lvlKnoppen"><button id="lvlSpeel">▶ Speel</button><button id="lvlJoker">✨ Joker</button></div><div id="lvlZeker">Weet je het zeker? Je hebt maar één toverkrijtje.<br><button id="zekerNee">Nee</button><button id="zekerJa">Ja, gebruik</button></div></div>
 <button id="boekTerug" aria-label="terug naar de boeken" title="terug naar de boeken"><img alt="" src="plaatjes/opening/terug_boek.webp"></button>
 <button id="plekTerug" aria-label="terug naar de startpagina" title="terug naar de startpagina"><img alt="" src="plaatjes/opening/terug_plek.webp"></button>
 <div id="wisVraag"><div id="wisTitel"></div><div id="wisTekst"></div>
@@ -133,7 +133,7 @@
   <div><button id="naamNee">Toch niet</button><button id="naamOk">Klaar</button></div></div>
 <input type="range" id="volume" min="0" max="100" step="1" aria-label="Volume van de muziek">
 <button id="opnieuw" style="display:none" title="Speel het begin nog een keer af">↻ nog een keer</button>
-<div id="versie">openingsscherm v0.55</div>
+<div id="versie">openingsscherm v0.56</div>
 <script>
 // =====================================================================
 // OELIEBOELIE – OPENINGSSCHERM v0.46 (v0.46: mist op het kaartje verder dan 3 levels vooruit; startpagina van de website; v0.45: gekoppeld aan spel.html en editor.html)
@@ -1163,7 +1163,7 @@ function mijnKlik(k, t){
 // Rechtstreeks via het webadres van Firestore (geen extra bibliotheek nodig). De regels in Firebase bepalen wat mag:
 // iedereen mag insturen (met toestemming, niet te groot), alleen Arjen mag lezen en weggooien. De apiKey is geen geheim.
 const FIREBASE = { apiKey: 'AIzaSyB3M1J2srTFu3XF4rs-esHafs3Pz4xqUwk', projectId: 'oelieboelie-f6df6' };
-const INSTUUR_VERSIE = 'v0.55';
+const INSTUUR_VERSIE = 'v0.56';
 // (v0.54) Mailtje naar Arjen bij elke inzending, via Web3Forms (gratis, 250 per maand). De sleutel is openbaar bedoeld:
 // er kan alleen mee gemaild worden naar Arjens eigen adres. Het level zelf zit niet in de mail; dat staat in Firebase.
 const WEB3FORMS_SLEUTEL = '5fcbd2af-ff72-417d-b4a4-f6e86b02b496';
@@ -1206,12 +1206,25 @@ async function naarBrievenbus(l, bijnaam){
   mailArjen(l, bijnaam, !!plaatje);   // (v0.54) niet op wachten
 }
 let stuurVoor = null;
+// (v0.56) Stempel 'Ingestuurd' op velletjes die al naar Arjen zijn gestuurd. Per levelnummer onthouden we een
+// vingerafdruk van het level; verandert het level daarna, dan verdwijnt de stempel (en kun je de nieuwe versie insturen).
+const INGESTUURD_SLEUTEL = 'oelieboelie_ingestuurd_v1';
+const afdrukGeheugen = new WeakMap();   // niet elk beeldje opnieuw uitrekenen
+function levelAfdruk(l){ if(afdrukGeheugen.has(l)) return afdrukGeheugen.get(l);
+  const { nummer, ...rest } = l; const t = JSON.stringify(rest); let h = 0;
+  for(let i = 0; i < t.length; i++) h = (h*31 + t.charCodeAt(i)) | 0;
+  const a = h + ':' + t.length; afdrukGeheugen.set(l, a); return a; }
+let ingestuurdGeheugen = null;
+function ingestuurdLijst(){ if(!ingestuurdGeheugen){ try{ ingestuurdGeheugen = JSON.parse(localStorage.getItem(INGESTUURD_SLEUTEL) || '{}'); }catch(e){ ingestuurdGeheugen = {}; } } return ingestuurdGeheugen; }
+function isIngestuurd(l){ return ingestuurdLijst()[l.nummer] === levelAfdruk(l); }
+function onthoudIngestuurd(l){ const t = ingestuurdLijst(); t[l.nummer] = levelAfdruk(l); try{ localStorage.setItem(INGESTUURD_SLEUTEL, JSON.stringify(t)); }catch(e){} }
 function openStuur(l){ stuurVoor = l; const v = document.getElementById('stuurVraag');
   document.getElementById('stuurLevel').textContent = '\u2018' + (l.naam || ('Level ' + l.nummer)) + '\u2019';
   let oud = ''; try{ oud = localStorage.getItem('oelieboelie_bijnaam') || ''; }catch(e){}
   document.getElementById('stuurNaam').value = oud;
   document.getElementById('stuurVink').checked = false; document.getElementById('stuurOk').disabled = true;
   const m = document.getElementById('stuurMelding'); m.style.display = 'none'; m.textContent = ''; m.style.color = '#1d7a50';
+  if(isIngestuurd(l)){ m.textContent = 'Dit level heb je al ingestuurd. Heb je het verbeterd? Dan verdwijnt de stempel vanzelf en kun je de nieuwe versie sturen.'; m.style.color = '#7a3d12'; m.style.display = 'block'; }
   v.classList.add('zichtbaar'); }
 function sluitStuur(){ stuurVoor = null; const v = document.getElementById('stuurVraag'); if(v){ v.classList.remove('zichtbaar'); document.getElementById('stuurNaam').blur(); } }
 let stuurBezig = false;
@@ -1220,7 +1233,7 @@ async function stuurVerstuur(){ if(!stuurVoor || stuurBezig || !document.getElem
   try{ localStorage.setItem('oelieboelie_bijnaam', bijnaam); }catch(e){}
   const m = document.getElementById('stuurMelding'); m.style.color = '#1d7a50';
   m.textContent = 'Bezig met versturen…'; m.style.display = 'block'; stuurBezig = true; ok.disabled = true;
-  try{ await naarBrievenbus(l, bijnaam);
+  try{ await naarBrievenbus(l, bijnaam); onthoudIngestuurd(l);
     m.textContent = 'Verstuurd! Arjen gaat je level bekijken. Dank je wel!';
     if(OPTIES.geluid){ toon(659, 0, 0.2, 0.08); toon(880, 0.1, 0.2, 0.08); toon(1319, 0.2, 0.4, 0.08); }
     setTimeout(() => { if(stuurVoor === l) sluitStuur(); }, 2600); }
@@ -1232,6 +1245,15 @@ document.getElementById('stuurNee').onclick = sluitStuur;
 document.getElementById('stuurOk').onclick = stuurVerstuur;
 document.getElementById('stuurVink').onchange = e => { document.getElementById('stuurOk').disabled = !e.target.checked; };
 document.getElementById('stuurNaam').addEventListener('keydown', e => { if(e.key === 'Escape') sluitStuur(); });
+// (v0.56) rode stempel 'INGESTUURD', een beetje scheef, alsof hij erop gedrukt is
+function tekenStempel(x, y){
+  ctx.save(); ctx.translate(x, y); ctx.rotate(-0.24); ctx.globalAlpha *= 0.88;
+  ctx.strokeStyle = ctx.fillStyle = '#c8372d'; ctx.lineJoin = 'round';
+  ctx.lineWidth = 3; ctx.beginPath(); ctx.roundRect(-60, -17, 120, 34, 7); ctx.stroke();
+  ctx.lineWidth = 1.2; ctx.beginPath(); ctx.roundRect(-55, -12, 110, 24, 4); ctx.stroke();
+  ctx.font = '800 16px "Trebuchet MS", system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('INGESTUURD', 0, 1); ctx.restore();
+}
 function tekenMijn(t, al){
   const by = MIJN_Y + VEL_H/2 + 70;
   mijnZichtbaar().forEach((l, i) => { const x = MIJN_X[i], hoek = [-0.035, 0.02, -0.015][i];
@@ -1246,6 +1268,7 @@ function tekenMijn(t, al){
     let fs = 22; ctx.font = `700 ${fs}px "Trebuchet MS", system-ui, sans-serif`;
     while(ctx.measureText(l.naam || '').width > VEL_B && fs > 12){ fs--; ctx.font = `700 ${fs}px "Trebuchet MS", system-ui, sans-serif`; }
     ctx.fillText(l.naam || ('Level ' + l.nummer), 0, VEL_H/2 + 22);
+    if(isIngestuurd(l)) tekenStempel(VEL_B/2 - 52, -VEL_H/2 + 26);   // (v0.56)
     ctx.restore();
     for(const [dx, im, mag] of [[-60, IMG.hkSpeel, !!(l.potlood && l.toverwolk)], [60, IMG.hkBouw, true]]){ const [w, h] = mijnKnopMaat(im);
       ctx.save(); ctx.globalAlpha *= al*(mag ? 1 : 0.4); ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 3;
@@ -1599,7 +1622,7 @@ async function laadLevels(){
     const d = await r.json(), A = d.achtergronden || {};
     for(const l of [...(d.levels || [])].sort((a, b) => a.nummer - b.nummer)){
       if(l.klaar === false) break;   // (v0.48) het boek stopt bij het eerste level dat nog niet klaar is (onaffe levels staan altijd achteraan)
-      LEVELS.push({ nr: l.nummer, naam: l.naam });
+      LEVELS.push({ nr: l.nummer, naam: l.naam, maker: (typeof l.maker === 'string' && l.maker.trim()) ? l.maker.trim().slice(0, 20) : '' });   // (v0.56) maker
       if(l.achtergrond && A[l.achtergrond]) LEVEL_ACHTERGROND[l.nummer] = A[l.achtergrond];
     }
   }catch(e){}
@@ -1684,6 +1707,7 @@ function toonLvl(nr){
   pl.src = inMist ? mistPlaatje() : 'plaatjes/levels/level' + nr + '.webp';
   document.getElementById('lvlNr').textContent = 'Level ' + nr;
   document.getElementById('lvlNaam').textContent = st === 'toekomst' ? '???' : L.naam;
+  document.getElementById('lvlMaker').textContent = st !== 'toekomst' && L.maker ? 'door ' + L.maker : '';   // (v0.56)
   document.getElementById('lvlStand').textContent = st === 'gehaald' ? '★ gehaald' : st === 'volgende' ? 'Dit is je volgende level!'
     : st === 'half' ? 'Overgeslagen met je toverkrijtje. Haal hem alsnog, dan krijg je je krijtje terug!' : 'Haal eerst de levels hiervoor';
   k.classList.toggle('toekomst', st === 'toekomst'); k.classList.remove('vraag');
