@@ -4,6 +4,20 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Oelieboelie</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="description" content="Oelieboelie: een vrolijk puzzelspel in de browser. Help de oelieboelies veilig naar de finish!">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://oelieboelie.com/">
+<meta property="og:title" content="Oelieboelie">
+<meta property="og:description" content="Een vrolijk puzzelspel in de browser. Help de oelieboelies veilig naar de finish!">
+<meta property="og:image" content="https://oelieboelie.com/deelplaatje.jpg">
+<meta property="og:image:width" content="1080">
+<meta property="og:image:height" content="1080">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://oelieboelie.com/deelplaatje.jpg">
 <style>
   html,body{margin:0;height:100%;background:#1b2633;overflow:hidden;touch-action:manipulation}
   canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
@@ -133,7 +147,7 @@
   <div><button id="naamNee">Toch niet</button><button id="naamOk">Klaar</button></div></div>
 <input type="range" id="volume" min="0" max="100" step="1" aria-label="Volume van de muziek">
 <button id="opnieuw" style="display:none" title="Speel het begin nog een keer af">↻ nog een keer</button>
-<div id="versie">openingsscherm v0.56</div>
+<div id="versie">openingsscherm v0.57</div>
 <script>
 // =====================================================================
 // OELIEBOELIE – OPENINGSSCHERM v0.46 (v0.46: mist op het kaartje verder dan 3 levels vooruit; startpagina van de website; v0.45: gekoppeld aan spel.html en editor.html)
@@ -1163,7 +1177,7 @@ function mijnKlik(k, t){
 // Rechtstreeks via het webadres van Firestore (geen extra bibliotheek nodig). De regels in Firebase bepalen wat mag:
 // iedereen mag insturen (met toestemming, niet te groot), alleen Arjen mag lezen en weggooien. De apiKey is geen geheim.
 const FIREBASE = { apiKey: 'AIzaSyB3M1J2srTFu3XF4rs-esHafs3Pz4xqUwk', projectId: 'oelieboelie-f6df6' };
-const INSTUUR_VERSIE = 'v0.56';
+const INSTUUR_VERSIE = 'v0.57';
 // (v0.54) Mailtje naar Arjen bij elke inzending, via Web3Forms (gratis, 250 per maand). De sleutel is openbaar bedoeld:
 // er kan alleen mee gemaild worden naar Arjens eigen adres. Het level zelf zit niet in de mail; dat staat in Firebase.
 const WEB3FORMS_SLEUTEL = '5fcbd2af-ff72-417d-b4a4-f6e86b02b496';
