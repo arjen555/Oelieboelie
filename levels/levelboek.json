@@ -4426,8 +4426,8 @@
    "nummer": 19,
    "naam": "Ughe ughe",
    "klaar": true,
-   "oelieboelies": 10,
-   "moetenErIn": 5,
+   "oelieboelies": 60,
+   "moetenErIn": 50,
    "typen": {
     "buildy": 5,
     "fungy": 0,
@@ -4687,8 +4687,8 @@
    "nummer": 20,
    "naam": "Oelieboelie Hooky",
    "klaar": true,
-   "oelieboelies": 10,
-   "moetenErIn": 5,
+   "oelieboelies": 30,
+   "moetenErIn": 18,
    "typen": {
     "buildy": 1,
     "fungy": 0,
@@ -4909,7 +4909,7 @@
    "nummer": 21,
    "naam": "Naar beneden",
    "klaar": true,
-   "oelieboelies": 10,
+   "oelieboelies": 50,
    "moetenErIn": 5,
    "typen": {
     "buildy": 5,
@@ -5118,8 +5118,8 @@
    "nummer": 22,
    "naam": "Nog een keer en nog een keer",
    "klaar": true,
-   "oelieboelies": 10,
-   "moetenErIn": 5,
+   "oelieboelies": 60,
+   "moetenErIn": 10,
    "typen": {
     "buildy": 10,
     "fungy": 0,
@@ -5499,8 +5499,8 @@
    "nummer": 24,
    "naam": "nog niet af",
    "klaar": false,
-   "oelieboelies": 10,
-   "moetenErIn": 5,
+   "oelieboelies": 70,
+   "moetenErIn": 30,
    "typen": {
     "buildy": 9,
     "fungy": 5,
