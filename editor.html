@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Oelieboelie Editor v1.53</title>
+<title>Oelieboelie Editor v1.54</title>
 <style>
   :root{ --bg:#16202b; --panel:#1f2b38; --panel2:#263445; --rand:#334457; --text:#e8eef5; --muted:#93a4b6; --accent:#7fb2ff; }
   *{box-sizing:border-box}
@@ -26,6 +26,14 @@
   button{background:#2b3b4d;color:var(--text);border:1px solid #3a4d63;border-radius:8px;
     padding:7px 12px;font-size:14px;cursor:pointer;font-family:inherit}
   button:hover{background:#34475c}
+  /* (v1.54) Uitlegballon bij de knoppen rechtsboven (muis: eroverheen; tablet: eerste tik bij Als bestand/Openen) */
+  #knopUitleg{position:fixed;z-index:60;max-width:290px;background:#fff8e6;color:#5a2e10;border:3px solid #1f9e9a;border-radius:14px;
+    padding:9px 12px;font:600 14px/1.35 "Trebuchet MS",system-ui,sans-serif;box-shadow:0 8px 22px rgba(0,0,0,.45);
+    opacity:0;transform:translateY(-4px);transition:opacity .15s,transform .15s;pointer-events:none}
+  #knopUitleg.zichtbaar{opacity:1;transform:none}
+  #knopUitleg::before{content:"";position:absolute;top:-9px;left:var(--pijl,50%);width:14px;height:14px;margin-left:-7px;background:#fff8e6;
+    border-left:3px solid #1f9e9a;border-top:3px solid #1f9e9a;transform:rotate(45deg)}
+  #knopUitleg .nogeens{display:block;margin-top:6px;color:#1d7a50;font-weight:700}
   button.hoofd{background:var(--accent);color:#0d1620;border-color:var(--accent);font-weight:600}
   aside{background:var(--panel);border-right:1px solid var(--rand);padding:12px;overflow-y:auto}
   aside h2{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:14px 0 8px}
@@ -96,7 +104,7 @@
 <body>
 <div id="opgeslagen" role="status" aria-live="polite"><div class="vink">✓</div><div class="kop">Opgeslagen!</div><div class="uitleg"></div></div>
 <header>
-  <h1>Oelieboelie Editor<span>v1.53</span><span id="stand"></span></h1>
+  <h1>Oelieboelie Editor<span>v1.54</span><span id="stand"></span></h1>
   <label class="veld">Levelnummer<input id="nummer" type="number" min="1" max="100" value="1"></label>
   <label class="veld">Naam<input id="naam" type="text" value="Mijn eerste level"></label>
   <label class="veld" id="klaarVeld" title="Alleen klare levels staan in het prentenboek van de spelers (onaffe levels altijd achteraan zetten)">Klaar<input id="klaar" type="checkbox"></label>
@@ -132,6 +140,7 @@
   </div>
 </header>
 
+<div id="knopUitleg"></div>
 <aside>
   <h2>Levelboek</h2>
   <div class="keuzes" id="levellijst"></div>
@@ -1707,6 +1716,49 @@ $('alsBestand').onclick = () => {   // (v1.47) het hele boek als bestand (in Dow
 };
 $('naarHuisje').onclick = () => { location.href = 'index.html?plek=huisje'; };   // (v1.46) terug naar het openingsscherm (niet opgeslagen werk: de browser vraagt het eerst)
 $('openen').onclick = () => $('bestand').click();
+// (v1.54) UITLEG BIJ DE KNOPPEN RECHTSBOVEN. Arjen: spelers snappen niet vanzelf wat Als bestand… en Openen… doen.
+// Met de muis: uitlegballon als je eroverheen gaat. Op een tablet (geen hoveren): bij Als bestand… en Openen… laat de
+// eerste tik de uitleg zien en doet pas de tweede tik het echt (net als de knop Opnieuw in het spel).
+const KNOP_UITLEG = MAKER ? {
+  proef: 'Speel dit level meteen uit, om te kijken of het lukt. (T)',
+  naarHuisje: 'Terug naar het huisje in Oelieboelieland. Sla je werk eerst op!',
+  alsBestand: 'Een kopie van het hele levelboek in je map Downloads, als reserve.',
+  openen: 'Een levelboek openen, of één los levelbestand toevoegen.',
+  opslaan: 'Sla het hele levelboek op in je map website. Met GitHub Desktop zet je het daarna online. (Ctrl+S)'
+} : {
+  proef: 'Speel je level meteen uit, om te kijken of het lukt.',
+  naarHuisje: 'Terug naar je huisje. Sla je level eerst op!',
+  alsBestand: 'Maak een reservekopie van al je levels op deze computer, in de map Downloads. Handig als je ze op een ander apparaat wilt spelen of aan iemand wilt geven.',
+  openen: 'Haal je levels terug uit zo\u2019n reservekopie.',
+  opslaan: 'Bewaar je levels. Ze hangen daarna aan de muur in je huisje.'
+};
+const TWEE_TIKKEN = ['alsBestand', 'openen'];
+let uitlegVoor = null, uitlegKlaar = 0, uitlegTimer = 0, laatsteAanwijzer = 'mouse';
+function toonKnopUitleg(id, nogEens){
+  const k = $(id), u = $('knopUitleg'), r = k.getBoundingClientRect();
+  u.innerHTML = ''; u.append(KNOP_UITLEG[id]);
+  if(nogEens){ const n = document.createElement('span'); n.className = 'nogeens'; n.textContent = 'Tik nog een keer om door te gaan.'; u.append(n); }
+  u.style.left = '0px'; u.style.top = (r.bottom + 12) + 'px';
+  const b = u.offsetWidth, links = Math.max(8, Math.min(innerWidth - b - 8, r.left + r.width/2 - b/2));
+  u.style.left = links + 'px'; u.style.setProperty('--pijl', (r.left + r.width/2 - links) + 'px');
+  u.classList.add('zichtbaar'); uitlegVoor = id;
+}
+function verbergKnopUitleg(){ $('knopUitleg').classList.remove('zichtbaar'); uitlegVoor = null; uitlegKlaar = 0; }
+addEventListener('pointerdown', e => { laatsteAanwijzer = e.pointerType;
+  if(uitlegVoor && !e.target.closest('#' + uitlegVoor)) verbergKnopUitleg(); }, true);
+for(const id of Object.keys(KNOP_UITLEG)){
+  const k = $(id); k.removeAttribute('title'); k.setAttribute('aria-description', KNOP_UITLEG[id]);
+  k.addEventListener('pointerenter', e => { if(e.pointerType === 'mouse') toonKnopUitleg(id, false); });
+  k.addEventListener('pointerleave', e => { if(e.pointerType === 'mouse' && uitlegVoor === id) verbergKnopUitleg(); });
+  const doe = k.onclick; if(!doe) continue;   // (Proefspelen krijgt zijn klik verderop; die heeft geen twee tikken nodig)
+  k.onclick = e => {
+    if(laatsteAanwijzer !== 'mouse' && TWEE_TIKKEN.includes(id) && !(uitlegVoor === id && Date.now() < uitlegKlaar)){
+      toonKnopUitleg(id, true); uitlegKlaar = Date.now() + 5000;
+      clearTimeout(uitlegTimer); uitlegTimer = setTimeout(() => { if(uitlegVoor === id) verbergKnopUitleg(); }, 5000);
+      return; }
+    verbergKnopUitleg(); return doe.call(k, e);
+  };
+}
 $('bestand').onchange = async e => {
   const f = e.target.files[0]; if(!f) return;
   try{
