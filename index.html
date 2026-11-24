@@ -133,7 +133,7 @@
   <div><button id="naamNee">Toch niet</button><button id="naamOk">Klaar</button></div></div>
 <input type="range" id="volume" min="0" max="100" step="1" aria-label="Volume van de muziek">
 <button id="opnieuw" style="display:none" title="Speel het begin nog een keer af">↻ nog een keer</button>
-<div id="versie">openingsscherm v0.52</div>
+<div id="versie">openingsscherm v0.53</div>
 <script>
 // =====================================================================
 // OELIEBOELIE – OPENINGSSCHERM v0.46 (v0.46: mist op het kaartje verder dan 3 levels vooruit; startpagina van de website; v0.45: gekoppeld aan spel.html en editor.html)
@@ -1144,7 +1144,8 @@ function mijnKnopOnder(wx, wy){
   mijnZichtbaar().forEach((l, i) => { const x = MIJN_X[i];
     for(const [soort, dx, im] of [['speel', -60, IMG.hkSpeel], ['bouw', 60, IMG.hkBouw]]){ const [w, h] = mijnKnopMaat(im);
       if(Math.abs(wx - (x + dx)) < w/2 && Math.abs(wy - by) < h/2) mijnKnopOnder.raak = { soort, l }; }
-    const [sw, sh] = mijnStuurMaat(); if(Math.abs(wx - x) < sw/2 && Math.abs(wy - (by + STUUR_DY)) < sh/2) mijnKnopOnder.raak = { soort: 'stuur', l }; });
+    const [sw, sh] = mijnStuurMaat(); if(Math.abs(wx - x) < sw/2 && Math.abs(wy - (by + STUUR_DY)) < sh/2) mijnKnopOnder.raak = { soort: 'stuur', l };
+    if(!mijnKnopOnder.raak && Math.abs(wx - x) < VEL_B/2 + 10 && wy > MIJN_Y - VEL_H/2 - 10 && wy < MIJN_Y + VEL_H/2 + 42) mijnKnopOnder.raak = { soort: 'bouw', l }; });   // (v0.53) tik op het velletje = verder bouwen
   const r = mijnKnopOnder.raak; mijnKnopOnder.raak = null; return r || null;
 }
 function mijnKlik(k, t){

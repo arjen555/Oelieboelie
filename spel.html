@@ -131,6 +131,12 @@
   #speelveld.richten canvas{cursor:crosshair}
   /* Vilten bedieningsknoppen: pauze/verder, opnieuw en snelheid */
   .bedien{display:flex;gap:14px;align-items:center;margin-left:8px}
+  /* (v1.66) Terugknop tijdens het spelen (Images\terug.png): rechts in het paneel */
+  #terugKnop{display:none;margin-left:auto;margin-right:8px;height:58px;padding:0;border:0;background:none;cursor:pointer;transition:transform .12s,filter .12s;filter:drop-shadow(0 3px 3px rgba(0,0,0,.35))}
+  #terugKnop img{display:block;height:100%;width:auto;pointer-events:none}
+  #terugKnop:hover{transform:scale(1.06) rotate(-2deg);filter:drop-shadow(0 5px 5px rgba(0,0,0,.4)) brightness(1.06)}
+  #terugKnop:active{transform:scale(.94)}
+  #terugKnop:focus-visible{outline:3px solid var(--accent);outline-offset:3px;border-radius:30px}
   button.rond{width:66px;height:66px;padding:0;border:none;border-radius:50%;background-color:transparent;background-position:center;background-size:contain;background-repeat:no-repeat;
     filter:drop-shadow(0 3px 3px rgba(0,0,0,.35));transition:transform .12s ease, filter .12s ease}
   button.rond:hover{background-color:transparent;transform:scale(1.08) rotate(-3deg);filter:drop-shadow(0 5px 5px rgba(0,0,0,.4)) brightness(1.06)}
@@ -221,6 +227,7 @@
     <button id="snelheid" class="rond k-snel1"></button>
     <button id="gum" class="rond k-gum"></button>
   </div>
+  <button id="terugKnop"><img alt="" draggable="false" src="plaatjes/terug.webp"></button>
 </div>
 
 <script>
@@ -229,7 +236,7 @@
 // =====================================================================
 const TEKST = {
   titel: 'Oelieboelie',
-  versie: 'v1.65 · duimnagels door de editor',
+  versie: 'v1.66 · terugknop tijdens het spelen',
   uitlegTeller: { getekend: 'Getekend', wolk: nodig => `In de toverwolk · nodig: ${nodig}`, af: 'Af' },
   draaiScherm: 'Draai je scherm een kwartslag',
   gum: 'Uitgummen: wie nog rondloopt wordt uitgegumd en het level stopt (twee keer drukken)',
@@ -5636,6 +5643,14 @@ const UIT_BOEK = (() => { const q = new URLSearchParams(location.search);
 // (v1.63) Een eigen level spelen (uit het huisje, Mijn levels): spel.html?eigen=3. De levels komen dan uit de
 // spelersstand van de editor (localStorage 'oelieboelie_spelerboek_v1'); de knop op het uitslagbord brengt je terug naar je muur.
 const EIGEN = (() => { const q = new URLSearchParams(location.search); return !IN_EDITOR && q.has('eigen') ? +q.get('eigen') : null; })();
+// (v1.66) Terugknop tijdens het spelen. Waar hij heen gaat hangt af van hoe je in het level kwam:
+// uit het prentenboek → terug naar dat boek; uit Mijn levels → terug naar je muur; anders → de startpagina. In de editor geen knop.
+const TERUG = IN_EDITOR ? null
+  : UIT_BOEK ? { naar: 'index.html?boek=' + UIT_BOEK.boek + '&level=' + UIT_BOEK.level, tekst: 'Terug naar je boek' }
+  : EIGEN !== null ? { naar: 'index.html?plek=mijn', tekst: 'Terug naar je levels' }
+  : { naar: 'index.html', tekst: 'Terug naar de startpagina' };
+if(TERUG){ const k = $('terugKnop'); k.style.display = 'block'; k.title = TERUG.tekst; k.setAttribute('aria-label', TERUG.tekst);
+  k.onclick = () => { location.href = TERUG.naar; }; }
 async function laadLevelboek(){
   if(IN_EDITOR) return true;
   if(EIGEN !== null){
