@@ -133,7 +133,7 @@
   <div><button id="naamNee">Toch niet</button><button id="naamOk">Klaar</button></div></div>
 <input type="range" id="volume" min="0" max="100" step="1" aria-label="Volume van de muziek">
 <button id="opnieuw" style="display:none" title="Speel het begin nog een keer af">↻ nog een keer</button>
-<div id="versie">openingsscherm v0.54</div>
+<div id="versie">openingsscherm v0.55</div>
 <script>
 // =====================================================================
 // OELIEBOELIE – OPENINGSSCHERM v0.46 (v0.46: mist op het kaartje verder dan 3 levels vooruit; startpagina van de website; v0.45: gekoppeld aan spel.html en editor.html)
@@ -1163,7 +1163,7 @@ function mijnKlik(k, t){
 // Rechtstreeks via het webadres van Firestore (geen extra bibliotheek nodig). De regels in Firebase bepalen wat mag:
 // iedereen mag insturen (met toestemming, niet te groot), alleen Arjen mag lezen en weggooien. De apiKey is geen geheim.
 const FIREBASE = { apiKey: 'AIzaSyB3M1J2srTFu3XF4rs-esHafs3Pz4xqUwk', projectId: 'oelieboelie-f6df6' };
-const INSTUUR_VERSIE = 'v0.54';
+const INSTUUR_VERSIE = 'v0.55';
 // (v0.54) Mailtje naar Arjen bij elke inzending, via Web3Forms (gratis, 250 per maand). De sleutel is openbaar bedoeld:
 // er kan alleen mee gemaild worden naar Arjens eigen adres. Het level zelf zit niet in de mail; dat staat in Firebase.
 const WEB3FORMS_SLEUTEL = '5fcbd2af-ff72-417d-b4a4-f6e86b02b496';
@@ -1172,7 +1172,7 @@ function mailArjen(l, bijnaam, metPlaatje){
   const tekst = 'Er is een nieuw level ingestuurd!\n\n' +
     'Level: ' + naam + '\nMaker: ' + wie + '\nOelieboelies: ' + (l.oelieboelies ?? '?') + ', moeten erin: ' + (l.moetenErIn ?? '?') +
     '\nEigen achtergrond: ' + (metPlaatje ? 'ja' : 'nee') + '\nVerstuurd: ' + new Date().toLocaleString('nl-NL') +
-    '\n\nJe vindt het in Firebase: Firestore \u2192 Data \u2192 inzendingen.';
+    '\n\nJe vindt het in je Postvak: open de editor via Start Oelieboelie en klik op \ud83d\udcec Postvak.';
   return fetch('https://api.web3forms.com/submit', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
     body: JSON.stringify({ access_key: WEB3FORMS_SLEUTEL, subject: 'Nieuw Oelieboelie-level: ' + naam + ' (door ' + wie + ')', from_name: 'Oelieboelie', message: tekst }) })
     .catch(e => console.warn('mailtje lukte niet', e));   // lukt het mailtje niet, dan is het level toch al binnen
