@@ -31,6 +31,13 @@
     background:linear-gradient(#fff6de,#f3dfb0);border:5px solid #1f9e9a;border-radius:28px;padding:22px 30px;width:min(520px,86vw);
     box-shadow:0 0 0 3px #f6e2b5 inset,0 0 0 6px rgba(31,158,154,.35) inset,0 14px 40px rgba(0,0,0,.5);font-family:"Trebuchet MS",system-ui,sans-serif;color:#7a3d12}
   #toeg.zichtbaar{opacity:1;transform:translate(-50%,-50%) scale(1);pointer-events:auto}
+  /* (v0.59) melding bij het aanzetten van de geluidjes: zelfde vilten kader als Toegankelijkheid */
+  #geluidMelding{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.9);opacity:0;pointer-events:none;transition:opacity .3s,transform .3s;
+    background:linear-gradient(#fff6de,#f3dfb0);border:5px solid #1f9e9a;border-radius:28px;padding:22px 30px;width:min(480px,86vw);text-align:center;
+    box-shadow:0 0 0 3px #f6e2b5 inset,0 0 0 6px rgba(31,158,154,.35) inset,0 14px 40px rgba(0,0,0,.5);font-family:"Trebuchet MS",system-ui,sans-serif;color:#7a3d12}
+  #geluidMelding.zichtbaar{opacity:1;transform:translate(-50%,-50%) scale(1);pointer-events:auto}
+  #geluidMelding .kop{font-size:26px;font-weight:700;margin-bottom:10px}
+  #geluidMelding p{font-size:19px;line-height:1.4;margin:0}
   #toeg .kop{font-size:26px;font-weight:700;text-align:center;margin-bottom:12px}
   #toeg .rij{display:flex;align-items:center;gap:16px;padding:12px 6px;border-top:2px dashed rgba(122,61,18,.25);cursor:pointer}
   #toeg .rij span{flex:1} #toeg .rij b{font-size:21px;display:block} #toeg .rij small{font-size:15px;color:#8a5a2a}
@@ -39,7 +46,7 @@
   #toeg .rij i::after{content:'';position:absolute;left:3px;top:3px;width:28px;height:28px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 2px 4px rgba(0,0,0,.3)}
   #toeg input:checked + i{background:#2aa36b} #toeg input:checked + i::after{left:33px}
   #toeg .noot{font-size:14px;color:#8a5a2a;text-align:center;margin-top:8px}
-  #toegKlaar{display:block;margin:14px auto 0;font:700 18px "Trebuchet MS",system-ui,sans-serif;color:#fff;background:#1f9e9a;border:0;border-radius:20px;padding:10px 34px;cursor:pointer;box-shadow:0 4px 0 #167a77}
+  #toegKlaar,#geluidOke{display:block;margin:14px auto 0;font:700 18px "Trebuchet MS",system-ui,sans-serif;color:#fff;background:#1f9e9a;border:0;border-radius:20px;padding:10px 34px;cursor:pointer;box-shadow:0 4px 0 #167a77}
   #lvlKaart{position:fixed;width:260px;opacity:0;pointer-events:none;transform:scale(.9);transition:opacity .15s,transform .15s;
     background:linear-gradient(#fff8e6,#f3e2b8);border:4px solid #1f9e9a;border-radius:18px;padding:10px 12px 12px;text-align:center;
     box-shadow:0 10px 26px rgba(0,0,0,.45);font-family:"Trebuchet MS",system-ui,sans-serif;color:#7a3d12;z-index:6}
@@ -57,6 +64,12 @@
   #lvlZeker button{margin:8px 4px 0;font:700 16px "Trebuchet MS",system-ui,sans-serif;border:0;border-radius:16px;padding:7px 16px;cursor:pointer}
   #zekerJa{color:#fff;background:#1f9e9a;box-shadow:0 3px 0 #167a77} #zekerNee{color:#7a3d12;background:#ead6a8;box-shadow:0 3px 0 #c9ad72}
   #lvlKaart.vraag #lvlZeker{display:block} #lvlKaart.vraag #lvlKnoppen{display:none}
+  /* (v0.58) met de Loep aan: het levelkaartje ongeveer twee keer zo groot */
+  body.loepUI #lvlKaart{width:min(520px,46vw,calc((100vh - 250px)*1.7));padding:16px 20px 20px;border-width:6px;border-radius:26px}
+  body.loepUI #lvlNr{font-size:22px;margin-top:12px} body.loepUI #lvlNaam{font-size:34px} body.loepUI #lvlMaker{font-size:20px}
+  body.loepUI #lvlStand{font-size:21px;min-height:26px}
+  body.loepUI #lvlSpeel,body.loepUI #lvlJoker{font-size:27px;padding:12px 38px;border-radius:24px}
+  body.loepUI #lvlZeker{font-size:22px} body.loepUI #lvlZeker button{font-size:23px;padding:10px 24px}
   /* (v0.42) Hooky met het bordje 'Terug' (Images\hooky_terug.png); werkt net als Fungy hieronder */
   #boekTerug{position:fixed;left:10px;top:8px;display:none;background:none;border:0;padding:0;cursor:pointer;z-index:6;width:clamp(120px,12vw,200px);transform-origin:30% 90%;transition:transform .18s ease;filter:drop-shadow(0 4px 6px rgba(0,0,0,.45))}
   #boekTerug img{display:block;width:100%;height:auto;pointer-events:none}
@@ -126,6 +139,7 @@
 <body>
 <canvas id="doek"></canvas>
 <div id="kaart"><div id="kaartTekst"></div><button id="terug">← terug naar Oelieboelieland</button></div>
+<div id="geluidMelding" role="dialog" aria-live="polite"><div class="kop">🔔 Geluidjes</div><p>Als je wilt is er deels geluid in het spel, dit onderdeel is dus nog in aanbouw.</p><button id="geluidOke">Oké</button></div>
 <div id="toeg"><div class="kop">🔍 Toegankelijkheid</div>
   <label class="rij"><span><b>Loep</b><small>maakt het speelveld groter; zoomen met het muiswieltje of door te knijpen</small></span><input type="checkbox" id="optLoep"><i></i></label>
   <label class="rij"><span><b>Hoog contrast</b><small>rustige achtergrond, de oelieboelies en gevaren duidelijk omlijnd</small></span><input type="checkbox" id="optContrast"><i></i></label>
@@ -147,7 +161,7 @@
   <div><button id="naamNee">Toch niet</button><button id="naamOk">Klaar</button></div></div>
 <input type="range" id="volume" min="0" max="100" step="1" aria-label="Volume van de muziek">
 <button id="opnieuw" style="display:none" title="Speel het begin nog een keer af">↻ nog een keer</button>
-<div id="versie">openingsscherm v0.57</div>
+<div id="versie">openingsscherm v0.59</div>
 <script>
 // =====================================================================
 // OELIEBOELIE – OPENINGSSCHERM v0.46 (v0.46: mist op het kaartje verder dan 3 levels vooruit; startpagina van de website; v0.45: gekoppeld aan spel.html en editor.html)
@@ -245,8 +259,12 @@ function maat(){
   // (v0.43) Fungy en Hooky (de terugknoppen) hangen in de linkerbovenhoek van het speelbeeld, niet van het scherm:
   // op een ultrabreed scherm schuiven ze dus mee naar het beeld. Hun grootte groeit mee met het beeld.
   for(const id of ['plekTerug', 'boekTerug']){ const b = document.getElementById(id); if(!b) continue;
-    b.style.left = Math.max(10, ox + 10) + 'px'; b.style.top = '8px'; b.style.width = klem(190*schaal, 110, 240) + 'px'; }
+    const groot = id === 'boekTerug' && loepAan();   // (v0.58) met de Loep aan is Hooky in het boek veel groter
+    b.style.left = Math.max(10, ox + 10) + 'px'; b.style.top = '8px'; b.style.width = (groot ? klem(300*schaal, 190, 380) : klem(190*schaal, 110, 240)) + 'px'; }
+  if(document.body) document.body.classList.toggle('loepUI', loepAan());
 }
+// (v0.58) staat de Loep aan? (OPTIES bestaat pas iets verderop, vandaar de try)
+function loepAan(){ try { return !!OPTIES.loep; } catch(e){ return false; } }
 addEventListener('resize', maat); maat();
 
 // ---- logo en O op het podium ----
@@ -923,7 +941,7 @@ doek.addEventListener('pointermove', e => {
   const t = (performance.now() - start)/1000, [px, py] = podiumPunt(e);
   if(inKamer()){ const k = kamerOnder(px, py); kamerWijs = k; doek.style.cursor = k ? 'pointer' : 'default'; return; }
   if(inHuis()){ const k = huisOnder(px, py); huisWijs = k; doek.style.cursor = k ? 'pointer' : 'default'; return; }
-  if(inBoek()){ boekBeweeg(px, py); return; }
+  if(inBoek()){ if(BZ.knijp || (BZ.sleep && BZ.sleep.ver)) return; boekBeweeg(...boekPunt(px, py)); return; }   // (v0.58) rekening houden met de loep
   if(inPlek()){ plekWijs = plekOnder(px, py); doek.style.cursor = plekWijs !== null ? 'pointer' : 'default'; return; }
   const id = menuOnder(px, py, t);
   if(id !== menuWijs){ menuWijs = id; if(id) wijsTijd[id] = t; }
@@ -935,7 +953,7 @@ doek.addEventListener('click', e => {
   if(document.getElementById('toeg').classList.contains('zichtbaar')){ toegDicht(); return; }   // (v0.31) buiten het kader tikken = klaar
   if(inKamer()){ kamerKlik(kamerOnder(px, py), t); return; }
   if(inHuis()){ huisKlik(huisOnder(px, py), t, px, py); return; }
-  if(inBoek()){ if(veegde){ veegde = false; return; } boekKlik(px, py, t); return; }
+  if(inBoek()){ if(veegde){ veegde = false; return; } boekKlik(...boekPunt(px, py), t); return; }
   if(inPlek()){ plekKlik(plekOnder(px, py), t); return; }
   const id = menuOnder(px, py, t);
   if(!id) return;
@@ -952,9 +970,14 @@ document.getElementById('terug').onclick = () => { document.getElementById('kaar
 //   loep = toegankelijkheid (eigen schermpje), deur = terug naar buiten.
 // De keuzes worden op dit apparaat bewaard (localStorage).
 // =====================================================================
-const OPTIES = (() => { const st = { muziek: true, volume: 60, geluid: true, loep: false, contrast: false };
-  try { Object.assign(st, JSON.parse(localStorage.getItem('oelieboelie_opties') || '{}')); } catch(e){}
+// (v0.59) De geluidjes staan standaard uit (er komen nu echte geluiden in het spel). Wie ze al eens aan had,
+// begint één keer opnieuw met uit (geluidV: 2). Zet de speler ze aan, dan verschijnt een melding.
+const OPTIES = (() => { const st = { muziek: true, volume: 60, geluid: false, geluidV: 2, loep: false, contrast: false };
+  try { const oud = JSON.parse(localStorage.getItem('oelieboelie_opties') || '{}');
+    if(oud.geluidV !== 2){ oud.geluid = false; oud.geluidV = 2; }
+    Object.assign(st, oud); localStorage.setItem('oelieboelie_opties', JSON.stringify(st)); } catch(e){}
   return st; })();
+maat();   // (v0.58) nu OPTIES er is: Hooky en het levelkaartje meteen op de goede maat
 function bewaarOpties(){ try { localStorage.setItem('oelieboelie_opties', JSON.stringify(OPTIES)); } catch(e){} }
 const KAMER = [
   { id: 'geluid',  rect: [80, 70, 245, 370],   label: [372, 250], tekst: () => 'Geluidjes', aan: () => OPTIES.geluid },
@@ -972,6 +995,7 @@ function kamerAlpha(t){
 function inKamer(){ const t = (performance.now() - start)/1000; return kamerIn !== null && kamerUit === null && t - kamerIn > 0.5; }
 function kamerOnder(px, py){
   if(document.getElementById('toeg').classList.contains('zichtbaar')) return null;
+  if(document.getElementById('geluidMelding').classList.contains('zichtbaar')) return null;
   for(const d of KAMER){
     if(d.rond && Math.hypot(px - d.rond[0], py - d.rond[1]) < d.rond[2]) return d.id;
     const r = d.rect; if(px > r[0] && px < r[2] && py > r[1] && py < r[3]) return d.id;
@@ -990,9 +1014,10 @@ function toon(freq, wanneer, duur, sterk, soort = 'sine'){
 }
 function belGeluid(){ toon(1568, 0, 1.2, 0.18); toon(2093, 0, 0.9, 0.08); toon(3136, 0, 0.5, 0.04); }
 function doosGeluid(){ const v = OPTIES.volume/100*0.22; [784, 988, 1175, 1568, 1175, 988].forEach((f, i) => toon(f, i*0.16, 0.7, v, 'triangle')); }
+document.getElementById('geluidOke').onclick = () => document.getElementById('geluidMelding').classList.remove('zichtbaar');
 function kamerKlik(id, t){
   if(!id) return;
-  if(id === 'geluid'){ OPTIES.geluid = !OPTIES.geluid; belSchud = t; if(OPTIES.geluid) belGeluid(); }
+  if(id === 'geluid'){ OPTIES.geluid = !OPTIES.geluid; belSchud = t; if(OPTIES.geluid){ belGeluid(); document.getElementById('geluidMelding').classList.add('zichtbaar'); } }
   if(id === 'muziek'){ OPTIES.muziek = !OPTIES.muziek; if(OPTIES.muziek){ doosSpeelt = t; doosGeluid(); } }
   if(id === 'toeg'){ document.getElementById('optLoep').checked = OPTIES.loep; document.getElementById('optContrast').checked = OPTIES.contrast;
     document.getElementById('toeg').classList.add('zichtbaar'); }
@@ -1000,7 +1025,7 @@ function kamerKlik(id, t){
   bewaarOpties();
 }
 function toegDicht(){ document.getElementById('toeg').classList.remove('zichtbaar'); }
-document.getElementById('optLoep').onchange = e => { OPTIES.loep = e.target.checked; bewaarOpties(); };
+document.getElementById('optLoep').onchange = e => { OPTIES.loep = e.target.checked; bewaarOpties(); maat(); if(!OPTIES.loep) boekZoomReset(); };
 document.getElementById('optContrast').onchange = e => { OPTIES.contrast = e.target.checked; bewaarOpties(); };
 window.addEventListener('keydown', e => { if(e.key === 'Escape') toegDicht(); });
 const vol = document.getElementById('volume');
@@ -1177,7 +1202,7 @@ function mijnKlik(k, t){
 // Rechtstreeks via het webadres van Firestore (geen extra bibliotheek nodig). De regels in Firebase bepalen wat mag:
 // iedereen mag insturen (met toestemming, niet te groot), alleen Arjen mag lezen en weggooien. De apiKey is geen geheim.
 const FIREBASE = { apiKey: 'AIzaSyB3M1J2srTFu3XF4rs-esHafs3Pz4xqUwk', projectId: 'oelieboelie-f6df6' };
-const INSTUUR_VERSIE = 'v0.57';
+const INSTUUR_VERSIE = 'v0.58';
 // (v0.54) Mailtje naar Arjen bij elke inzending, via Web3Forms (gratis, 250 per maand). De sleutel is openbaar bedoeld:
 // er kan alleen mee gemaild worden naar Arjens eigen adres. Het level zelf zit niet in de mail; dat staat in Firebase.
 const WEB3FORMS_SLEUTEL = '5fcbd2af-ff72-417d-b4a4-f6e86b02b496';
@@ -1669,7 +1694,7 @@ function staatVan(nr){ const B = BOEKEN[gekozen], g = B.gehaald; if(nr > LEVELS.
 function bolletjeOnder(px, py){
   if(blad) return null; const R = boekRect(), PAD = PADEN[kaartNr];
   for(let i = 0; i < PER_KAART; i++){ const [x, y] = PAD.plekken[i], nr = kaartNr*PER_KAART + i + 1;
-    if(Math.hypot(px - (R.x + x*R.k), py - (R.y + y*R.k)) < 31 && staatVan(nr) !== 'leeg') return nr; }
+    if(Math.hypot(px - (R.x + x*R.k), py - (R.y + y*R.k)) < 31*bolMaat() && staatVan(nr) !== 'leeg') return nr; }
   return null;
 }
 // tabjes rechts aan het boek en de ezelsoortjes onderin: om naar een andere kaart te bladeren
@@ -1709,8 +1734,91 @@ doek.addEventListener('pointerdown', e => { if(inBoek()) veegStart = [e.clientX,
 doek.addEventListener('pointerup', e => {
   if(!veegStart || !inBoek()) { veegStart = null; return; }
   const dx = e.clientX - veegStart[0], dy = e.clientY - veegStart[1]; veegStart = null;
+  if(loepAan() && (BZ.z > 1.01 || BZ.hadKnijp)) return;   // (v0.58) ingezoomd: slepen = rondkijken, niet bladeren
   if(Math.abs(dx) > 80 && Math.abs(dx) > 1.5*Math.abs(dy)){ veegde = true; sla(kaartNr + (dx < 0 ? 1 : -1)); }
 });
+// =====================================================================
+// (v0.58) DE LOEP IN HET BOEK (alleen als 'Loep' aanstaat in de molen)
+// Inzoomen met het muiswieltje, met + en −, of door met twee vingers te knijpen (tot 3 keer zo groot).
+// Ingezoomd: slepen (vinger of muis) schuift de kaart; bladeren gaat dan met de tabjes en ezelsoortjes.
+// BZ.z = hoe groot, BZ.bx/BZ.by = hoe ver verschoven (in podiumpunten).
+// =====================================================================
+const BZ_STANDEN = [1, 1.5, 2, 2.5, 3], BZ_MAX = 3;
+const BZ = { z: 1, doel: 1, bx: 0, by: 0, focus: null, vingers: new Map(), knijp: null, sleep: null, hadKnijp: false };
+function bolMaat(){ return loepAan() ? 1.45 : 1; }   // de bolletjes zijn met de Loep aan zo veel groter
+function boekZoomReset(){ BZ.z = BZ.doel = 1; BZ.bx = BZ.by = 0; BZ.focus = null; BZ.knijp = null; BZ.sleep = null; BZ.vingers.clear(); BZ.hadKnijp = false; }
+function zichtRand(){ return { L: zijbalk ? 0 : -ox/schaal, R: zijbalk ? PW : (innerWidth - ox)/schaal, T: -oy/schaal, B: (innerHeight - oy)/schaal }; }
+function bzKlem(){ const V = zichtRand(), z = BZ.z;   // nooit voorbij de rand schuiven
+  BZ.bx = klem(BZ.bx, V.R - z*V.R, V.L - z*V.L); BZ.by = klem(BZ.by, V.B - z*V.B, V.T - z*V.T); }
+function zetBZ(z, fx, fy){   // zoomen rond punt (fx, fy); dat punt blijft op zijn plek
+  const V = zichtRand(); if(fx == null){ fx = (V.L + V.R)/2; fy = (V.T + V.B)/2; }
+  z = klem(z, 1, BZ_MAX); const wx = (fx - BZ.bx)/BZ.z, wy = (fy - BZ.by)/BZ.z;
+  BZ.z = z; BZ.bx = fx - wx*z; BZ.by = fy - wy*z; bzKlem();
+}
+function boekPunt(px, py){ return [(px - BZ.bx)/BZ.z, (py - BZ.by)/BZ.z]; }
+function bzStapje(r, fx, fy){
+  if(!loepAan() || !inBoek() || blad) return;
+  const nu = BZ.doel;
+  BZ.doel = r > 0 ? (BZ_STANDEN.find(s => s > nu + 0.01) || BZ_MAX) : ([...BZ_STANDEN].reverse().find(s => s < nu - 0.01) || 1);
+  BZ.focus = fx == null ? null : [fx, fy];
+}
+function bzBij(){   // elk beeldje een stukje richting de gewenste zoom (soepel)
+  if(!loepAan()){ if(BZ.z !== 1) boekZoomReset(); return; }
+  if(BZ.knijp) return;
+  if(Math.abs(BZ.doel - BZ.z) > 0.002){ const z = BZ.z + (BZ.doel - BZ.z)*0.2;
+    zetBZ(Math.abs(BZ.doel - z) < 0.004 ? BZ.doel : z, BZ.focus && BZ.focus[0], BZ.focus && BZ.focus[1]); }
+  else bzKlem();
+}
+let bzWiel = 0;
+function bzWielDraai(e){
+  if(!inBoek() || !loepAan()) return; e.preventDefault();
+  const nu = performance.now(); if(nu - bzWiel < 90) return; bzWiel = nu;   // touchpads geven heel veel kleine stapjes
+  const [fx, fy] = podiumPunt(e); bzStapje(e.deltaY < 0 ? 1 : -1, fx, fy);
+}
+doek.addEventListener('wheel', bzWielDraai, { passive: false });
+document.getElementById('lvlKaart').addEventListener('wheel', bzWielDraai, { passive: false });   // ook boven het levelkaartje
+window.addEventListener('keydown', e => {
+  if(!inBoek() || !loepAan() || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if(e.key === '+' || e.key === '=' || e.code === 'NumpadAdd') bzStapje(1);
+  if(e.key === '-' || e.code === 'NumpadSubtract') bzStapje(-1);
+});
+doek.addEventListener('pointerdown', e => {
+  if(!inBoek() || !loepAan()) return;
+  if(BZ.vingers.size === 0) BZ.hadKnijp = false;
+  BZ.vingers.set(e.pointerId, podiumPunt(e));
+  if(BZ.vingers.size === 2){   // twee vingers: knijpen
+    const [a, b] = [...BZ.vingers.values()];
+    BZ.knijp = { d: Math.hypot(a[0] - b[0], a[1] - b[1]) || 1, m: [(a[0] + b[0])/2, (a[1] + b[1])/2] };
+    BZ.sleep = null; BZ.hadKnijp = true; veegde = true; BZ.doel = BZ.z; sluitLvl(); boekKeuze = null;
+  } else if(BZ.vingers.size === 1) BZ.sleep = { id: e.pointerId, x: e.clientX, y: e.clientY, bx: BZ.bx, by: BZ.by, ver: false };
+});
+doek.addEventListener('pointermove', e => {
+  if(!BZ.vingers.has(e.pointerId)) return;
+  BZ.vingers.set(e.pointerId, podiumPunt(e));
+  if(BZ.knijp && BZ.vingers.size >= 2){
+    const [a, b] = [...BZ.vingers.values()], k = BZ.knijp;
+    const d = Math.hypot(a[0] - b[0], a[1] - b[1]) || 1, m = [(a[0] + b[0])/2, (a[1] + b[1])/2];
+    zetBZ(BZ.z*d/k.d, k.m[0], k.m[1]); BZ.bx += m[0] - k.m[0]; BZ.by += m[1] - k.m[1]; bzKlem();
+    k.d = d; k.m = m; BZ.doel = BZ.z; return;
+  }
+  const s = BZ.sleep; if(!s || s.id !== e.pointerId || BZ.z <= 1.01) return;
+  const dx = e.clientX - s.x, dy = e.clientY - s.y;
+  if(!s.ver && Math.hypot(dx, dy) > 8){ s.ver = true; veegde = true; boekWijs = null; if(!boekKeuze) sluitLvl(); doek.style.cursor = 'grabbing'; }
+  if(s.ver){ BZ.bx = s.bx + dx/schaal; BZ.by = s.by + dy/schaal; BZ.doel = BZ.z; BZ.focus = null; bzKlem(); }
+});
+const bzLos = e => {
+  if(!BZ.vingers.has(e.pointerId)) return;
+  BZ.vingers.delete(e.pointerId);
+  if(BZ.vingers.size < 2) BZ.knijp = null;
+  if(BZ.sleep && BZ.sleep.id === e.pointerId){ if(BZ.sleep.ver) doek.style.cursor = 'default'; BZ.sleep = null; }
+};
+window.addEventListener('pointerup', bzLos); window.addEventListener('pointercancel', bzLos);
+let bzVorige = '';
+function bzKaartjeMee(){   // staat er een levelkaartje open, dan schuift het mee met de kaart
+  const sl = BZ.z.toFixed(3) + ',' + BZ.bx.toFixed(1) + ',' + BZ.by.toFixed(1);
+  if(sl === bzVorige) return; bzVorige = sl;
+  if(lvlNu && document.getElementById('lvlKaart').classList.contains('zichtbaar')) plaatsLvl(lvlNu);
+}
 function toonLvl(nr){
   const L = LEVELS[nr - 1], st = staatVan(nr), k = document.getElementById('lvlKaart'); lvlNu = nr;
   const pl = document.getElementById('lvlPlaatje');   // (v0.45) duimnagel als los plaatje; ontbreekt die, dan de achtergrond van het level
@@ -1718,6 +1826,7 @@ function toonLvl(nr){
   const inMist = st === 'toekomst' && nr > BOEKEN[gekozen].gehaald + 3;
   k.classList.toggle('mist', inMist);
   pl.onerror = () => { pl.onerror = null; pl.src = LEVEL_ACHTERGROND[nr] || ''; };
+  pl.onload = () => { if(lvlNu === nr) plaatsLvl(nr); };   // (v0.58) pas als het plaatje er is, weten we hoe hoog het kaartje wordt
   pl.src = inMist ? mistPlaatje() : 'plaatjes/levels/level' + nr + '.webp';
   document.getElementById('lvlNr').textContent = 'Level ' + nr;
   document.getElementById('lvlNaam').textContent = st === 'toekomst' ? '???' : L.naam;
@@ -1726,11 +1835,17 @@ function toonLvl(nr){
     : st === 'half' ? 'Overgeslagen met je toverkrijtje. Haal hem alsnog, dan krijg je je krijtje terug!' : 'Haal eerst de levels hiervoor';
   k.classList.toggle('toekomst', st === 'toekomst'); k.classList.remove('vraag');
   k.classList.toggle('magJoker', st === 'volgende' && BOEKEN[gekozen].joker == null && !jokerAnim);
-  const R = boekRect(), [x, y] = PADEN[kaartNr].plekken[(nr - 1) % PER_KAART], sx = ox + (R.x + x*R.k)*schaal, sy = oy + (R.y + y*R.k)*schaal;
-  const kw = 260, kh = 320; let lx = sx + 34, ly = sy - kh/2;
-  if(lx + kw > innerWidth - 10) lx = sx - 34 - kw;
-  k.style.left = klem(lx, 10, innerWidth - kw - 10) + 'px'; k.style.top = klem(ly, 10, innerHeight - kh - 10) + 'px';
+  plaatsLvl(nr);
   k.classList.add('zichtbaar');
+}
+// (v0.58) het kaartje naast het bolletje zetten; met de loep ingezoomd schuift het mee
+function plaatsLvl(nr){
+  const k = document.getElementById('lvlKaart'), R = boekRect(), [x, y] = PADEN[kaartNr].plekken[(nr - 1) % PER_KAART];
+  const sx = ox + ((R.x + x*R.k)*BZ.z + BZ.bx)*schaal, sy = oy + ((R.y + y*R.k)*BZ.z + BZ.by)*schaal;
+  const kw = k.offsetWidth || 260, kh = k.offsetHeight || 320, af = 29*bolMaat()*R.k*BZ.z*schaal + 10;
+  let lx = sx + af, ly = sy - kh/2;
+  if(lx + kw > innerWidth - 10) lx = sx - af - kw;
+  k.style.left = klem(lx, 10, Math.max(10, innerWidth - kw - 10)) + 'px'; k.style.top = klem(ly, 10, Math.max(10, innerHeight - kh - 10)) + 'px';
 }
 // (v0.46) een mistwolkje, door de code getekend (één keer, daarna bewaard)
 let mistBron = null;
@@ -1812,10 +1927,11 @@ function tekenKrijt(t, R){
   }
 }
 
-document.getElementById('boekTerug').onclick = () => { boekUit = (performance.now() - start)/1000; boekKeuze = null; boekWijs = null; sluitLvl(); };
+document.getElementById('boekTerug').onclick = () => { boekUit = (performance.now() - start)/1000; boekKeuze = null; boekWijs = null; sluitLvl(); BZ.doel = 1; BZ.focus = null; };
 function tekenBolletje(x, y, nr, st, t, wijs){
   // (v0.22) vilten badges van ChatGPT (Images\levelknop.png); het nummer zet de code erop
   ctx.save();
+  const bm = bolMaat(); if(bm !== 1){ ctx.translate(x, y); ctx.scale(bm, bm); ctx.translate(-x, -y); }   // (v0.58) Loep: groter bolletje
   if(st === 'leeg'){ ctx.globalAlpha *= 0.45; ctx.drawImage(IMG.knT, x - 20, y - 20, 40, 40); ctx.restore(); return; }   // plekje voor een level dat nog niet bestaat
   let r = wijs ? 29 : 25;
   if(st === 'volgende'){   // glinstert en ademt een beetje
@@ -1864,11 +1980,12 @@ function tekenPadEnBolletjes(n, t, R){
   ctx.save(); ctx.translate(R.x, R.y); ctx.scale(R.k, R.k);
   ctx.lineCap = 'round'; ctx.lineJoin = 'round';
   const lijn = () => { ctx.beginPath(); PAD.fijn.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); };
-  if(hc()){ hcDemp(0, 0, 1672, 941, 0.5); lijn(); ctx.strokeStyle = '#1a1208'; ctx.lineWidth = 44; ctx.stroke(); }
-  lijn(); ctx.strokeStyle = 'rgba(120,90,50,0.35)'; ctx.lineWidth = 34; ctx.stroke();
-  lijn(); ctx.strokeStyle = '#ead9ad'; ctx.lineWidth = 29; ctx.stroke();
-  lijn(); ctx.strokeStyle = 'rgba(255,250,230,0.55)'; ctx.lineWidth = 12; ctx.stroke();
-  lijn(); ctx.setLineDash([2, 9]); ctx.strokeStyle = 'rgba(150,110,60,0.35)'; ctx.lineWidth = 22; ctx.stroke(); ctx.setLineDash([]);
+  const pd = loepAan() ? 1.35 : 1;   // (v0.58) met de Loep aan een breder pad, passend bij de grotere bolletjes
+  if(hc()){ hcDemp(0, 0, 1672, 941, 0.5); lijn(); ctx.strokeStyle = '#1a1208'; ctx.lineWidth = 44*pd; ctx.stroke(); }
+  lijn(); ctx.strokeStyle = 'rgba(120,90,50,0.35)'; ctx.lineWidth = 34*pd; ctx.stroke();
+  lijn(); ctx.strokeStyle = '#ead9ad'; ctx.lineWidth = 29*pd; ctx.stroke();
+  lijn(); ctx.strokeStyle = 'rgba(255,250,230,0.55)'; ctx.lineWidth = 12*pd; ctx.stroke();
+  lijn(); ctx.setLineDash([2*pd, 9*pd]); ctx.strokeStyle = 'rgba(150,110,60,0.35)'; ctx.lineWidth = 22*pd; ctx.stroke(); ctx.setLineDash([]);
   for(let i = 0; i < PER_KAART; i++){ const [x, y] = PAD.plekken[i], nr = n*PER_KAART + i + 1;
     tekenBolletje(x, y, nr, staatTeken(nr, t), t, boekWijs === nr || boekKeuze === nr); }
   ctx.restore();
@@ -1885,12 +2002,16 @@ function halfBlad(n, kant, dx, b, R, t){
 function boek(t){
   const a = boekAlpha(t);
   document.getElementById('boekTerug').style.display = a >= 1 && boekUit === null ? 'block' : 'none';
-  if(a <= 0){ if(boekUit !== null && t - boekUit > 0.5){ boekIn = null; boekUit = null; plekKies = null; blad = null; } return; }
+  if(a <= 0){ if(doek.style.touchAction) doek.style.touchAction = ''; if(boekUit !== null && t - boekUit > 0.5){ boekIn = null; boekUit = null; plekKies = null; blad = null; boekZoomReset(); } return; }
+  const ta = loepAan() ? 'none' : '';   // (v0.58) met de loep: knijpen en slepen doet het spel zelf, niet de browser
+  if(doek.style.touchAction !== ta) doek.style.touchAction = ta;
   const R = boekRect();
   ctx.save(); ctx.setTransform(dpr*schaal, 0, 0, dpr*schaal, dpr*ox, dpr*oy); ctx.globalAlpha = a;
   // tafel
   const tg = ctx.createRadialGradient(PW/2, PH/2, 200, PW/2, PH/2, PW*0.75); tg.addColorStop(0, '#6b4a2e'); tg.addColorStop(1, '#2e1d10');
   ctx.fillStyle = tg; ctx.fillRect(-ox/schaal - 2, -oy/schaal - 2, innerWidth/schaal + 4, innerHeight/schaal + 4);
+  // (v0.58) de loep: inzoomen en verschuiven
+  bzBij(); bzKaartjeMee(); ctx.translate(BZ.bx, BZ.by); ctx.scale(BZ.z, BZ.z);
   // het boek komt even omhoog bij het openen
   const op = glad((t - boekIn)/0.6), sc = 0.94 + 0.06*op;
   ctx.translate(PW/2, PH/2); ctx.scale(sc, sc); ctx.translate(-PW/2, -PH/2);

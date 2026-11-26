@@ -189,6 +189,7 @@
    "versie": 2,
    "nummer": 2,
    "naam": "Bruggetjes",
+   "klaar": true,
    "oelieboelies": 20,
    "moetenErIn": 10,
    "typen": {
@@ -366,6 +367,7 @@
    "versie": 2,
    "nummer": 3,
    "naam": "In de val?",
+   "klaar": true,
    "oelieboelies": 10,
    "moetenErIn": 5,
    "typen": {
@@ -536,6 +538,7 @@
    "versie": 2,
    "nummer": 4,
    "naam": "Oelieboelie Fungy",
+   "klaar": true,
    "oelieboelies": 10,
    "moetenErIn": 5,
    "typen": {
@@ -723,6 +726,7 @@
    "versie": 2,
    "nummer": 5,
    "naam": "Fungy power!",
+   "klaar": true,
    "oelieboelies": 20,
    "moetenErIn": 13,
    "typen": {
@@ -918,11 +922,12 @@
    "versie": 2,
    "nummer": 6,
    "naam": "Paddo poing poing",
+   "klaar": true,
    "oelieboelies": 20,
    "moetenErIn": 17,
    "typen": {
     "buildy": 0,
-    "fungy": 3,
+    "fungy": 4,
     "balloony": 0,
     "bomby": 0,
     "rocky": 0,
@@ -1128,6 +1133,7 @@
    "versie": 2,
    "nummer": 7,
    "naam": "Oelieboelie Balloony",
+   "klaar": true,
    "oelieboelies": 20,
    "moetenErIn": 15,
    "typen": {
@@ -1419,6 +1425,7 @@
    "versie": 2,
    "nummer": 8,
    "naam": "Zwevend",
+   "klaar": true,
    "oelieboelies": 10,
    "moetenErIn": 4,
    "typen": {
@@ -1577,6 +1584,7 @@
    "versie": 2,
    "nummer": 9,
    "naam": "Holbewoners",
+   "klaar": true,
    "oelieboelies": 35,
    "moetenErIn": 30,
    "typen": {
@@ -1756,6 +1764,7 @@
    "versie": 2,
    "nummer": 10,
    "naam": "Oelieboelie Bomby",
+   "klaar": true,
    "oelieboelies": 30,
    "moetenErIn": 15,
    "typen": {
@@ -2469,6 +2478,7 @@
    "versie": 2,
    "nummer": 13,
    "naam": "Oelieboelie Rocky",
+   "klaar": true,
    "oelieboelies": 50,
    "moetenErIn": 11,
    "typen": {
@@ -2812,6 +2822,7 @@
    "versie": 2,
    "nummer": 15,
    "naam": "Ontsnap uit de kerker",
+   "klaar": true,
    "oelieboelies": 25,
    "moetenErIn": 4,
    "typen": {
@@ -3116,6 +3127,7 @@
    "versie": 2,
    "nummer": 16,
    "naam": "Oelieboelie Roby",
+   "klaar": true,
    "oelieboelies": 30,
    "moetenErIn": 9,
    "typen": {
@@ -4048,6 +4060,7 @@
    "versie": 2,
    "nummer": 17,
    "naam": "Grottenonderzoek",
+   "klaar": true,
    "oelieboelies": 50,
    "moetenErIn": 49,
    "typen": {
@@ -4206,6 +4219,7 @@
    "versie": 2,
    "nummer": 18,
    "naam": "Vreemde planeet?",
+   "klaar": true,
    "oelieboelies": 50,
    "moetenErIn": 45,
    "typen": {

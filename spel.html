@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Oelieboelie v1.65</title>
+<title>Oelieboelie v1.68</title>
 <style>
   :root{ --bg:#16202b; --panel:#1f2b38; --text:#e8eef5; --muted:#93a4b6; --accent:#7fb2ff; }
   *{box-sizing:border-box}
@@ -240,7 +240,7 @@
 // =====================================================================
 const TEKST = {
   titel: 'Oelieboelie',
-  versie: 'v1.67 · naam van de maker op het bordje',
+  versie: 'v1.68 · de eerste geluiden',
   uitlegTeller: { getekend: 'Getekend', wolk: nodig => `In de toverwolk · nodig: ${nodig}`, af: 'Af' },
   draaiScherm: 'Draai je scherm een kwartslag',
   gum: 'Uitgummen: wie nog rondloopt wordt uitgegumd en het level stopt (twee keer drukken)',
@@ -1369,6 +1369,60 @@ function laadLevel(d){
 }
 
 // =====================================================================
+// (v1.68) GELUID
+// De eerste echte geluiden (map 'geluiden', naast dit bestand). Ze klinken alleen als in het openingsscherm
+// 'Geluidjes' aanstaat (localStorage 'oelieboelie_opties', geluid: true); standaard staat het uit.
+// In het verborgen venstertje waarin de editor duimnagels maakt, blijft het spel altijd stil.
+// Browsers laten pas geluid toe na een klik of toets; tot dan wordt een geluid overgeslagen.
+// =====================================================================
+const GELUID_NAMEN = ['potlood','poof','buildykomt','buildylegt','fungykomt','fungyingrond','fungyuitgrond','fungyuitgrond2'];
+const GELUID_MAX_TEGELIJK = 4;   // hetzelfde geluid hoogstens zo vaak tegelijk (anders wordt het een brij)
+const POTLOOD_VOLUMES = [1, 0.7, 0.45, 0.28, 0.15, 0.07];   // de eerste o hard, dan steeds zachter; vanaf de 7e stil
+const POOF_STEM_WACHT = 0.3;     // zo lang na de poof begint de stem van het nieuwe figuur
+const KOMT_STEM = { buildy: 'buildykomt', fungy: 'fungykomt' };   // de stem na de poof (nog niet elk figuur heeft er een)
+const GELUID = { aan: false, ctx: null, uit: null, laden: null, buffers: {}, bezig: {},
+  stil: (() => { try { return !!(window.frameElement && window.frameElement.getAttribute('aria-hidden') === 'true'); } catch(e){ return false; } })() };
+function leesGeluid(){
+  let aan = false;
+  try { aan = JSON.parse(localStorage.getItem('oelieboelie_opties') || '{}').geluid === true; } catch(e){}
+  GELUID.aan = aan && !GELUID.stil;
+  if(GELUID.aan) geluidKlaarzetten();
+}
+function geluidKlaarzetten(){
+  if(GELUID.laden) return GELUID.laden;
+  try { GELUID.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){ GELUID.laden = Promise.resolve(); return GELUID.laden; }
+  GELUID.uit = GELUID.ctx.createGain(); GELUID.uit.gain.value = 0.9; GELUID.uit.connect(GELUID.ctx.destination);
+  GELUID.laden = Promise.all(GELUID_NAMEN.map(n =>
+    fetch('geluiden/' + n + '.mp3').then(r => { if(!r.ok) throw new Error(n); return r.arrayBuffer(); })
+      .then(b => new Promise((ok, nee) => GELUID.ctx.decodeAudioData(b, ok, nee)))
+      .then(buf => { GELUID.buffers[n] = buf; })
+      .catch(() => {})));
+  geluidWakker();
+  return GELUID.laden;
+}
+function geluidWakker(){ if(GELUID.ctx && GELUID.ctx.state === 'suspended') GELUID.ctx.resume().catch(() => {}); }
+['pointerdown', 'keydown', 'touchend'].forEach(s => window.addEventListener(s, geluidWakker, { capture: true, passive: true }));
+// speel een geluid: opt.volume (1 = normaal), opt.toon (1 = normaal, hoger = hoger en korter),
+// opt.variatie (bijv. 0.04: elke keer een heel klein beetje hoger of lager), opt.wacht (seconden)
+function speel(naam, opt = {}){
+  if(!GELUID.aan || !GELUID.ctx || GELUID.ctx.state !== 'running') return null;
+  const buf = GELUID.buffers[naam];
+  if(!buf || (GELUID.bezig[naam] || 0) >= GELUID_MAX_TEGELIJK) return null;
+  const ctx = GELUID.ctx, bron = ctx.createBufferSource(), g = ctx.createGain();
+  bron.buffer = buf;
+  bron.playbackRate.value = (opt.toon || 1)*(opt.variatie ? 1 + (Math.random()*2 - 1)*opt.variatie : 1);
+  g.gain.value = opt.volume == null ? 1 : opt.volume;
+  bron.connect(g).connect(GELUID.uit);
+  GELUID.bezig[naam] = (GELUID.bezig[naam] || 0) + 1;
+  bron.onended = () => { GELUID.bezig[naam]--; };
+  bron.start(ctx.currentTime + (opt.wacht || 0));
+  return bron;
+}
+leesGeluid();
+window.addEventListener('storage', e => { if(e.key === 'oelieboelie_opties') leesGeluid(); });
+window.addEventListener('focus', leesGeluid);
+
+// =====================================================================
 // HET POTLOOD
 // =====================================================================
 // waar de voeten van een net getekende oelieboelie staan
@@ -1845,7 +1899,13 @@ function volgendeSteen(o){
   for(let r = rij-1; r >= rij-6; r--) if(vast(nk, r) || vast(cx + d, r)) return null;
   return { kolommen, rij, nieuwX, nieuwY: rij*BLOK };
 }
-const BUILDY_MAX_TREDEN = 15;   // zoveel treden legt één Buildy hoogstens (een halve trede bij een muur telt ook als één)
+const BUILDY_MAX_TREDEN = 15;
+// (v1.68) het tikje bij elke steen: de eerste 2 duidelijk, daarna zacht, de laatste 2 weer duidelijk én hoger (bijna op!)
+function legGeluid(n){
+  if(n <= 2) speel('buildylegt', { volume: 0.8, variatie: 0.03 });
+  else if(n > BUILDY_MAX_TREDEN - 2) speel('buildylegt', { volume: 0.9, toon: 1.18 });
+  else speel('buildylegt', { volume: 0.2, variatie: 0.03 });
+}   // zoveel treden legt één Buildy hoogstens (een halve trede bij een muur telt ook als één)
 const BOUW_PROBEER = 1.5;   // zo lang blijft een nieuwe Buildy proberen te gaan bouwen als het niet meteen kan
 function stopBouwen(o, omdraaien){
   begin(o,'lopen'); o.frame = 0; o.frameTijd = 0;
@@ -1862,7 +1922,7 @@ function bouwStap(o, dt, per){
       if(!s){ stopBouwen(o, true); return; }
       for(const k of s.kolommen){ level.raster[s.rij*level.breed + k] = BAKSTEEN; level.trapVan.set(s.rij*level.breed + k, o.trapId); tekenVastBlok(k, s.rij, BAKSTEEN); }
       if(CONTRAST.aan) maakContrastVast(Math.min(...s.kolommen) - 1, s.rij - 1, Math.max(...s.kolommen) + 1, s.rij + 1);   // (v1.50) ook de nieuwe traptree in hoog contrast
-      o.steen = s; o.treden = (o.treden || 0) + 1; if(!level.trapKant.has(o.trapId)) level.trapKant.set(o.trapId, o.richting);   // naar welke kant deze trap omhoog loopt
+      o.steen = s; o.treden = (o.treden || 0) + 1; legGeluid(o.treden); if(!level.trapKant.has(o.trapId)) level.trapKant.set(o.trapId, o.richting);   // naar welke kant deze trap omhoog loopt
       deeltjes((s.kolommen[0]+s.kolommen[s.kolommen.length-1]+1)*BLOK/2, s.rij*BLOK, 5, { hoek:-Math.PI/2, spreiding:2, vMin:15, vMax:45, zw:200, leven:0.3, r:0.8, kleur:'rgb(220,190,160)', gloed:false });
     }
     if(o.frame >= LOOP_FRAMES){
@@ -1899,6 +1959,7 @@ function startDuiken(o){
   const hl = hellingOnder(o);
   if(hl){ const hy = hellingOppervlak(hl, o.x); if(Math.abs(hy - o.y) < BLOK*1.5) o.y = hy; }
   begin(o,'duiken'); o.frame = 0; o.frameTijd = 0; o.grondY = o.y; o.zakStart = null;
+  speel('fungyingrond', { volume: 0.85 });   // (v1.68)
 }
 function duikStap(o, dt){
   const t = staat.tijd;
@@ -2138,6 +2199,7 @@ function uitkomen(o){
   if(hl && hl.soort === 'helling'){ const hy = hellingOppervlak(hl, o.x); if(Math.abs(hy - o.oppY) < BLOK*1.5) o.oppY = hy; }
   o.y = o.oppY + FIGUUR_HOOGTE;
   begin(o,'opspringen'); o.frame = 2;
+  speel('fungyuitgrond2');   // (v1.68) jippie!
   deeltjes(o.x, o.oppY, 18, { hoek:-Math.PI/2, spreiding:1.6, vMin:60, vMax:190, zw:500, leven:0.5, r:1.3, kleur:'rgb(150,100,60)', gloed:false, breed:12 });
   deeltjes(o.x, o.oppY, 12, { hoek:-Math.PI/2, spreiding:1.2, vMin:40, vMax:140, leven:0.5, r:1, fonkel:0.5, kleur:'rgb(255,225,185)' });
 }
@@ -2152,6 +2214,7 @@ function opspringStap(o){
 // Fungy wordt een paddenstoel
 function wordPaddenstoel(o){
   o.fase = 'paddenstoel';
+  speel('fungyuitgrond', { volume: 0.6 });   // (v1.68) sterrenstof zolang de paddenstoel groeit en nawiebelt
   staat.paddenstoelen.push({ x: o.x, y: o.y, richting: o.richting, start: staat.tijd, klaar: null, boing: null });
   deeltjes(o.x, o.y - FIGUUR_HOOGTE*0.6, 14, { vMin:20, vMax:80, leven:0.6, r:1.1, fonkel:0.6, kleur:() => `hsl(${290+Math.random()*50|0},90%,78%)` });
 }
@@ -4256,6 +4319,8 @@ function verander(o, type){
   if(!(staat.voorraad[type] > 0)) return false;
   if(o.type !== 'blauwdruk' || o.fase !== 'lopen') return false;
   o.type = type; staat.voorraad[type]--;
+  speel('poof', { volume: 0.8, variatie: 0.04 });   // (v1.68) poef, en daarna de stem van het nieuwe figuur
+  if(KOMT_STEM[type]) speel(KOMT_STEM[type], { wacht: POOF_STEM_WACHT });
   if(type === 'buildy') o.trapId = (staat.trapTeller = (staat.trapTeller || 0) + 1);   // elke Buildy bouwt zijn eigen trap
   deeltjes(o.x, o.y - FIGUUR_HOOGTE/2, 16, { vMin:30, vMax:110, leven:0.4, r:1.2, fonkel:0.5, kleur:() => `hsl(${200+Math.random()*40|0},90%,75%)` });
   if(type === 'buildy'){
@@ -4282,6 +4347,7 @@ function werkBij(dt){
   if(staat.getekend === 0 && !staat.tekening && staat.vallers.some(f => !f.klaar)) staat.volgendeTekening = Math.max(staat.volgendeTekening, t + 0.5);
   if(!staat.tekening && staat.getekend < level.aantal && t >= staat.volgendeTekening){
     staat.tekening = { start:t, fase:'tekenen' }; staat.volgendeTekening = t + TEKEN_TUSSENPOOS;
+    const pv = POTLOOD_VOLUMES[staat.getekend]; if(pv) speel('potlood', { volume: pv });   // (v1.68)
   }
   const tk = staat.tekening;
   if(tk && tk.fase === 'tekenen' && t - tk.start >= TEKEN_DUUR){
