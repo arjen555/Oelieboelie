@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Oelieboelie v1.71</title>
+<title>Oelieboelie v1.74</title>
 <style>
   :root{ --bg:#16202b; --panel:#1f2b38; --text:#e8eef5; --muted:#93a4b6; --accent:#7fb2ff; }
   *{box-sizing:border-box}
@@ -240,7 +240,7 @@
 // =====================================================================
 const TEKST = {
   titel: 'Oelieboelie',
-  versie: 'v1.71 · de drukplaat',
+  versie: 'v1.74 · zweefmolen, borstbeeld, duiveltje en beestje',
   uitlegTeller: { getekend: 'Getekend', wolk: nodig => `In de toverwolk · nodig: ${nodig}`, af: 'Af' },
   draaiScherm: 'Draai je scherm een kwartslag',
   gum: 'Uitgummen: wie nog rondloopt wordt uitgegumd en het level stopt (twee keer drukken)',
@@ -3151,7 +3151,7 @@ function boem(b){
 // met een wolkje en o's worden weggeslingerd, net als bij Bomby. Werkt één keer. Een bom of andere drukplaat
 // vlakbij laat hem meteen afgaan.
 const DRUK_LONT = 2;          // seconden tussen aanzetten en knal
-const DRUK_DOORSNEE = 7;      // doorsnede van de knal, in blokjes
+const DRUK_DOORSNEE = 11;     // doorsnede van de knal, in blokjes (v1.71: 7, v1.72: 9)
 const DRUK_NIET = ['dood','weg','binnen','opzuigen','paddenstoel','duiken','draad','naarWolk','springen'];
 function drukplaatStap(p, dt){
   if(p.op) return;

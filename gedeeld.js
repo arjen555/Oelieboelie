@@ -88,12 +88,14 @@ const STEVIG = { boeken: { b:8,  h:7,  boven:0.03 }, blokken: { b:6,  h:6,  bove
 // (v1.12) theepot: alleen de buik is vast (9 breed); tuit, oor en het rechterstuk van het kopje worden alleen getekend.
 // midden = waar het midden van het vaste blok in het plaatje zit (0.47 = net links van het midden van het plaatje)
 Object.assign(OBJ_BRON, {"planeetplant": "plaatjes/planeetplant.webp", "raketje": "plaatjes/raketje.webp", "kristal": "plaatjes/kristal.webp"});   // (v1.56) decor voor de vreemde planeet (planeetplant.png, raketje.png, kristal.png)
+Object.assign(OBJ_BRON, {"duiveltje": "plaatjes/duiveltje.webp", "zweefmolen": "plaatjes/zweefmolen.webp", "borstbeeld": "plaatjes/borstbeeld.webp", "beestje": "plaatjes/beestje.webp"});   // (v1.74) decor uit items6.png
 const DECOR = ['molen', 'huis', 'struik', 'lantaarn', 'bank', 'vogelverschrikker', 'wegwijzer', 'brievenbus', 'vogelhuisje', 'kruiwagen',
                'ufo', 'struisvogel', 'glijbaan', 'molentje', 'banaan',    // v0.81 (items.png)
                'f1', 'racefiets', 'voetbal', 'tablet', 'stoommachine',    // v0.99 (items2.png)
                'ridder', 'vlag', 'koe', 'hart',                           // v1.3 (items3.png)
                'betonmolen', 'bouwvakker', 'kraan', 'hangmat', 'ruimtemannetje',
                'planeetplant', 'raketje', 'kristal',                      // v1.56 (vreemde planeet)
+               'duiveltje', 'zweefmolen', 'borstbeeld', 'beestje',        // v1.74 (items6.png)
                'rook'];   // v1.29: rookpluim (geen plaatje, alleen rook)   // v1.13 (items4.png)
 const isDing = o => DINGEN.includes(o.soort), isDecor = o => DECOR.includes(o.soort);
 
@@ -150,6 +152,10 @@ function spulMaat(o){   // breedte en hoogte in blokjes (een o is 6 blokjes hoog
     case 'planeetplant': return { b:9, h:13 };   // (v1.56) decor voor de vreemde planeet
     case 'raketje':    return { b:11, h:14 };
     case 'kristal':    return { b:8,  h:9 };
+    case 'zweefmolen': return { b:24, h:26 };   // (v1.74) decor uit items6.png: de zweefmolen het grootst (zo hoog als de windmolen),
+    case 'borstbeeld': return { b:12, h:17 };   // het borstbeeld daarna,
+    case 'duiveltje':  return { b:10, h:10 };   // duiveltje en beestje even groot
+    case 'beestje':    return { b:10, h:10 };
     case 'rook':       return { b: ({ klein:3, middel:5, groot:8 })[o.maat] || 5, h:2 };   // (v1.29) de bovenkant van een schoorsteen
   }
   return null;

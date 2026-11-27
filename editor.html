@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Oelieboelie Editor v1.58</title>
+<title>Oelieboelie Editor v1.62</title>
 <style>
   :root{ --bg:#16202b; --panel:#1f2b38; --panel2:#263445; --rand:#334457; --text:#e8eef5; --muted:#93a4b6; --accent:#7fb2ff; }
   *{box-sizing:border-box}
@@ -126,7 +126,7 @@
 <body>
 <div id="opgeslagen" role="status" aria-live="polite"><div class="vink">✓</div><div class="kop">Opgeslagen!</div><div class="uitleg"></div></div>
 <header>
-  <h1>Oelieboelie Editor<span>v1.58</span><span id="stand"></span></h1>
+  <h1>Oelieboelie Editor<span>v1.62</span><span id="stand"></span></h1>
   <label class="veld">Levelnummer<input id="nummer" type="number" min="1" max="100" value="1"></label>
   <label class="veld">Naam<input id="naam" type="text" value="Mijn eerste level"></label>
   <label class="veld" id="klaarVeld" title="Alleen klare levels staan in het prentenboek van de spelers (onaffe levels altijd achteraan zetten)">Klaar<input id="klaar" type="checkbox"></label>
@@ -209,9 +209,9 @@
   <p class="uitleg" style="margin-top:4px">Alleen voor het uiterlijk: dekt de achtergrond af. De o's lopen erdoorheen en blijven ervoor.</p>
   <p class="uitleg">
     <b>Linkermuis:</b> tekenen<br>
-    <b>Rechtermuis:</b> gummen (de gum haalt ook objecten weg)<br>
+    <b>Rechtermuis:</b> gummen (de gum haalt ook objecten weg). Twee keer snel rechtsklikken op een object haalt het altijd weg; op een lege plek laat het alles los.<br>
     <b>Potlood / wolk:</b> klik om te plaatsen, sleep om te verschuiven.<br>
-    <b>Objecten (O):</b> kies er een in het menu bovenin, klik om te plaatsen, sleep om te verschuiven. Rechtermuis op een object, of de gum, haalt het weg. Achtergrond-objecten zie je vervaagd: de o's lopen erlangs.<br>
+    <b>Objecten (O):</b> kies er een in het menu bovenin, klik om te plaatsen, sleep om te verschuiven. Rechtermuis op een object, twee keer snel rechtsklikken op een object (altijd), of de gum, haalt het weg. Achtergrond-objecten zie je vervaagd: de o's lopen erlangs.<br>
     <b>Stempel (S):</b> trek een rechthoek om een stukje terrein (objecten die er helemaal in staan gaan mee). Elke klik zet een kopie neer; bij de muis zie je hoeveel blokjes je van de vorige kopie af zit. Shift = recht onder/naast de vorige. Lege vakjes in het stempel maken een gat (lucht); houd Alt ingedrukt om ze over te slaan. Rechtermuis = ander stukje kiezen.<br>
     <b>Meetlat (M):</b> houd M ingedrukt en sleep met de linkermuis.<br>
     <b>Kleurvlakken:</b> kies een kleur en teken met penseel of rechthoek. Rechtermuis of de kleurgum haalt alleen kleur weg, het terrein blijft staan.<br>
@@ -962,7 +962,7 @@ const OBJ_MENU = [
   { groep: 'Werkende objecten', rijen: [
     { naam: 'Parachute', uitleg: 'De eerste o die erdoorheen loopt, zweeft één keer veilig naar beneden.', opties: [
       { soort:'parachute', label:'parachute' } ] },
-    { naam: 'Drukplaat', uitleg: 'Wie hem raakt (ook zwevend of vliegend) zet hem aan. Na 2 seconden een knal: in een cirkel van 7 blokjes gaat alles kapot, ook steen, en wie er staat vliegt weg. Werkt één keer. Zet hem op de grond.', opties: [
+    { naam: 'Drukplaat', uitleg: 'Wie hem raakt (ook zwevend of vliegend) zet hem aan. Na 2 seconden een knal: in een cirkel van 11 blokjes gaat alles kapot, ook steen, en wie er staat vliegt weg. Werkt één keer. Zet hem op de grond.', opties: [
       { soort:'drukplaat', label:'drukplaat' } ] }
   ]},
   { groep: "Spullen waar de o's op reageren", rijen: [
@@ -1009,6 +1009,10 @@ const OBJ_MENU = [
     { naam: 'Planeetplant', uitleg: 'Vreemde plant die zacht wiegt; de knoppen gloeien.', opties: [ { soort:'planeetplant', label:'planeetplant' } ] },
     { naam: 'Raketje', uitleg: 'Geland raketje; het lampje op de antenne knippert.', opties: [ { soort:'raketje', label:'raketje' } ] },
     { naam: 'Kristallen', uitleg: 'Gloeiende kristallen met af en toe een fonkeling.', opties: [ { soort:'kristal', label:'kristal' } ] },
+    { naam: 'Zweefmolen', uitleg: 'Een kermiszweefmolen met lampjes, zo hoog als de windmolen.', opties: [ { soort:'zweefmolen', label:'zweefmolen' } ] },
+    { naam: 'Borstbeeld', uitleg: 'Een stenen borstbeeld van een oude wijsgeer.', opties: [ { soort:'borstbeeld', label:'borstbeeld' } ] },
+    { naam: 'Duiveltje', uitleg: 'Een vrolijk vilten duiveltje met een drietand.', opties: [ { soort:'duiveltje', label:'duiveltje' } ] },
+    { naam: 'Schattig beestje', uitleg: 'Een pluizig beestje met grote ogen en een paarse kuif.', opties: [ { soort:'beestje', label:'beestje' } ] },
     { naam: 'Rookpluim', uitleg: 'Donkere rook voor een schoorsteen in de achtergrond. Zet het rondje op de bovenkant van de schoorsteen. In het spel zie je alleen de rook.', opties: [
       { soort:'rook', maat:'klein', label:'klein' }, { soort:'rook', maat:'middel', label:'middel' }, { soort:'rook', maat:'groot', label:'groot' } ] }
   ]}
@@ -1020,7 +1024,7 @@ function labelVan(o){
                  struik:'Struik', lantaarn:'Lantaarnpaal', bank:'Bankje', vogelverschrikker:'Vogelverschrikker', wegwijzer:'Wegwijzer',
                  brievenbus:'Brievenbus', vogelhuisje:'Vogelhuisje', kruiwagen:'Kruiwagen',
                  ufo:'Neergestorte ufo', struisvogel:'Struisvogel', glijbaan:'Glijbaan', molentje:'Windmolentje', banaan:'Banaan',
-                 f1:'Raceauto', racefiets:'Racefiets', voetbal:'Voetbal', tablet:'Tablet', stoommachine:'Stoommachine', ridder:'Ridder', vlag:'Vlag', koe:'Koe', hart:'Hart', betonmolen:'Betonmolen', bouwvakker:'Bouwvakker', kraan:'Bouwkraan', hangmat:'Hangmat', ruimtemannetje:'Ruimtemannetje', planeetplant:'Planeetplant', raketje:'Raketje', kristal:'Kristallen', rook:'Rookpluim',
+                 f1:'Raceauto', racefiets:'Racefiets', voetbal:'Voetbal', tablet:'Tablet', stoommachine:'Stoommachine', ridder:'Ridder', vlag:'Vlag', koe:'Koe', hart:'Hart', betonmolen:'Betonmolen', bouwvakker:'Bouwvakker', kraan:'Bouwkraan', hangmat:'Hangmat', ruimtemannetje:'Ruimtemannetje', planeetplant:'Planeetplant', raketje:'Raketje', kristal:'Kristallen', zweefmolen:'Zweefmolen', borstbeeld:'Borstbeeld', duiveltje:'Duiveltje', beestje:'Schattig beestje', rook:'Rookpluim',
                  boeken:'Stapel boeken', blokken:'Speelgoedblokken', stronk:'Boomstronk', ton:'Regenton', cadeau:'Cadeaupakket', theepot:'Theepot' }[o.soort];
   if(o.soort === 'boom') return { spar:'Spar', appel:'Appelboom', berk:'Berk' }[o.maat] || naam;
   if(o.soort === 'struisvogel') return { staan:'Struisvogel (rechtop)', pik:'Struisvogel (pikt)', kijk:'Struisvogel (kijkt)' }[o.maat] || naam;
@@ -1296,10 +1300,22 @@ doek.addEventListener('pointerdown', e => {
   const w = muis.wereld;
   if(meetAan && e.button === 0){ meting = { a: {...muis.blok}, z: {...muis.blok} }; muis.meet = true; return; }
   // twee keer snel rechtsklikken: alles loslaten (wat de eerste klik eventueel weghaalde, komt terug)
+  // (v1.61) maar twee keer snel rechtsklikken ÓP een object haalt dat object weg, wat je ook gekozen hebt
   if(e.button === 2){
     const nu = performance.now();
+    if(nu - muis.rechtsTijd < DUBBEL_RECHTS && muis.rechtsOpObject){
+      muis.rechtsTijd = 0; muis.rechtsOpObject = false;
+      if(muis.rechtsDeed) ongedaan();   // wat de eerste klik deed (bijv. gummen) terugzetten
+      muis.rechtsDeed = false;
+      const i = objectOnder(w);
+      if(i >= 0){
+        bewaarStap(); const o = level.objecten[i]; level.objecten.splice(i, 1); vernieuwVast(); markeerGewijzigd();
+        meld(`${labelVan(o)} weggehaald (Ctrl+Z zet het terug).`);
+      }
+      return;
+    }
     if(nu - muis.rechtsTijd < DUBBEL_RECHTS){
-      muis.rechtsTijd = 0;
+      muis.rechtsTijd = 0; muis.rechtsOpObject = false;
       if(muis.rechtsDeed) ongedaan();
       muis.rechtsDeed = false;
       soortKeuze = null; plekKeuze = null; objectKeuze = null; stempel = null; if(gereedschap === 'stempel') gereedschap = 'penseel';
@@ -1307,7 +1323,7 @@ doek.addEventListener('pointerdown', e => {
       meld('Niets gekozen. Klik en sleep om een object, het potlood of de wolk te verschuiven.');
       return;
     }
-    muis.rechtsTijd = nu; muis.rechtsDeed = false;
+    muis.rechtsTijd = nu; muis.rechtsDeed = false; muis.rechtsOpObject = objectOnder(w) >= 0;
   }
   if(gereedschap === 'stempel'){
     if(e.button === 2){ if(stempel){ stempel = null; meld('Stempel leeg: trek een rechthoek om een ander stukje.'); } return; }
