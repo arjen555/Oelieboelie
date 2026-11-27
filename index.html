@@ -160,7 +160,7 @@
   <div><button id="naamNee">Toch niet</button><button id="naamOk">Klaar</button></div></div>
 <input type="range" id="volume" min="0" max="100" step="1" aria-label="Volume van de muziek">
 <button id="opnieuw" style="display:none" title="Speel het begin nog een keer af">↻ nog een keer</button>
-<div id="versie">openingsscherm v0.64</div>
+<div id="versie">openingsscherm v0.65</div>
 <script>
 // =====================================================================
 // OELIEBOELIE – OPENINGSSCHERM v0.46 (v0.46: mist op het kaartje verder dan 3 levels vooruit; startpagina van de website; v0.45: gekoppeld aan spel.html en editor.html)
@@ -173,6 +173,9 @@ const D = {"A": {"kleur": "plaatjes/opening/kleur.webp", "schets": "plaatjes/ope
 const M = D.M;
 // (v0.44) Fungy gluurt uit het gras bij de paddenstoelen (Images\fungy_gluurt.png, losgeknipt van de blauwe achtergrond)
 D.A.fungy = "plaatjes/opening/fungy.webp";
+// (v0.65) een tweede vlinder: het citroenvlindertje (Images\vlinder2.png), om en om met de kleine vos
+D.A.vlinder2 = "plaatjes/opening/vlinder2.webp";
+M.vlinder2 = [{"x": 0, "w": 172, "h": 183, "ax": 110.4, "ay": 127.4}, {"x": 174, "w": 181, "h": 135, "ax": 115.1, "ay": 83.3}, {"x": 357, "w": 210, "h": 142, "ax": 127.9, "ay": 66.4}, {"x": 569, "w": 225, "h": 136, "ax": 140.5, "ay": 64.4}, {"x": 796, "w": 181, "h": 167, "ax": 118.3, "ay": 64.6}, {"x": 979, "w": 185, "h": 115, "ax": 117.4, "ay": 72.2}, {"x": 1166, "w": 209, "h": 142, "ax": 125.3, "ay": 66.2}, {"x": 1377, "w": 190, "h": 147, "ax": 121.7, "ay": 99.1}];
 M.fungy = [{"x": 0, "w": 259, "h": 261, "ax": 128.0, "ay": 258}, {"x": 261, "w": 255, "h": 288, "ax": 128.0, "ay": 285}, {"x": 518, "w": 252, "h": 331, "ax": 128.5, "ay": 328}, {"x": 772, "w": 252, "h": 331, "ax": 129.0, "ay": 328}, {"x": 1026, "w": 255, "h": 335, "ax": 129.0, "ay": 332}, {"x": 1283, "w": 269, "h": 334, "ax": 131.0, "ay": 331}, {"x": 1554, "w": 245, "h": 333, "ax": 127.0, "ay": 330}, {"x": 1801, "w": 260, "h": 280, "ax": 130.5, "ay": 277}];
 
 // ---- instellingen (hier schaaf je aan maat, plek en tempo) ----
@@ -213,12 +216,12 @@ const ROCKY_RUST = [15, 35];           // daarna zoveel seconden tussen twee kee
 // (molen, huisje, boekenplek, prentenboek ...). laad() onthoudt het adres alleen; startLaden() haalt echt op.
 function laad(src){ const i = new Image(); i._bron = src; return i; }
 function startLaden(lijst){ return Promise.all(lijst.map(i => { if(!i.getAttribute('src')) i.src = i._bron; return i.decode ? i.decode().catch(() => {}) : null; })); }
-const GOLF1 = ['kleur', 'schets', 'logo', 'O', 'sch', 'los', 'bal', 'lach', 'wegwijzer', 'wieken', 'bordStart', 'vlinder', 'pluis'];
+const GOLF1 = ['kleur', 'schets', 'logo', 'O', 'sch', 'los', 'bal', 'lach', 'wegwijzer', 'wieken', 'bordStart', 'vlinder', 'vlinder2', 'pluis'];
 const GOLF2_EERST = ['kruip', 'fungy', 'ooglid', 'kijk'];   // komen later in het begin in beeld (Rocky, Fungy)
 function golf1(){ return GOLF1.map(k => IMG[k]); }
 function golf2(){ return [...GOLF2_EERST.map(k => IMG[k]), ...Object.keys(IMG).filter(k => !GOLF1.includes(k) && !GOLF2_EERST.includes(k)).map(k => IMG[k]), ...PB.map(b => b.im)]; }
 const IMG = { kleur: laad(D.A.kleur), schets: laad(D.A.schets), logo: laad(D.A.logo), O: laad(D.A.O),
-              sch: laad(D.A.sch), los: laad(D.A.los), bal: laad(D.A.bal), lach: laad(D.A.lach), kruip: laad(D.A.kruip), vlinder: laad(D.A.vlinder), wegwijzer: laad(D.A.wegwijzer), wieken: laad(D.A.wieken), kamer: laad(D.A.kamer), plek: laad(D.A.plek), hkPrik: laad(D.A.hk_prik), hkMaak: laad(D.A.hk_maak), hkMijn: laad(D.A.hk_mijn), hkSpeel: laad(D.A.hk_speel), hkBouw: laad(D.A.hk_bouw), hkStuur: laad(D.A.hk_stuur), hkEerst: laad(D.A.hk_eerst), okGA: laad(D.A.ok_geluidAan), okGU: laad(D.A.ok_geluidUit), okMA: laad(D.A.ok_muziekAan), okMU: laad(D.A.ok_muziekUit), okT: laad(D.A.ok_toeg), okBalk: laad(D.A.ok_balk), okKnop: laad(D.A.ok_knop), krijt: laad(D.A.krijt), huis: laad(D.A.huis), gum: laad(D.A.gum), kaart1: laad(D.A.kaart1), kaart2: laad(D.A.kaart2), kaart3: laad(D.A.kaart3), kaart4: laad(D.A.kaart4), knG: laad(D.A.knG), knV: laad(D.A.knV), knT: laad(D.A.knT), knS: laad(D.A.knS), belS: laad(D.A.belS), belP: laad(D.A.belP), pluis: laad(D.A.pluis), ooglid: laad(D.A.ooglid), kijk: laad(D.A.kijk), bordStart: laad(D.A.bord_start), fungy: laad(D.A.fungy) };
+              sch: laad(D.A.sch), los: laad(D.A.los), bal: laad(D.A.bal), lach: laad(D.A.lach), kruip: laad(D.A.kruip), vlinder: laad(D.A.vlinder), vlinder2: laad(D.A.vlinder2), wegwijzer: laad(D.A.wegwijzer), wieken: laad(D.A.wieken), kamer: laad(D.A.kamer), plek: laad(D.A.plek), hkPrik: laad(D.A.hk_prik), hkMaak: laad(D.A.hk_maak), hkMijn: laad(D.A.hk_mijn), hkSpeel: laad(D.A.hk_speel), hkBouw: laad(D.A.hk_bouw), hkStuur: laad(D.A.hk_stuur), hkEerst: laad(D.A.hk_eerst), okGA: laad(D.A.ok_geluidAan), okGU: laad(D.A.ok_geluidUit), okMA: laad(D.A.ok_muziekAan), okMU: laad(D.A.ok_muziekUit), okT: laad(D.A.ok_toeg), okBalk: laad(D.A.ok_balk), okKnop: laad(D.A.ok_knop), krijt: laad(D.A.krijt), huis: laad(D.A.huis), gum: laad(D.A.gum), kaart1: laad(D.A.kaart1), kaart2: laad(D.A.kaart2), kaart3: laad(D.A.kaart3), kaart4: laad(D.A.kaart4), knG: laad(D.A.knG), knV: laad(D.A.knV), knT: laad(D.A.knT), knS: laad(D.A.knS), belS: laad(D.A.belS), belP: laad(D.A.belP), pluis: laad(D.A.pluis), ooglid: laad(D.A.ooglid), kijk: laad(D.A.kijk), bordStart: laad(D.A.bord_start), fungy: laad(D.A.fungy) };
 
 // ---- podium ----
 const doek = document.getElementById('doek'), ctx = doek.getContext('2d');
@@ -707,13 +710,13 @@ function vlinder(t, laag){
   const zw = p.zweef.find(([a, d]) => tt >= a && tt < a + d);
   const fase = tt*p.slag, k = zw ? 2 : Math.floor(fase*8) % 8;
   if(!zw) y -= Math.sin(fase*Math.PI*2)*5*z;
-  const f = M.vlinder[k];                    // opgeslagen ca. 200 px breed
+  const geel = p.geel && IMG.vlinder2.complete && IMG.vlinder2.naturalWidth, f = (geel ? M.vlinder2 : M.vlinder)[k];   // opgeslagen ca. 200 px breed
   const sc = VLINDER_GROOT*z/200, links = x2 < x;
   ctx.save(); ctx.translate(x, y); if(links) ctx.scale(-1, 1);
   ctx.rotate(Math.sin(tt*3.1 + p.f1)*0.12);
   if(z < 0.4){ ctx.filter = 'blur(0.8px) saturate(0.75)'; ctx.globalAlpha = 0.85; }
   else if(z < 0.7){ ctx.filter = 'blur(0.6px) saturate(0.85)'; ctx.globalAlpha = 0.9; }
-  ctx.drawImage(IMG.vlinder, f.x, 0, f.w, f.h, -f.ax*sc, -f.ay*sc, f.w*sc, f.h*sc);
+  ctx.drawImage(geel ? IMG.vlinder2 : IMG.vlinder, f.x, 0, f.w, f.h, -f.ax*sc, -f.ay*sc, f.w*sc, f.h*sc);
   ctx.restore();
 }
 function maakPluisPlan(){
@@ -732,7 +735,7 @@ function maakPluisPlan(){
                   f: rnd(0, 6.28), s: rnd(0.85, 1.15) });
       t += d + rnd(PLUIS_RUST[0], PLUIS_RUST[1]);
     } else {
-      const v = maakVlinder(t); plan.push(v); t += v.duur + rnd(PLUIS_RUST[0], PLUIS_RUST[1]);
+      const v = maakVlinder(t); v.geel = plan.filter(q => q.soort === 'vlinder').length % 2 === 1; plan.push(v);   // (v0.65) om en om oranje en geel t += v.duur + rnd(PLUIS_RUST[0], PLUIS_RUST[1]);
     }
   }
   pluisPlan = plan;
