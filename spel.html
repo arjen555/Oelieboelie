@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Oelieboelie v1.70</title>
+<title>Oelieboelie v1.71</title>
 <style>
   :root{ --bg:#16202b; --panel:#1f2b38; --text:#e8eef5; --muted:#93a4b6; --accent:#7fb2ff; }
   *{box-sizing:border-box}
@@ -240,7 +240,7 @@
 // =====================================================================
 const TEKST = {
   titel: 'Oelieboelie',
-  versie: 'v1.70 · Rocky krakt hoorbaar',
+  versie: 'v1.71 · de drukplaat',
   uitlegTeller: { getekend: 'Getekend', wolk: nodig => `In de toverwolk · nodig: ${nodig}`, af: 'Af' },
   draaiScherm: 'Draai je scherm een kwartslag',
   gum: 'Uitgummen: wie nog rondloopt wordt uitgegumd en het level stopt (twee keer drukken)',
@@ -1297,7 +1297,7 @@ function nieuwSpel(){
     fps: BEELDEN_PER_SEC, pas: PASLENGTE,
     voorraad: {...level.typen}, keuze: null, binnenTypen: [],
     pauze: false, tijd: 0, volgendeTekening: 0.6, getekend: 0,
-    oelies: [], paddenstoelen: [], stekjes: [], parachutes: [], kussens: [], knallen: [], bommen: [], boems: [], wolkjes: [], krakken: [], vallers: [], stenen: [], kabels: [], steunCheck: true, tekening: null, poef: null, stofjes: [], flitsen: [],
+    oelies: [], paddenstoelen: [], stekjes: [], parachutes: [], drukplaten: [], kussens: [], knallen: [], bommen: [], boems: [], wolkjes: [], krakken: [], vallers: [], stenen: [], kabels: [], steunCheck: true, tekening: null, poef: null, stofjes: [], flitsen: [],
     binnen: 0, af: 0, eindTijd: null, schuifStart: null, vliegStart: null,
     uitspringers: [], uitgesprongen: 0, inBoek: 0, volgendeUitsprong: 0,
     camX: 0, camY: 0
@@ -1317,6 +1317,7 @@ function nieuwSpel(){
   if(levelData){ level = maakLevel(levelData); stempelObjecten(); vernieuwVast(); staat.voorraad = {...level.typen}; }
   // de parachutes die in dit level klaarhangen
   staat.parachutes = level.objecten.filter(o => o.soort === 'parachute').map(o => ({...o, op: false}));
+  staat.drukplaten = level.objecten.filter(o => o.soort === 'drukplaat').map(o => ({...o, aan: null, op: false}));   // (v1.71)
   maakDingZones();
   bouwTypebalk();
 }
@@ -3084,7 +3085,7 @@ function boem(b){
   const raakt = (x, y, w, h) => x < vak.x1 && x + w > vak.x0 && y < vak.y1 && y + h > vak.y0;
   let weg = false;
   for(const o of [...level.objecten]){
-    if(isDecor(o) || o.soort === 'parachute') continue;
+    if(isDecor(o) || o.soort === 'parachute' || o.soort === 'drukplaat') continue;
     const m = objectMaat(o);
     if(!raakt(o.x*BLOK, o.y*BLOK, m.b*BLOK, m.h*BLOK)) continue;
     level.objecten.splice(level.objecten.indexOf(o), 1); weg = true;
@@ -3135,9 +3136,123 @@ function boem(b){
   }
   // 5. andere bommen in de buurt gaan meteen mee af
   for(const a of staat.bommen) if(!a.weg && a.x > vak.x0 - 8 && a.x < vak.x1 + 8 && a.y > vak.y0 && a.y < vak.y1 + 8) a.start = Math.min(a.start, t - LONT_DUUR + 0.12);
+  for(const p of staat.drukplaten){   // (v1.71) een drukplaat in de buurt ook
+    if(p.op) continue; const m = objectMaat(p);
+    if(raakt(p.x*BLOK - 8, p.y*BLOK, m.b*BLOK + 16, m.h*BLOK + 8)) p.aan = Math.min(p.aan ?? t, t - DRUK_LONT + 0.12);
+  }
   grondWeg();
   // grote knal: een flinke wolk vonken en rook
   deeltjes(b.x, b.y - 18, 18, { vMin: 40, vMax: 160, leven: 0.5, r: 1.2, fonkel: 0.6, kleur: () => Math.random() < 0.5 ? 'rgb(255,214,90)' : 'rgb(255,140,50)', gloed: false });
+}
+// ---- (v1.71) DE DRUKPLAAT (ontstekingsmechanisme) ----
+// Wie hem raakt (lopend, vallend, zwevend in de ballon of vliegend als Roby) zet hem aan: klik, het lampje
+// knippert steeds sneller en het lontje brandt op. Na DRUK_LONT seconden een knal: in een cirkel van
+// DRUK_DOORSNEE blokjes gaat ALLES kapot (ook steen, rots en ijs; water en vuur blijven), spullen verdwijnen
+// met een wolkje en o's worden weggeslingerd, net als bij Bomby. Werkt één keer. Een bom of andere drukplaat
+// vlakbij laat hem meteen afgaan.
+const DRUK_LONT = 2;          // seconden tussen aanzetten en knal
+const DRUK_DOORSNEE = 7;      // doorsnede van de knal, in blokjes
+const DRUK_NIET = ['dood','weg','binnen','opzuigen','paddenstoel','duiken','draad','naarWolk','springen'];
+function drukplaatStap(p, dt){
+  if(p.op) return;
+  const t = staat.tijd, m = objectMaat(p);
+  // valt hij? (net als de parachute: als er niets meer onder ligt)
+  const kol0 = Math.floor(p.x), r = Math.floor(p.y + m.h + 0.001);
+  let steun = r >= LEVEL_HOOGTE;
+  for(let bx = kol0; bx < kol0 + m.b && !steun; bx++) if(vast(bx, r)) steun = true;
+  if(!steun || p.vy > 0){
+    p.vy = Math.min(MAX_VALSNELHEID, (p.vy || 0) + ZWAARTEKRACHT*dt);
+    let ny = p.y + p.vy*dt/BLOK;
+    for(let rr = r; rr <= Math.floor(ny + m.h); rr++){
+      let raak = rr >= LEVEL_HOOGTE;
+      for(let bx = kol0; bx < kol0 + m.b && !raak; bx++) if(vast(bx, rr)) raak = true;
+      if(raak){ ny = rr - m.h; p.vy = 0; break; }
+    }
+    p.y = ny;
+    if(p.y*BLOK > level.H + 40){ p.op = true; return; }
+  }
+  // aanzetten: raakt een o de plaat?
+  if(p.aan == null){
+    const x0 = p.x*BLOK, x1 = (p.x + m.b)*BLOK, y0 = p.y*BLOK - 3, y1 = (p.y + m.h)*BLOK + 2, fh = FIGUUR_HOOGTE;
+    for(const o of staat.oelies){
+      if(DRUK_NIET.includes(o.fase)) continue;
+      if(o.x + fh*0.2 > x0 && o.x - fh*0.2 < x1 && o.y > y0 && o.y - fh < y1){
+        p.aan = t; p.v = 0;
+        deeltjes(x0 + m.b*BLOK/2, y0 + 3, 6, { hoek:-Math.PI/2, spreiding:1.6, vMin:20, vMax:60, leven:0.3, r:0.8, kleur:'rgb(210,216,224)', gloed:false });
+        break;
+      }
+    }
+    return;
+  }
+  p.v = Math.min(1, (t - p.aan)/DRUK_LONT);
+  if(Math.random() < dt*22) deeltjes((p.x + m.b)*BLOK + 2, p.y*BLOK - 2, 1,
+    { vMin:15, vMax:55, leven:0.25, r:0.6, fonkel:0.7, kleur: () => Math.random() < 0.5 ? 'rgb(255,230,120)' : 'rgb(255,160,60)', gloed:false });
+  if(t - p.aan >= DRUK_LONT) drukBoem(p);
+}
+function drukBoem(p){
+  p.op = true;
+  const t = staat.tijd, m = objectMaat(p);
+  const cx = (p.x + m.b/2)*BLOK, cy = (p.y + m.h)*BLOK, R = DRUK_DOORSNEE/2*BLOK;   // midden van de knal: midden van de plaat, op de grond
+  staat.boems.push({ x: cx, y: cy - 6, start: t });
+  const inCirkel = (px, py) => (px - cx)*(px - cx) + (py - cy)*(py - cy) <= R*R;
+  const raaktCirkel = (x, y, w, h) => { const nx = Math.max(x, Math.min(cx, x + w)), ny = Math.max(y, Math.min(cy, y + h)); return inCirkel(nx, ny); };
+  // 1. spullen en bouwvormen in de cirkel verdwijnen met een wolkje (decor blijft staan)
+  let weg = false;
+  for(const o of [...level.objecten]){
+    if(isDecor(o) || o.soort === 'parachute' || o.soort === 'drukplaat') continue;
+    const om = objectMaat(o);
+    if(!raaktCirkel(o.x*BLOK, o.y*BLOK, om.b*BLOK, om.h*BLOK)) continue;
+    level.objecten.splice(level.objecten.indexOf(o), 1); weg = true;
+    staat.wolkjes.push({ x: (o.x + om.b/2)*BLOK, y: (o.y + om.h/2)*BLOK, maat: Math.max(om.b, om.h)*BLOK*1.3, start: t });
+  }
+  for(const q of staat.parachutes){
+    if(q.op) continue; const qm = objectMaat(q);
+    if(raaktCirkel(q.x*BLOK, q.y*BLOK, qm.b*BLOK, qm.h*BLOK)){ q.op = true; staat.wolkjes.push({ x: (q.x + qm.b/2)*BLOK, y: (q.y + qm.h/2)*BLOK, maat: qm.h*BLOK*1.5, start: t }); }
+  }
+  if(weg){ herstempel(); maakDingZones(); }
+  // 2. het gat: alles wat vast is gaat kapot, ook steen, rots en ijs (water en vuur blijven)
+  const KLEUR = { [GROND]: 'rgb(139,92,52)', [MUUR]: 'rgb(186,98,62)', [BAKSTEEN]: 'rgb(200,92,60)', [STEEN]: 'rgb(150,152,158)' };
+  const k0 = Math.floor((cx - R)/BLOK), k1 = Math.floor((cx + R)/BLOK), r0 = Math.floor((cy - R)/BLOK), r1 = Math.floor((cy + R)/BLOK);
+  for(let by = r0; by <= r1; by++) for(let bx = k0; bx <= k1; bx++){
+    if(bx < 0 || by < 0 || bx >= level.breed || by >= LEVEL_HOOGTE) continue;
+    if(!inCirkel((bx + 0.5)*BLOK, (by + 0.5)*BLOK)) continue;
+    const i = by*level.breed + bx, s = level.raster[i];
+    if(s !== GROND && s !== MUUR && s !== BAKSTEEN && s !== STEEN) continue;
+    const kl = kruimelKleur(bx, by, s, KLEUR[s]);
+    level.raster[i] = LEEG;
+    if(level.rots) level.rots[i] = 0;
+    if(level.mat) level.mat[i] = 0;
+    if(level.onder) level.onder.delete(i);
+    deeltjes((bx + 0.5)*BLOK, (by + 0.5)*BLOK, 2, { hoek: -Math.PI/2, spreiding: 2.6, vMin: 60, vMax: 230, zw: 650, leven: 0.6, r: 1.3, kleur: kl, gloed: false });
+  }
+  // 3. wat niet meer gedragen wordt, valt of kantelt (zoals bij Bomby)
+  for(const f of [...staat.vallers]){
+    if(f.soort !== 'kantel') continue;
+    const kolom = f.kant < 0 ? Math.floor(f.P[0]/BLOK) : Math.floor(f.P[0]/BLOK) - 1;
+    if(vast(kolom, Math.round(f.P[1]/BLOK))) continue;
+    staat.vallers.splice(staat.vallers.indexOf(f), 1);
+    level.objecten.push(f.o); herstempel(); startVal(f.o);
+  }
+  controleerSteun();
+  herplanVallers();
+  vernieuwVast();
+  // 4. o's in de cirkel: weggeslingerd
+  const KWETSBAAR = ['vliegen','zakken','lopen','vallen','bouwen','eten','krak','leggen','weigeren','glijden','veren','aanloop','duiken','opspringen','landen','opstappen','opblazen','stijgen','zweven','verschijnen','boren','draaien','opstijgen','terug','richten','gooien','haakVliegt','trekken','oprollen','vasthouden','kabel'];
+  for(const o of staat.oelies){
+    if(!KWETSBAAR.includes(o.fase)) continue;
+    if(!raaktCirkel(o.x - 8, o.y - FIGUUR_HOOGTE, 16, FIGUUR_HOOGTE)) continue;
+    if(inBallon(o)){ const maat = ballonMaat(o); staat.knallen.push({ x: o.x + BALLON_HUID_DX*maat*ballonKant(o), y: o.y - BALLON_TOP*maat, maat, start: t }); }
+    o.slingerRichting = Math.sign(o.x - cx) || o.richting;
+    gaatDood(o, 'slinger');
+  }
+  // 5. bommen en andere drukplaten in de buurt gaan meteen mee af
+  for(const a of staat.bommen) if(!a.weg && inCirkel(a.x, a.y)) a.start = Math.min(a.start, t - LONT_DUUR + 0.12);
+  for(const q of staat.drukplaten){
+    if(q.op || q === p) continue; const qm = objectMaat(q);
+    if(raaktCirkel(q.x*BLOK, q.y*BLOK, qm.b*BLOK, qm.h*BLOK)) q.aan = Math.min(q.aan ?? t, t - DRUK_LONT + 0.12);
+  }
+  grondWeg();
+  deeltjes(cx, cy - 18, 22, { vMin: 40, vMax: 180, leven: 0.55, r: 1.3, fonkel: 0.6, kleur: () => Math.random() < 0.5 ? 'rgb(255,214,90)' : 'rgb(255,140,50)', gloed: false });
 }
 // staat er een o (of Bomby met zijn bom) op een plek waar de grond weg is? Dan valt hij.
 function grondWeg(){
@@ -3268,7 +3383,7 @@ function controleerSteun(){
   // van onder naar boven: wat bovenop iets anders staat, weet dan waar dat terechtkomt
   // Hellingen zijn grond: alleen bij de start van het level vallen ze op hun plek (als ze in de editor zwevend
   // zijn neergezet). Daarna blijven ze altijd staan, ook als Rocky of Bomby de grond eronder weghaalt.
-  const lijst = level.objecten.filter(o => !isDecor(o) && o.soort !== 'parachute' && !o.gegeten && !(o.soort === 'helling' && staat.hellingenVast))
+  const lijst = level.objecten.filter(o => !isDecor(o) && o.soort !== 'parachute' && o.soort !== 'drukplaat' && !o.gegeten && !(o.soort === 'helling' && staat.hellingenVast))
     .sort((a, b) => (b.y + objectMaat(b).h) - (a.y + objectMaat(a).h));
   for(const o of lijst){
     const i = level.objecten.indexOf(o); if(i < 0) continue;
@@ -4526,6 +4641,7 @@ function werkBij(dt){
   // Newton: staat alles nog ergens op? (bij de start, na een knal, na een landing)
   if(staat.steunCheck) controleerSteun();
   for(const p of staat.parachutes) parachuteStap(p, dt);
+  for(const p of staat.drukplaten) drukplaatStap(p, dt);   // (v1.71)
   stenenStap(dt);
   // Bomby's bommen, vallende en kantelende balken, de knallen en de wolkjes
   for(const b of staat.bommen) if(!b.weg) bomStap(b, dt);
@@ -5036,6 +5152,7 @@ function teken(){
   for(const o of latGetrokken) if(level.objecten.includes(o)){ ctx.save(); ctx.translate(o.schuif || 0, 0); tekenObject(ctx, o, staat.tijd); ctx.restore(); }   // (v1.41) door Hooky getrokken balk
   for(const o of kistenOpVolgorde(level.objecten)) if(isDing(o)) tekenObject(ctx, o, staat.tijd);   // (v1.35) onderste kisten eerst
   for(const p of staat.parachutes) if(!p.op) tekenObject(ctx, p, staat.tijd);
+  for(const p of staat.drukplaten) if(!p.op) tekenObject(ctx, p, staat.tijd);   // (v1.71)
   tekenVallers();
   tekenStenen();
   if(staat.vliegStart === null){ tekenWolk(); if(CONTRAST.aan) tekenContrastRing('wolk'); }

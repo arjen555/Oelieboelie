@@ -16,11 +16,12 @@ function objectMaat(o){   // breedte (b) en hoogte (h) in blokjes
   if(o.soort === 'balk'){ const l = OBJ_LENGTES[o.maat] || 16; return o.stand === 'verticaal' ? { b:2, h:l } : { b:l, h:2 }; }
   if(o.soort === 'plank')     return { b: OBJ_LENGTES[o.maat] || 16, h:1 };
   if(o.soort === 'parachute') return { b:4, h:5 };
+  if(o.soort === 'drukplaat') return { b:4, h:1 };   // (v1.71) ontstekingsmechanisme: platte plaat op de grond
   return { b:1, h:1 };
 }
 // de parachute is geen bouwvorm: je loopt erdoorheen. Van de spullen is alleen de kist vast (je staat erop);
 // boom, put, hond en cactus werken met een eigen stuk waar de o's tegenaan lopen, en decor doet niets.
-const objectIsVast = o => o.soort !== 'parachute' && !isDecor(o) && (!isDing(o) || o.soort === 'kist' || !!STEVIG[o.soort]);
+const objectIsVast = o => o.soort !== 'parachute' && o.soort !== 'drukplaat' && !isDecor(o) && (!isDing(o) || o.soort === 'kist' || !!STEVIG[o.soort]);
 // De vorm van een object, in spelpixels. Deze vorm wordt getekend, en in het spel bepaalt hij ook
 // welke blokjes 'vast' worden (een blokje telt mee als zijn midden binnen de vorm valt).
 function objectPad(o){
@@ -41,7 +42,7 @@ function objectPad(o){
     p.closePath();
   } else if(o.soort === 'schuin'){
     o.hoeken.forEach(([hx, hy], i) => i ? p.lineTo(hx, hy) : p.moveTo(hx, hy)); p.closePath();
-  } else if(o.soort === 'parachute' || isDing(o) || isDecor(o)){
+  } else if(o.soort === 'parachute' || o.soort === 'drukplaat' || isDing(o) || isDecor(o)){
     p.rect(x, y, b, h);
   } else {
     const r = Math.min(2.5, h/3, b/3);   // balk en plank: rechthoek met zachte hoekjes
@@ -414,6 +415,7 @@ function tekenHelling(c, o){
 function tekenObject(c, o, t){
   const m = objectMaat(o), x = o.x*BLOK, y = o.y*BLOK, b = m.b*BLOK, h = m.h*BLOK;
   if(o.soort === 'parachute'){ tekenParachutePakket(c, x + b/2, y, b, h, t || 0); return; }
+  if(o.soort === 'drukplaat'){ tekenDrukplaat(c, x, y, b, h, t || 0, o.v); return; }   // (v1.71)
   if(o.soort === 'helling'){ tekenHelling(c, o); return; }
   if(o.soort === 'schuin'){
     const lat = objPlaatje(o.lat);
@@ -465,5 +467,62 @@ function tekenParachutePakket(c, x, y, b, h, t){
   tekenParachuteKoepel(c, x, y + 4 + dein, 28, 12, 15);
   c.save(); c.fillStyle = '#8a929c'; c.strokeStyle = '#4c5561'; c.lineWidth = 1;
   c.beginPath(); c.roundRect ? c.roundRect(x - 5, y + 30 + dein, 10, 8, 2) : c.rect(x - 5, y + 30 + dein, 10, 8); c.fill(); c.stroke();
+  c.restore();
+}
+
+// ---- (v1.71) De drukplaat (ontstekingsmechanisme) ----
+// Een platte metalen plaat met klinknagels, half in de grond, met een lontje aan de rechterkant.
+// v = hoe ver het lontje is opgebrand (undefined = nog niet aangezet, 0..1 = brandt).
+// x, y = linkerbovenhoek van het vak (4 x 1 blokjes); de onderkant van het vak is de grond.
+function tekenDrukplaat(c, x, y, b, h, t, v){
+  const aan = typeof v === 'number', in_ = aan ? 1.6 : 0;   // aangezet: de plaat is ingedrukt
+  const top = y + h - 5 + in_, onder = y + h + 1.5;
+  c.save();
+  // het lontje: een krulletje van de rechterrand omhoog, korter naarmate het opbrandt
+  const L = aan ? Math.max(0, 1 - v) : 1;
+  const p0 = [x + b - 3, top + 1.5], p1 = [x + b + 5, top - 1], p2 = [x + b + 1, top - 8], p3 = [x + b + 6, top - 11];
+  const punt = k => { const u = 1 - k; return [u*u*u*p0[0] + 3*u*u*k*p1[0] + 3*u*k*k*p2[0] + k*k*k*p3[0], u*u*u*p0[1] + 3*u*u*k*p1[1] + 3*u*k*k*p2[1] + k*k*k*p3[1]]; };
+  if(L > 0.02){
+    c.beginPath(); c.moveTo(p0[0], p0[1]);
+    for(let i = 1; i <= 16; i++){ const q = punt(L*i/16); c.lineTo(q[0], q[1]); }
+    c.lineCap = 'round'; c.strokeStyle = '#3b2a1a'; c.lineWidth = 1.6; c.stroke();
+    c.strokeStyle = 'rgba(214,180,120,.55)'; c.lineWidth = 0.6; c.stroke();
+  }
+  // de plaat
+  const r = 1.8;
+  c.beginPath();
+  if(c.roundRect) c.roundRect(x + 0.5, top, b - 1, onder - top, r); else c.rect(x + 0.5, top, b - 1, onder - top);
+  const g = c.createLinearGradient(0, top, 0, onder);
+  g.addColorStop(0, '#b9c1ca'); g.addColorStop(0.45, '#8c949e'); g.addColorStop(1, '#5c646e');
+  c.fillStyle = g; c.fill(); c.lineWidth = 1; c.strokeStyle = '#3c444e'; c.stroke();
+  c.strokeStyle = 'rgba(255,255,255,.45)'; c.lineWidth = 0.7;   // glimlijntje bovenop
+  c.beginPath(); c.moveTo(x + 2.5, top + 0.9); c.lineTo(x + b - 2.5, top + 0.9); c.stroke();
+  // klinknagels
+  for(const kx of [x + 3.2, x + b - 3.2, x + b*0.33, x + b*0.67]){
+    c.beginPath(); c.arc(kx, top + 2.9, 0.95, 0, Math.PI*2);
+    c.fillStyle = '#d7dde3'; c.fill(); c.lineWidth = 0.5; c.strokeStyle = '#4a525c'; c.stroke();
+  }
+  // het lampje in het midden: dof rood; aangezet knippert het, steeds sneller
+  const lx = x + b/2, ly = top - 0.6;
+  let licht = 0.25;
+  if(aan){ const f = 2.5 + 14*v*v; licht = (Math.sin(t*f*Math.PI*2) > 0) ? 1 : 0.35; }
+  if(licht > 0.5){
+    const gl = c.createRadialGradient(lx, ly, 0, lx, ly, 7);
+    gl.addColorStop(0, 'rgba(255,90,60,.7)'); gl.addColorStop(1, 'rgba(255,60,40,0)');
+    c.fillStyle = gl; c.beginPath(); c.arc(lx, ly, 7, 0, Math.PI*2); c.fill();
+  }
+  c.beginPath(); c.arc(lx, ly + 0.6, 2.1, Math.PI, 0); c.closePath();
+  c.fillStyle = licht > 0.5 ? '#ff5a3c' : '#9a2f24'; c.fill(); c.lineWidth = 0.6; c.strokeStyle = '#4a1610'; c.stroke();
+  c.fillStyle = 'rgba(255,255,255,.6)'; c.beginPath(); c.arc(lx - 0.7, ly - 0.4, 0.55, 0, Math.PI*2); c.fill();
+  // het vonkje aan het eind van het lontje
+  if(aan && L > 0.02){
+    const [sx, sy] = punt(L), rr = 2.2 + Math.sin(t*37)*0.5;
+    const gs = c.createRadialGradient(sx, sy, 0, sx, sy, rr*1.9);
+    gs.addColorStop(0, 'rgba(255,255,235,1)'); gs.addColorStop(0.35, 'rgba(255,215,90,.9)'); gs.addColorStop(1, 'rgba(255,120,30,0)');
+    c.fillStyle = gs; c.beginPath(); c.arc(sx, sy, rr*1.9, 0, Math.PI*2); c.fill();
+    c.fillStyle = 'rgba(255,245,200,.95)'; c.beginPath();
+    for(let i = 0; i < 8; i++){ const hk = i*Math.PI/4 + t*6, q = i % 2 ? rr*0.35 : rr*1.2; c.lineTo(sx + Math.cos(hk)*q, sy + Math.sin(hk)*q); }
+    c.closePath(); c.fill();
+  }
   c.restore();
 }

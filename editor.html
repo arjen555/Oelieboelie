@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Oelieboelie Editor v1.57</title>
+<title>Oelieboelie Editor v1.58</title>
 <style>
   :root{ --bg:#16202b; --panel:#1f2b38; --panel2:#263445; --rand:#334457; --text:#e8eef5; --muted:#93a4b6; --accent:#7fb2ff; }
   *{box-sizing:border-box}
@@ -126,7 +126,7 @@
 <body>
 <div id="opgeslagen" role="status" aria-live="polite"><div class="vink">✓</div><div class="kop">Opgeslagen!</div><div class="uitleg"></div></div>
 <header>
-  <h1>Oelieboelie Editor<span>v1.57</span><span id="stand"></span></h1>
+  <h1>Oelieboelie Editor<span>v1.58</span><span id="stand"></span></h1>
   <label class="veld">Levelnummer<input id="nummer" type="number" min="1" max="100" value="1"></label>
   <label class="veld">Naam<input id="naam" type="text" value="Mijn eerste level"></label>
   <label class="veld" id="klaarVeld" title="Alleen klare levels staan in het prentenboek van de spelers (onaffe levels altijd achteraan zetten)">Klaar<input id="klaar" type="checkbox"></label>
@@ -961,7 +961,9 @@ const OBJ_MENU = [
   ]},
   { groep: 'Werkende objecten', rijen: [
     { naam: 'Parachute', uitleg: 'De eerste o die erdoorheen loopt, zweeft één keer veilig naar beneden.', opties: [
-      { soort:'parachute', label:'parachute' } ] }
+      { soort:'parachute', label:'parachute' } ] },
+    { naam: 'Drukplaat', uitleg: 'Wie hem raakt (ook zwevend of vliegend) zet hem aan. Na 2 seconden een knal: in een cirkel van 7 blokjes gaat alles kapot, ook steen, en wie er staat vliegt weg. Werkt één keer. Zet hem op de grond.', opties: [
+      { soort:'drukplaat', label:'drukplaat' } ] }
   ]},
   { groep: "Spullen waar de o's op reageren", rijen: [
     { naam: 'Bomen', uitleg: "De o's lopen tegen de stam en draaien om. Door de kruin val je heen.", opties: [ { soort:'boom', label:'boom' },
@@ -1013,7 +1015,7 @@ const OBJ_MENU = [
 ];
 const objSleutel = o => [o.soort, o.maat || '', o.stand || '', o.richting || ''].join('|');
 function labelVan(o){
-  const naam = { boog:'Boog', helling:'Helling', balk: o.stand === 'verticaal' ? 'Balk staand' : 'Balk liggend', plank:'Plank', parachute:'Parachute',
+  const naam = { boog:'Boog', helling:'Helling', balk: o.stand === 'verticaal' ? 'Balk staand' : 'Balk liggend', plank:'Plank', parachute:'Parachute', drukplaat:'Drukplaat',
                  boom:'Boom', put:'Waterput', kist:'Houten kist', hond:'Hond', cactus:'Cactussen', molen:'Windmolen', huis:'Huisje',
                  struik:'Struik', lantaarn:'Lantaarnpaal', bank:'Bankje', vogelverschrikker:'Vogelverschrikker', wegwijzer:'Wegwijzer',
                  brievenbus:'Brievenbus', vogelhuisje:'Vogelhuisje', kruiwagen:'Kruiwagen',
@@ -1024,7 +1026,7 @@ function labelVan(o){
   if(o.soort === 'struisvogel') return { staan:'Struisvogel (rechtop)', pik:'Struisvogel (pikt)', kijk:'Struisvogel (kijkt)' }[o.maat] || naam;
   if(o.soort === 'rook') return { klein:'Rookpluim (klein)', middel:'Rookpluim (middel)', groot:'Rookpluim (groot)' }[o.maat] || naam;
   if(o.soort === 'struik') return { rond:'Struik', bloei:'Bloeiende struik', bloemen:'Bloemen' }[o.maat] || naam;
-  return (o.soort === 'parachute' || isDing(o) || isDecor(o)) ? naam : `${naam} ${o.label}`;
+  return (o.soort === 'parachute' || o.soort === 'drukplaat' || isDing(o) || isDecor(o)) ? naam : `${naam} ${o.label}`;
 }
 function bouwObjectMenu(){
   const paneel = $('objPaneel'); paneel.innerHTML = '';
