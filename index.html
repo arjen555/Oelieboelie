@@ -59,7 +59,6 @@
   #lvlSpeel{margin-top:8px;font:700 18px "Trebuchet MS",system-ui,sans-serif;color:#fff;background:#2aa36b;border:0;border-radius:18px;padding:8px 26px;cursor:pointer;box-shadow:0 4px 0 #1d7a50}
   #lvlKaart.toekomst #lvlSpeel{display:none}
   #lvlJoker{display:none;margin:8px 0 0 6px;font:700 18px "Trebuchet MS",system-ui,sans-serif;color:#fff;background:#1f9e9a;border:0;border-radius:18px;padding:8px 16px;cursor:pointer;box-shadow:0 4px 0 #167a77}
-  #lvlKaart.magJoker #lvlJoker{display:inline-block}
   #lvlZeker{display:none;margin-top:8px;font-size:15px;font-weight:700}
   #lvlZeker button{margin:8px 4px 0;font:700 16px "Trebuchet MS",system-ui,sans-serif;border:0;border-radius:16px;padding:7px 16px;cursor:pointer}
   #zekerJa{color:#fff;background:#1f9e9a;box-shadow:0 3px 0 #167a77} #zekerNee{color:#7a3d12;background:#ead6a8;box-shadow:0 3px 0 #c9ad72}
@@ -144,7 +143,7 @@
   <label class="rij"><span><b>Loep</b><small>maakt het speelveld groter; zoomen met het muiswieltje of door te knijpen</small></span><input type="checkbox" id="optLoep"><i></i></label>
   <label class="rij"><span><b>Hoog contrast</b><small>rustige achtergrond, de oelieboelies en gevaren duidelijk omlijnd</small></span><input type="checkbox" id="optContrast"><i></i></label>
   <div class="noot">Tik buiten dit kader om verder te gaan.</div></div>
-<div id="lvlKaart"><img id="lvlPlaatje" alt=""><div id="lvlNr"></div><div id="lvlNaam"></div><div id="lvlMaker"></div><div id="lvlStand"></div><div id="lvlKnoppen"><button id="lvlSpeel">▶ Speel</button><button id="lvlJoker">✨ Joker</button></div><div id="lvlZeker">Weet je het zeker? Je hebt maar één toverkrijtje.<br><button id="zekerNee">Nee</button><button id="zekerJa">Ja, gebruik</button></div></div>
+<div id="lvlKaart"><img id="lvlPlaatje" alt=""><div id="lvlNr"></div><div id="lvlNaam"></div><div id="lvlMaker"></div><div id="lvlStand"></div><div id="lvlKnoppen"><button id="lvlSpeel">▶ Speel</button></div><div id="lvlZeker"><span id="zekerTekst">Dit level overslaan met het toverkrijtje? Op deze kaart heb je er maar één.</span><br><button id="zekerNee">Nee</button><button id="zekerJa">Ja, overslaan</button></div></div>
 <button id="boekTerug" aria-label="terug naar de boeken" title="terug naar de boeken"><img alt="" src="plaatjes/opening/terug_boek.webp"></button>
 <button id="plekTerug" aria-label="terug naar de startpagina" title="terug naar de startpagina"><img alt="" src="plaatjes/opening/terug_plek.webp"></button>
 <div id="wisVraag"><div id="wisTitel"></div><div id="wisTekst"></div>
@@ -161,7 +160,7 @@
   <div><button id="naamNee">Toch niet</button><button id="naamOk">Klaar</button></div></div>
 <input type="range" id="volume" min="0" max="100" step="1" aria-label="Volume van de muziek">
 <button id="opnieuw" style="display:none" title="Speel het begin nog een keer af">↻ nog een keer</button>
-<div id="versie">openingsscherm v0.59</div>
+<div id="versie">openingsscherm v0.64</div>
 <script>
 // =====================================================================
 // OELIEBOELIE – OPENINGSSCHERM v0.46 (v0.46: mist op het kaartje verder dan 3 levels vooruit; startpagina van de website; v0.45: gekoppeld aan spel.html en editor.html)
@@ -675,12 +674,23 @@ function cr(p0, p1, p2, p3, u){   // vloeiende lijn door de punten (Catmull-Rom)
   const u2 = u*u, u3 = u2*u;
   return 0.5*((2*p1) + (-p0 + p2)*u + (2*p0 - 5*p1 + 4*p2 - p3)*u2 + (-p0 + 3*p1 - 3*p2 + p3)*u3);
 }
+let inBoekVlieg = false;
+// (v0.64) ook in het prentenboek fladdert de vlinder en zweeft het paardenbloempluisje over de kaart (zelfde plan
+// als op het openingsscherm, steeds opnieuw na 13 minuten). Alleen op kaarten die je al hebt bereikt.
+function boekVliegers(t, R){
+  if(hc() || !bereikt(kaartNr) || t < 70) return;
+  const tb = 70 + (t - 70) % 780;
+  ctx.save(); ctx.translate(R.x, R.y); ctx.scale(R.k, R.k); ctx.beginPath(); ctx.rect(0, 0, 1672, 941); ctx.clip();
+  inBoekVlieg = true; try { vlinder(tb, 'achter'); vlinder(tb, 'voor'); pluisje(tb); } finally { inBoekVlieg = false; }
+  ctx.restore();
+}
 function vlinderPlek(p, tt){
   const n = p.punten.length - 1, s = klem(tt/p.duur, 0, 1)*n, i = Math.min(n - 1, Math.floor(s)), u = s - i;
   const P = k => p.punten[klem(k, 0, n)], Z = k => p.diepte[klem(k, 0, n)];
   const x = cr(P(i-1)[0], P(i)[0], P(i+1)[0], P(i+2)[0], u), y = cr(P(i-1)[1], P(i)[1], P(i+1)[1], P(i+2)[1], u);
   const z = cr(Z(i-1), Z(i), Z(i+1), Z(i+2), u);
   // van 'deel van wat je ziet' naar podiumpunten (werkt bij elke schermvorm)
+  if(inBoekVlieg) return [x*1672, y*941, klem(z, 0.16, 1.45)];   // (v0.64) in het boek: over de bladzijden
   const L = -ox/schaal, T = -oy/schaal, B = innerWidth/schaal, H = innerHeight/schaal;
   return [L + x*B, T + y*H, klem(z, 0.16, 1.45)];
 }
@@ -731,7 +741,7 @@ function pluisje(t){
   const p = pluisPlan.find(q => t >= q.t0 && t < q.t0 + q.duur); if(!p || p.soort !== 'pluis') return;
   const tt = t - p.t0, v = tt/p.duur;
   // van net links buiten het beeld naar net rechts erbuiten (ook bij smalle of brede schermen)
-  const links = -ox/schaal - 60, rechts = (innerWidth - ox)/schaal + 60;
+  const links = inBoekVlieg ? -60 : -ox/schaal - 60, rechts = inBoekVlieg ? 1732 : (innerWidth - ox)/schaal + 60;
   const x = links + (rechts - links)*v;
   const golf = Math.sin(tt*p.w1 + p.f)*p.a1 + Math.sin(tt*p.w2 + p.f*1.7)*p.a2;
   const y = p.y0 + (p.y1 - p.y0)*glad(v) + golf;
@@ -1455,9 +1465,9 @@ function kamer(t){
 // met de rand in de kleur van dat boek. Elk boek bewaart zijn eigen voortgang (localStorage 'oelieboelie_boeken').
 // De boeken zijn losgeknipt (veelhoek per boek) zodat ze omhoog kunnen komen als je ze aanwijst.
 // =====================================================================
-const BOEK_KLEUREN = [ { kaft: '#7d1f1a', rand: null, gloed: '255,120,90' },          // rood: de kaarten zijn al rood omrand
-                       { kaft: '#1f3b78', rand: [58, 96, 178], gloed: '120,160,255' },  // blauw
-                       { kaft: '#34561f', rand: [92, 132, 54], gloed: '170,220,110' } ]; // groen
+const BOEK_KLEUREN = [ { kaft: '#7d1f1a', rand: '#9b2d22', gloed: '255,120,90' },     // rood   (v0.60: de rand van de bladzijde tekent de code)
+                       { kaft: '#1f3b78', rand: '#2f5aa8', gloed: '120,160,255' },    // blauw
+                       { kaft: '#34561f', rand: '#4f7a2c', gloed: '170,220,110' } ];  // groen
 const LAPJES = [[568, 468], [859, 468], [1155, 469]];         // midden van de naamlapjes
 const LANTAARNS = [[325, 222, 70, '255,190,90'], [465, 195, 85, '255,140,50'], [645, 140, 95, '255,225,150'], [1350, 422, 70, '255,190,90']];
 const PB = D.A.boeken.map(b => ({ ...b, im: laad(b.img) }));
@@ -1561,22 +1571,22 @@ function tekenGum(t){
     ctx.fillStyle = '#7a3d12'; ctx.fillText(tk, 860, 291); ctx.restore(); }
 }
 
-// de landkaart met de rand in de kleur van het gekozen boek (rode randpixels omkleuren; één keer per kaart en kleur)
-const kaartRandCache = {};
-function kaartBeeld(n){
-  const kl = BOEK_KLEUREN[gekozen], im = IMG[KAARTEN[n].img];
-  if(!kl.rand || !im.complete || !im.naturalWidth) return im;
-  const key = n + '_' + gekozen; if(kaartRandCache[key]) return kaartRandCache[key];
-  const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight;
-  const g = c.getContext('2d'); g.drawImage(im, 0, 0);
-  const W = c.width, H = c.height, B = 19, d = g.getImageData(0, 0, W, H), p = d.data;
-  for(let y = 0; y < H; y++) for(let x = 0; x < W; x++){
-    if(!(x < B || x >= W - B || y < B || y >= H - B || (Math.abs(x - W/2) < 40 && (y < 32 || y > H - 32)))) continue;
-    const i = (y*W + x)*4, r = p[i], gg = p[i+1], b = p[i+2];
-    if(r > 80 && r > gg*1.5 && r > b*1.5){ const f = r/190, m = Math.min(1, (r - Math.max(gg, b))/90);
-      p[i] = r*(1 - m) + Math.min(255, kl.rand[0]*f)*m; p[i+1] = gg*(1 - m) + Math.min(255, kl.rand[1]*f)*m; p[i+2] = b*(1 - m) + Math.min(255, kl.rand[2]*f)*m; }
-  }
-  g.putImageData(d, 0, 0); kaartRandCache[key] = c; return c;
+// (v0.60) de landkaart. Een kaart die je nog niet hebt bereikt, is wazig, zwart-wit en flets (Arjen: je moet
+// nauwelijks kunnen zien wat het voorstelt). Die wazige versie wordt één keer per kaart gemaakt: klein tekenen en
+// weer opblazen (vervagen), dan kleur eruit en contrast omlaag. Werkt ook op oudere iPads (geen ctx.filter nodig).
+const kaartWaasCache = {};
+function kaartBeeld(n){ return IMG[KAARTEN[n].img]; }
+function kaartWaas(n){
+  const im = IMG[KAARTEN[n].img]; if(!im.complete || !im.naturalWidth) return im;
+  if(kaartWaasCache[n]) return kaartWaasCache[n];
+  const k = document.createElement('canvas'); k.width = 190; k.height = 107;   // (v0.62) minder vaag: je ziet een tipje van wat er komt
+  const kg = k.getContext('2d'); kg.imageSmoothingQuality = 'high'; kg.drawImage(im, 0, 0, k.width, k.height);
+  const c = document.createElement('canvas'); c.width = 418; c.height = 235;
+  const g = c.getContext('2d'); g.imageSmoothingQuality = 'high'; g.drawImage(k, 0, 0, c.width, c.height);
+  const d = g.getImageData(0, 0, c.width, c.height), p = d.data;
+  for(let i = 0; i < p.length; i += 4){ const l = 0.3*p[i] + 0.59*p[i+1] + 0.11*p[i+2], v = 190 + (l - 140)*0.55;
+    p[i] = v; p[i+1] = v + 2; p[i+2] = v + 6; }
+  g.putImageData(d, 0, 0); return kaartWaasCache[n] = c;
 }
 function plek(t){
   const a = plekAlpha(t);
@@ -1637,21 +1647,23 @@ function tekenNaam(i, x, y, s){
 // =====================================================================
 const BOEK_SCHAAL = 0.9;               // het boek op het podium (de rest is tafel)
 const PER_KAART = 25;
-// (v0.24) vier landkaarten, elk met een eigen pad (in pixels van het plaatje, 1672 x 941).
-// Het pad begint steeds linksonder en eindigt waar de volgende kaart begint.
+// (v0.60) vier nieuwe landkaarten in de stijl van het openingsscherm (Images\Openingsscherm\landkaart1-4.png, 1672 x 941).
+// Het pad is meegeschilderd; 'pad' volgt dat geschilderde paadje (in pixels van het plaatje), de 25 bolletjes
+// komen op gelijke afstand. Per kaart ook: het kistje met het toverkrijtje, het terugbordje aan het begin en de
+// wegwijzer aan het eind (x, y = voet van de paal; r = 1 wijst naar rechts, -1 naar links).
 const KAARTEN = [
-  { img: 'kaart1', naam: 'Het dal', kleur: '#7f9e3a',     // langs het vijvertje en de konijntjes het toverbos in
-    pad: [[70,742],[260,712],[480,688],[700,664],[920,640],[1110,602],[1200,545],[1120,490],[960,470],[835,440],
-          [800,385],[870,335],[1010,318],[1160,300],[1280,262],[1350,222],[1402,188]] },
-  { img: 'kaart2', naam: 'Het toverbos', kleur: '#3f7d4a',  // onderlangs het bos, door de open plek, naar het doorkijkje op de bergen
-    pad: [[60,835],[300,800],[560,780],[800,750],[1000,705],[1150,640],[1170,570],[1060,525],[930,500],[880,440],
-          [960,390],[1100,370],[1220,345],[1310,318]] },
-  { img: 'kaart3', naam: 'De bergen', kleur: '#6b7f99',     // over de bergweide, langs de waterval, naar het uitzicht op zee
-    pad: [[110,660],[330,645],[560,645],[780,665],[960,690],[1110,650],[1190,580],[1110,515],[960,485],[905,435],
-          [1000,400],[1150,390],[1260,368],[1330,345]] },
-  { img: 'kaart4', naam: 'De Oelieboeliezee', kleur: '#2f7fb5', // over het strand, langs het zeehondje, naar de pier
-    pad: [[310,665],[440,610],[560,530],[700,485],[830,515],[830,610],[730,690],[700,790],[840,855],[1020,820],
-          [1140,740],[1170,650],[1240,590],[1310,545],[1365,515]] }
+  { img: 'kaart1', naam: 'Woepiedal',
+    pad: [[40,700],[200,642],[405,622],[559,595],[748,574],[961,547],[1120,530],[1242,481],[1258,454],[1217,428],[1097,408],[949,398],[845,364],[828,351],[861,328],[994,297],[1147,289],[1300,281],[1388,264]],
+    kist: [880, 527], terug: { x: 385, y: 578, tekst: 'Naar huis', maat: 1.25 }, verder: { x: 1352, y: 458, r: 1, hoek: -0.08, naam: 'Boeliebos', sub: 'level 26 t/m 50' } },
+  { img: 'kaart2', naam: 'Boeliebos',
+    pad: [[215,290],[350,305],[470,330],[530,381],[541,449],[470,500],[382,542],[329,603],[341,666],[422,713],[559,751],[756,766],[946,747],[1098,703],[1180,636],[1179,561],[1107,506],[1007,447],[990,406],[1010,345],[1100,310],[1252,311],[1399,302],[1550,294]],
+    kist: [760, 640], terug: { x: 200, y: 266, tekst: 'Woepiedal' }, verder: { x: 1490, y: 268, r: 1, naam: 'Oeliegebergte', sub: 'level 51 t/m 75' } },
+  { img: 'kaart3', naam: 'Oeliegebergte',
+    pad: [[68,367],[124,390],[162,465],[125,538],[110,610],[171,679],[287,717],[430,713],[553,679],[700,671],[822,670],[936,648],[1051,636],[1157,606],[1210,560],[1160,510],[1043,509],[966,469],[1000,420],[1149,405],[1333,391],[1453,350],[1440,300],[1296,290],[1159,263],[1202,232],[1399,209],[1552,183],[1640,145]],
+    kist: [300, 630], terug: { x: 230, y: 380, tekst: 'Boeliebos' }, verder: { x: 1462, y: 172, r: 1, naam: 'Zwiezozee', sub: 'level 76 t/m 100' } },
+  { img: 'kaart4', naam: 'Zwiezozee',
+    pad: [[86,115],[154,150],[280,182],[388,224],[416,264],[376,300],[272,345],[197,409],[196,453],[269,493],[404,523],[503,591],[533,643],[591,689],[700,710],[879,713],[1059,746],[1201,777],[1329,797],[1465,800]],
+    kist: [760, 625], terug: { x: 300, y: 165, tekst: 'Oeliegebergte' }, verder: { x: 1250, y: 742, r: 1, naam: 'Eeuwige roem!', sub: '' } }
 ];
 const LEVELS = [];                     // (v0.45) de levels die er nu zijn: bij het starten uit levels/levelboek.json
 const LEVEL_ACHTERGROND = {};
@@ -1690,22 +1702,147 @@ const PADEN = KAARTEN.map(k => padPunten(k.pad));
 function boekRect(){ const w = PW*BOEK_SCHAAL, h = PH*BOEK_SCHAAL; return { x: (PW - w)/2 - 10, y: (PH - h)/2, w, h, k: BOEK_SCHAAL }; }
 function boekAlpha(t){ if(boekIn === null) return 0; if(boekUit !== null) return 1 - glad((t - boekUit)/0.5); return glad((t - boekIn)/0.6); }
 function inBoek(){ const t = (performance.now() - start)/1000; return boekIn !== null && boekUit === null && t - boekIn > 0.6; }
-function staatVan(nr){ const B = BOEKEN[gekozen], g = B.gehaald; if(nr > LEVELS.length) return 'leeg'; if(B.joker === nr) return 'half'; if(nr <= g) return 'gehaald'; if(nr === g + 1) return 'volgende'; return 'toekomst'; }
+function staatVan(nr){ const B = BOEKEN[gekozen], g = B.gehaald; if(nr > LEVELS.length) return 'leeg'; if(krijtVan(B).includes(nr)) return 'half'; if(nr <= g) return 'gehaald'; if(nr === g + 1) return 'volgende'; return 'toekomst'; }
 function bolletjeOnder(px, py){
   if(blad) return null; const R = boekRect(), PAD = PADEN[kaartNr];
   for(let i = 0; i < PER_KAART; i++){ const [x, y] = PAD.plekken[i], nr = kaartNr*PER_KAART + i + 1;
     if(Math.hypot(px - (R.x + x*R.k), py - (R.y + y*R.k)) < 31*bolMaat() && staatVan(nr) !== 'leeg') return nr; }
   return null;
 }
-// tabjes rechts aan het boek en de ezelsoortjes onderin: om naar een andere kaart te bladeren
-function tabRect(i){ const R = boekRect(); return [R.x + R.w - 10, R.y + 70 + i*82, 52 + (i === kaartNr ? 10 : 0), 60]; }
-function bladerOnder(px, py){
-  if(blad) return null;
-  for(let i = 0; i < KAARTEN.length; i++){ const [x, y, w, h] = tabRect(i); if(i !== kaartNr && px > x + 10 && px < x + w && py > y && py < y + h) return i; }
-  const R = boekRect(), es = 70;
-  if(kaartNr < KAARTEN.length - 1 && px > R.x + R.w - es && py > R.y + R.h - es) return kaartNr + 1;
-  if(kaartNr > 0 && px < R.x + es && py > R.y + R.h - es) return kaartNr - 1;
+// (v0.60) Geen tabjes en ezelsoortjes meer: aan het eind van het pad staat een wegwijzer naar de volgende kaart,
+// aan het begin een terugbordje (op kaart 1: 'Naar huis' = terug naar het openingsscherm). Vegen op de tablet mag nog.
+// Een kaart is 'bereikt' zodra het eerste level ervan je volgende level is (of al gehaald).
+function bereikt(n){ return n === 0 || BOEKEN[gekozen].gehaald >= n*PER_KAART; }
+function krijtVan(B){   // het toverkrijtje per kaart: krijt[n] = nummer van het overgeslagen level op kaart n (of null)
+  if(!Array.isArray(B.krijt)){ B.krijt = KAARTEN.map(() => null);
+    if(B.joker != null){ B.krijt[Math.min(KAARTEN.length - 1, Math.floor((B.joker - 1)/PER_KAART))] = B.joker; } delete B.joker; }
+  return B.krijt;
+}
+const PIJL_GROOT = 1, PIJL_KLEIN = 2;   // welke houten pijl uit het wegwijzer-plaatje
+function bordVorm(n, soort){   // waar staat het bordje (in pixels van de kaart), en hoe groot
+  const K = KAARTEN[n], b = soort === 'verder' ? K.verder : K.terug, P = M.ww.paal;
+  const m = b.maat || 1, f = M.ww.pijl[soort === 'verder' ? PIJL_GROOT : PIJL_KLEIN], s = (soort === 'verder' ? 0.34 : 0.27)*m, ps = (soort === 'verder' ? 0.24 : 0.17)*m;
+  const r = soort === 'verder' ? b.r : -1, pw = P.w*ps, ph = P.h*ps, w = f.w*s, h = f.h*s, py = b.y - ph*0.78;
+  const x0 = r > 0 ? b.x - pw*0.12 : b.x + pw*0.12 - w;   // de pijl hangt aan de paal en wijst weg
+  const hoek = b.hoek || 0, box0 = Math.min(b.y - ph, py - h/2 + Math.min(0, Math.sin(hoek)*w)) - 6;
+  return { b, f, s, ps, r, pw, ph, w, h, py, x0, hoek, box0, box: [Math.min(x0, b.x - pw/2) - 6, box0, Math.max(x0 + w, b.x + pw/2) + 6, b.y + 4] };
+}
+function bordZichtbaar(n, soort){ return soort === 'terug' || bereikt(n); }
+function bordOnder(px, py){
+  if(blad) return null; const R = boekRect();
+  for(const soort of ['verder', 'terug']){ if(!bordZichtbaar(kaartNr, soort)) continue;
+    if(soort === 'verder' && kaartNr === KAARTEN.length - 1) continue;   // 'Eeuwige roem!' wijst alleen
+    const [a, b, c, d] = bordVorm(kaartNr, soort).box;
+    if(px > R.x + a*R.k && px < R.x + c*R.k && py > R.y + b*R.k && py < R.y + d*R.k) return soort; }
   return null;
+}
+function tekenBord(n, soort, t, wijs){
+  const v = bordVorm(n, soort), P = M.ww.paal, im = IMG.wegwijzer; if(!im.complete || !im.naturalWidth) return;
+  ctx.save();
+  ctx.shadowColor = hc() ? 'rgba(255,216,60,0.9)' : 'rgba(0,0,0,0.35)'; ctx.shadowBlur = hc() ? 14 : 8; ctx.shadowOffsetY = hc() ? 0 : 4;
+  ctx.drawImage(im, P.x, 0, P.w, P.h, v.b.x - v.pw/2, v.b.y - v.ph, v.pw, v.ph);
+  // (v0.62) de houten pijl en de tekst erop bewegen samen: draaien om het punt waar de pijl aan de paal hangt
+  const wiebel = wijs ? Math.sin(t*9)*0.045 : 0, hup = wijs ? Math.sin(t*9)*2.5 : 0;
+  ctx.save(); ctx.translate(v.r > 0 ? v.x0 : v.x0 + v.w, v.py + hup); ctx.rotate((v.hoek + wiebel)*v.r);
+  if(wijs){ ctx.shadowColor = 'rgba(255,220,120,0.95)'; ctx.shadowBlur = 18; ctx.shadowOffsetY = 0; }
+  ctx.save(); if(v.r < 0) ctx.scale(-1, 1);
+  ctx.drawImage(im, v.f.x, 0, v.f.w, v.f.h, 0, -v.h/2, v.w, v.h);
+  ctx.restore(); ctx.shadowColor = 'transparent';
+  // tekst op het vilten lapje (nooit gespiegeld)
+  const [x0, y0, x1, y1] = v.f.vilt.map(q => q*v.s), bw = (x1 - x0)*0.92, bh = (y1 - y0)*0.9;
+  ctx.translate(v.r*(x0 + x1)/2, -v.h/2 + (y0 + y1)/2);
+  const tekst = soort === 'verder' ? v.b.naam : v.b.tekst, sub = soort === 'verder' ? v.b.sub : '';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = wijs ? '#5a2a08' : '#7a3d12';
+  let fs = Math.min(bh*(sub ? 0.5 : 0.62), 30*(v.b.maat || 1)); const pas = () => { ctx.font = `700 ${fs}px "Trebuchet MS", system-ui, sans-serif`; return ctx.measureText(tekst).width <= bw; };
+  while(!pas() && fs > 9) fs -= 0.5;
+  if(sub){ ctx.fillText(tekst, 0, -bh*0.16); let f2 = fs*0.62; ctx.font = `700 ${f2}px "Trebuchet MS", system-ui, sans-serif`;
+    while(ctx.measureText(sub).width > bw && f2 > 7) { f2 -= 0.5; ctx.font = `700 ${f2}px "Trebuchet MS", system-ui, sans-serif`; }
+    ctx.fillStyle = wijs ? '#6b3a16' : '#8a5428'; ctx.fillText(sub, 0, bh*0.27); }
+  else ctx.fillText(tekst, 0, 1);
+  ctx.restore();
+  ctx.restore();
+}
+// (v0.64) DE ZEEPBEL MET HET TOVERKRIJTJE (Arjens keuze; vervangt het kistje). Eén per kaart; het krijtje werkt
+// alleen op die kaart. De bel dobbert rustig boven het landschap (KAARTEN[].kist = de plek). Tik → vraag →
+// de bel knapt (plop) en het krijtje vliegt naar je bolletje. Krijtje terugverdiend → het vliegt terug en er
+// groeit een nieuwe bel omheen. Gebruikt, kaart uit of niet aan de beurt: geen bel.
+const BEL_R = 50;
+let belKnap = null, belGroei = null;   // { n, t }
+function kistStand(n){   // 'vol' = krijtje ligt klaar, 'leeg' = gebruikt, 'dicht' = kaart uit of nog niet aan de beurt
+  if(!bereikt(n)) return null; const B = BOEKEN[gekozen], k = krijtVan(B)[n];
+  if(k != null) return 'leeg';
+  const vol = B.gehaald + 1; if(vol > LEVELS.length) return 'dicht';
+  return Math.floor((vol - 1)/PER_KAART) === n ? 'vol' : 'dicht';
+}
+function belPlek(n, t){ const [x, y] = KAARTEN[n].kist; return [x + Math.sin(t*0.83 + n)*7, y - BEL_R - 10 + Math.sin(t*1.27 + n*2)*9]; }
+function kistPodium(n, R){ const [x, y] = belPlek(n, (performance.now() - start)/1000); return [R.x + x*R.k, R.y + y*R.k]; }
+function belZichtbaar(n){
+  if(kistStand(n) !== 'vol') return false;
+  if(jokerAnim && Math.floor((jokerAnim.nr - 1)/PER_KAART) === n) return false;   // krijtje is onderweg
+  return true;
+}
+function kistOnder(px, py){
+  if(blad || jokerAnim || !belZichtbaar(kaartNr)) return false; const R = boekRect(), [x, y] = kistPodium(kaartNr, R);
+  return Math.hypot(px - x, py - y) < (BEL_R + 8)*R.k;
+}
+function tekenKist(n, t, wijs){
+  // de bel die net geknapt is: een ringetje en spetters
+  if(belKnap && belKnap.n === n){ const w = t - belKnap.t;
+    if(w > 0.45) belKnap = null;
+    else { const [x, y] = belKnap.plek, p = w/0.45; ctx.save();
+      ctx.strokeStyle = `rgba(255,255,255,${0.8*(1 - p)})`; ctx.lineWidth = 3*(1 - p) + 0.5;
+      ctx.beginPath(); ctx.arc(x, y, BEL_R*(1 + 0.5*p), 0, Math.PI*2); ctx.stroke();
+      for(let i = 0; i < 10; i++){ const a = i*Math.PI/5 + 0.3, d = BEL_R*(1 + 1.1*p);
+        ctx.fillStyle = `rgba(220,240,255,${0.9*(1 - p)})`; ctx.beginPath(); ctx.arc(x + Math.cos(a)*d, y + Math.sin(a)*d, 3.5*(1 - p) + 1, 0, Math.PI*2); ctx.fill(); }
+      ctx.restore(); } }
+  if(!belZichtbaar(n)) return;
+  let groei = 1; if(belGroei && belGroei.n === n){ groei = glad(klem((t - belGroei.t)/0.5, 0, 1)); if(groei >= 1) belGroei = null; }
+  const [x, y] = belPlek(n, t), r = BEL_R*groei*(wijs ? 1.06 + 0.02*Math.sin(t*8) : 1)*(1 + 0.015*Math.sin(t*2.1));
+  if(r < 1) return;
+  ctx.save();
+  // het krijtje in de bel, schuin en een beetje draaiend
+  if(IMG.krijt.complete){ const kw = 66*groei, kh = kw*IMG.krijt.height/Math.max(1, IMG.krijt.width);
+    ctx.save(); ctx.translate(x, y); ctx.rotate(-0.35 + Math.sin(t*0.9)*0.25);
+    ctx.drawImage(IMG.krijt, -kw/2, -kh/2, kw, kh); ctx.restore(); }
+  // de bel: bijna doorzichtig, met een regenboogrand en een glimlichtje
+  const g = ctx.createRadialGradient(x - r*0.3, y - r*0.35, r*0.1, x, y, r);
+  g.addColorStop(0, 'rgba(255,255,255,0.10)'); g.addColorStop(0.75, 'rgba(210,235,255,0.10)'); g.addColorStop(1, 'rgba(200,225,255,0.38)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill();
+  const kl = ['255,120,200', '255,210,90', '120,230,160', '110,190,255', '190,140,255'];
+  ctx.lineWidth = Math.max(1.5, r*0.06);
+  for(let i = 0; i < kl.length; i++){ const a0 = t*0.6 + i*Math.PI*2/kl.length;
+    ctx.strokeStyle = `rgba(${kl[i]},0.55)`; ctx.beginPath(); ctx.arc(x, y, r - ctx.lineWidth/2, a0, a0 + Math.PI*2/kl.length*0.9); ctx.stroke(); }
+  if(wijs || hc()){ ctx.strokeStyle = hc() ? 'rgba(255,216,60,0.95)' : 'rgba(255,225,130,0.9)'; ctx.lineWidth = hc() ? 4 : 2.5; ctx.beginPath(); ctx.arc(x, y, r + 3, 0, Math.PI*2); ctx.stroke(); }
+  ctx.fillStyle = 'rgba(255,255,255,0.75)'; ctx.beginPath(); ctx.ellipse(x - r*0.42, y - r*0.45, r*0.2, r*0.11, -0.7, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.beginPath(); ctx.arc(x + r*0.45, y + r*0.42, r*0.06, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+function tekenSterretje(x, y, r){ ctx.beginPath(); for(let i = 0; i < 8; i++){ const a = i*Math.PI/4, q = i % 2 ? r*0.38 : r; ctx.lineTo(x + Math.cos(a)*q, y + Math.sin(a)*q); } ctx.closePath(); ctx.fill(); }
+// alles wat op de kaart staat (bordjes en kistje), in pixels van de kaart getekend
+function tekenKaartDingen(n, t, R){
+  ctx.save(); ctx.translate(R.x, R.y); ctx.scale(R.k, R.k);
+  if(bereikt(n)) tekenKist(n, t, kistWijs && n === kaartNr);
+  for(const soort of ['terug', 'verder']) if(bordZichtbaar(n, soort)) tekenBord(n, soort, t, bordWijs === soort && n === kaartNr);
+  ctx.restore();
+}
+let bordWijs = null, kistWijs = false;
+// de rand van de bladzijden en de vouw in het midden, in de kleur van het boek
+function tekenRand(R){
+  const kl = BOEK_KLEUREN[gekozen].rand, b = 17, rug = R.x + R.w/2;
+  ctx.save();
+  const sg = ctx.createLinearGradient(rug - 46, 0, rug + 46, 0); sg.addColorStop(0, 'rgba(40,20,5,0)'); sg.addColorStop(0.5, 'rgba(40,20,5,0.32)'); sg.addColorStop(1, 'rgba(40,20,5,0)');
+  ctx.fillStyle = sg; ctx.fillRect(rug - 46, R.y, 92, R.h);
+  ctx.fillStyle = 'rgba(40,20,5,0.35)'; ctx.fillRect(rug - 1, R.y, 2, R.h);
+  ctx.strokeStyle = kl; ctx.lineWidth = b; ctx.strokeRect(R.x + b/2, R.y + b/2, R.w - b, R.h - b);
+  ctx.strokeStyle = 'rgba(255,236,190,0.6)'; ctx.lineWidth = 2; ctx.strokeRect(R.x + b + 1, R.y + b + 1, R.w - 2*b - 2, R.h - 2*b - 2);
+  ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.lineWidth = 1.5; ctx.strokeRect(R.x + 1, R.y + 1, R.w - 2, R.h - 2);
+  ctx.restore();
+}
+// (v0.60) de mist trekt op: de eerste keer dat je een kaart ziet die je net hebt bereikt
+let mistOp = null;
+function naarHuis(){
+  const t = (performance.now() - start)/1000;
+  boekUit = t; plekUit = t; boekKeuze = null; boekWijs = null; sluitLvl(); BZ.doel = 1; BZ.focus = null;
 }
 function sla(naar){
   if(naar === null || naar === kaartNr || naar < 0 || naar >= KAARTEN.length || blad) return;
@@ -1719,13 +1856,23 @@ function bladGeluid(){   // zacht ritselend geluidje (proefgeluid)
     g.gain.value = 0.5*OPTIES.volume/100; s.buffer = buf; s.connect(f); f.connect(g); g.connect(ac.destination); s.start(); }catch(e){}
 }
 function boekBeweeg(px, py){
-  const nr = bolletjeOnder(px, py), b = bladerOnder(px, py); doek.style.cursor = nr || b !== null || krijtOnder(px, py) ? 'pointer' : 'default';
-  if(nr !== boekWijs){ boekWijs = nr; if(nr) toonLvl(nr); else if(!boekKeuze) sluitLvl(); }
+  const nr = bereikt(kaartNr) ? bolletjeOnder(px, py) : null; bordWijs = bordOnder(px, py); kistWijs = kistOnder(px, py);
+  doek.style.cursor = nr || bordWijs || kistWijs ? 'pointer' : 'default';
+  // (v0.63) van het bolletje naar 'Speel' bewegen: het kaartje blijft even staan, en zolang je erop bent helemaal
+  if(nr !== boekWijs){ boekWijs = nr; clearTimeout(lvlDichtTimer);
+    if(nr) toonLvl(nr); else if(!boekKeuze) lvlDichtTimer = setTimeout(() => { if(!boekWijs && !boekKeuze && !opKaartje) sluitLvl(); }, 450); }
 }
+let lvlDichtTimer = null, opKaartje = false;
+{ const k = document.getElementById('lvlKaart');
+  k.addEventListener('pointerenter', () => { opKaartje = true; clearTimeout(lvlDichtTimer); });
+  k.addEventListener('pointerleave', e => { opKaartje = false; if(e.pointerType !== 'mouse') return;
+    clearTimeout(lvlDichtTimer); lvlDichtTimer = setTimeout(() => { if(!boekWijs && !boekKeuze && !opKaartje) sluitLvl(); }, 300); }); }
 function boekKlik(px, py, t){
-  const b = bladerOnder(px, py); if(b !== null){ sla(b); return; }
-  if(krijtOnder(px, py)){ krijtTip = t; return; }
-  const nr = bolletjeOnder(px, py);
+  const b = bordOnder(px, py);
+  if(b === 'verder'){ sla(kaartNr + 1); return; }
+  if(b === 'terug'){ if(kaartNr === 0) naarHuis(); else sla(kaartNr - 1); return; }
+  if(kistOnder(px, py)){ kistKlik(); return; }
+  const nr = bereikt(kaartNr) ? bolletjeOnder(px, py) : null;
   if(nr){ boekKeuze = nr; toonLvl(nr); } else { boekKeuze = null; sluitLvl(); }
 }
 // vegen (tablet): naar links vegen = volgende kaart, naar rechts = vorige
@@ -1834,7 +1981,6 @@ function toonLvl(nr){
   document.getElementById('lvlStand').textContent = st === 'gehaald' ? '★ gehaald' : st === 'volgende' ? 'Dit is je volgende level!'
     : st === 'half' ? 'Overgeslagen met je toverkrijtje. Haal hem alsnog, dan krijg je je krijtje terug!' : 'Haal eerst de levels hiervoor';
   k.classList.toggle('toekomst', st === 'toekomst'); k.classList.remove('vraag');
-  k.classList.toggle('magJoker', st === 'volgende' && BOEKEN[gekozen].joker == null && !jokerAnim);
   plaatsLvl(nr);
   k.classList.add('zichtbaar');
 }
@@ -1892,15 +2038,23 @@ const KRIJT_W = 180, KRIJT_TIP = [0.705, 0.363], KRIJT_RUST = [895, 72];
 let jokerAnim = null, krijtTip = -9;
 function jokerGeluid(terug){ if(!OPTIES.geluid) return; const f = terug ? [1568, 1319, 1047, 1568] : [784, 1047, 1319, 1568, 2093];
   f.forEach((v, i) => toon(v, i*0.08, 0.5, 0.07, 'triangle')); }
-document.getElementById('lvlJoker').onclick = () => { document.getElementById('lvlKaart').classList.add('vraag'); };
-document.getElementById('zekerNee').onclick = () => { document.getElementById('lvlKaart').classList.remove('vraag'); };
+// (v0.60) Tik op het kistje: het kaartje van je volgende level opent met de vraag of je het wilt overslaan.
+function kistKlik(){
+  const nr = BOEKEN[gekozen].gehaald + 1; if(staatVan(nr) !== 'volgende') return;
+  if(OPTIES.geluid){ toon(880, 0, 0.18, 0.07); toon(1175, 0.07, 0.25, 0.06); }
+  boekKeuze = nr; toonLvl(nr); document.getElementById('lvlKaart').classList.add('vraag');
+}
+document.getElementById('zekerNee').onclick = () => { document.getElementById('lvlKaart').classList.remove('vraag'); boekKeuze = null; sluitLvl(); };
 document.getElementById('zekerJa').onclick = () => {
-  if(staatVan(lvlNu) !== 'volgende' || BOEKEN[gekozen].joker != null) return;
-  jokerAnim = { nr: lvlNu, t: (performance.now() - start)/1000, soort: 'weg' }; jokerGeluid(false);
+  const kn = Math.floor((lvlNu - 1)/PER_KAART);
+  if(staatVan(lvlNu) !== 'volgende' || krijtVan(BOEKEN[gekozen])[kn] != null || kistStand(kn) !== 'vol') return;
+  const tNu = (performance.now() - start)/1000, Rb = boekRect(), [bx, by] = belPlek(kn, tNu);
+  belKnap = { n: kn, t: tNu, plek: [bx, by] };
+  if(OPTIES.geluid){ toon(620, 0, 0.06, 0.14); toon(310, 0.02, 0.09, 0.1); }   // plop!
+  jokerAnim = { nr: lvlNu, t: tNu + 0.12, soort: 'weg', van: [Rb.x + bx*Rb.k, Rb.y + by*Rb.k] }; setTimeout(() => jokerGeluid(false), 120);
   boekKeuze = null; boekWijs = null; sluitLvl();
 };
 function bolletjePodium(nr, R){ const [x, y] = PADEN[kaartNr].plekken[(nr - 1) % PER_KAART]; return [R.x + x*R.k, R.y + y*R.k]; }
-function krijtOnder(px, py){ return false; }
 function tekenKrijtAan(tx, ty, sch, al, hoek){   // teken het krijtje met de punt op (tx, ty)
   const w = KRIJT_W*sch, h = w*IMG.krijt.height/Math.max(1, IMG.krijt.width);
   ctx.save(); ctx.globalAlpha *= al; ctx.translate(tx, ty); ctx.rotate(hoek || 0);
@@ -1914,16 +2068,21 @@ function glinsters(x, y, t, n){ ctx.save(); ctx.globalCompositeOperation = 'ligh
 function tekenKrijt(t, R){
   const B = BOEKEN[gekozen];
   if(!jokerAnim) return;   // (v0.30) Arjen: het krijtje hoeft niet steeds in beeld; het verschijnt alleen als je de joker gebruikt
-  const w = t - jokerAnim.t, [dx, dy] = bolletjePodium(jokerAnim.nr, R);
+  const w = t - jokerAnim.t, [dx, dy] = bolletjePodium(jokerAnim.nr, R), kn = Math.floor((jokerAnim.nr - 1)/PER_KAART);
+  if(kn !== kaartNr || blad) return;
+  const [kx, ky] = jokerAnim.van || kistPodium(kn, R), KH = 0;
+  if(w < 0) return;
   if(jokerAnim.soort === 'weg'){
-    if(w < 0.8){ const p = glad(w/0.8); tekenKrijtAan(dx + 40*(1 - p), dy - 60*(1 - p), 0.8, p, 0); glinsters(dx, dy, w, 5*p); }   // verschijnt en zakt naar het bolletje
+    if(w < 0.8){ const p = glad(w/0.8), boog = Math.sin(p*Math.PI)*120;   // (v0.60) vliegt in een boog uit het kistje naar het bolletje
+      tekenKrijtAan(kx + (dx - kx)*p, ky - KH + (dy - ky + KH)*p - boog, 0.8, 1, 0); glinsters(kx + (dx - kx)*p, ky - KH + (dy - ky + KH)*p - boog, w, 5); }
     else if(w < 1.7){ const k = w - 0.8; tekenKrijtAan(dx + Math.sin(k*28)*12, dy + Math.cos(k*21)*7, 0.8, 1, 0); glinsters(dx, dy, w, 7); }
-    else { if(B.joker == null){ B.joker = jokerAnim.nr; B.gehaald = Math.max(B.gehaald, jokerAnim.nr); bewaarBoeken(); }
+    else { if(krijtVan(B)[kn] == null){ krijtVan(B)[kn] = jokerAnim.nr; B.gehaald = Math.max(B.gehaald, jokerAnim.nr); bewaarBoeken(); }
       if(w < 2.2) { tekenKrijtAan(dx, dy, 0.8*(1 - (w - 1.7)/0.5), 1 - (w - 1.7)/0.5, 0); glinsters(dx, dy, w, 9); } else jokerAnim = null; }
-  } else {   // terug naar de vouw van het boek
+  } else {   // (v0.60) terug in het kistje van deze kaart
     if(w < 0.3){ tekenKrijtAan(dx, dy, 0.8, w/0.3, 0); glinsters(dx, dy, w, 7); }
-    else if(w < 1.1){ const p = glad((w - 0.3)/0.8); tekenKrijtAan(dx + 40*p, dy - 90*p, 0.8, 1 - p, 0); glinsters(dx + 20*p, dy - 45*p, w, 7*(1 - p)); }   // zweeft omhoog en verdwijnt
-    else jokerAnim = null;
+    else if(w < 1.2){ const p = glad((w - 0.3)/0.9), boog = Math.sin(p*Math.PI)*120, x = dx + (kx - dx)*p, y = dy + (ky - KH - dy)*p - boog;
+      tekenKrijtAan(x, y, 0.8, 1, 0); glinsters(x, y, w, 7); }
+    else { jokerAnim = null; belGroei = { n: kn, t }; if(OPTIES.geluid) toon(1320, 0, 0.25, 0.05); }   // er groeit een nieuwe bel omheen
   }
 }
 
@@ -1981,27 +2140,26 @@ function tekenPadEnBolletjes(n, t, R){
   ctx.lineCap = 'round'; ctx.lineJoin = 'round';
   const lijn = () => { ctx.beginPath(); PAD.fijn.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); };
   const pd = loepAan() ? 1.35 : 1;   // (v0.58) met de Loep aan een breder pad, passend bij de grotere bolletjes
-  if(hc()){ hcDemp(0, 0, 1672, 941, 0.5); lijn(); ctx.strokeStyle = '#1a1208'; ctx.lineWidth = 44*pd; ctx.stroke(); }
-  lijn(); ctx.strokeStyle = 'rgba(120,90,50,0.35)'; ctx.lineWidth = 34*pd; ctx.stroke();
-  lijn(); ctx.strokeStyle = '#ead9ad'; ctx.lineWidth = 29*pd; ctx.stroke();
-  lijn(); ctx.strokeStyle = 'rgba(255,250,230,0.55)'; ctx.lineWidth = 12*pd; ctx.stroke();
-  lijn(); ctx.setLineDash([2*pd, 9*pd]); ctx.strokeStyle = 'rgba(150,110,60,0.35)'; ctx.lineWidth = 22*pd; ctx.stroke(); ctx.setLineDash([]);
+  // (v0.60) het pad is meegeschilderd in de kaart; alleen bij hoog contrast nog een donkere lijn, zodat je het pad goed ziet
+  if(hc()){ hcDemp(0, 0, 1672, 941, 0.5); lijn(); ctx.strokeStyle = '#1a1208'; ctx.lineWidth = 44*pd; ctx.stroke();
+    lijn(); ctx.strokeStyle = '#ead9ad'; ctx.lineWidth = 30*pd; ctx.stroke(); }
+  if(!bereikt(n)){ ctx.restore(); return; }   // wazige kaart: geen bolletjes
   for(let i = 0; i < PER_KAART; i++){ const [x, y] = PAD.plekken[i], nr = n*PER_KAART + i + 1;
     tekenBolletje(x, y, nr, staatTeken(nr, t), t, boekWijs === nr || boekKeuze === nr); }
   ctx.restore();
 }
 // een halve bladzijde van kaart n tekenen (kant 0 = links, 1 = rechts), eventueel samengeknepen tot breedte b
 function halfBlad(n, kant, dx, b, R, t){
-  const im = kaartBeeld(n), hw = im.width/2, hwR = R.w/2;
+  const im = bereikt(n) ? kaartBeeld(n) : kaartWaas(n), hw = im.width/2, hwR = R.w/2;
   ctx.save(); ctx.beginPath(); ctx.rect(dx, R.y, b, R.h); ctx.clip();
   ctx.translate(dx, 0); ctx.scale(b/hwR, 1); ctx.translate(-(R.x + kant*hwR), 0);
   ctx.drawImage(im, kant*hw, 0, hw, im.height, R.x + kant*hwR, R.y, hwR, R.h);
-  tekenPadEnBolletjes(n, t, R);
+  tekenPadEnBolletjes(n, t, R); tekenKaartDingen(n, t, R);
   ctx.restore();
 }
 function boek(t){
   const a = boekAlpha(t);
-  document.getElementById('boekTerug').style.display = a >= 1 && boekUit === null ? 'block' : 'none';
+  document.getElementById('boekTerug').style.display = 'none';   // (v0.60) terug gaat nu met het bordje op de kaart
   if(a <= 0){ if(doek.style.touchAction) doek.style.touchAction = ''; if(boekUit !== null && t - boekUit > 0.5){ boekIn = null; boekUit = null; plekKies = null; blad = null; boekZoomReset(); } return; }
   const ta = loepAan() ? 'none' : '';   // (v0.58) met de loep: knijpen en slepen doet het spel zelf, niet de browser
   if(doek.style.touchAction !== ta) doek.style.touchAction = ta;
@@ -2018,11 +2176,6 @@ function boek(t){
   // kaft
   ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 30; ctx.shadowOffsetY = 12;
   ctx.fillStyle = BOEK_KLEUREN[gekozen].kaft; ctx.beginPath(); ctx.roundRect(R.x - 24, R.y - 6, R.w + 48, R.h + 18, 10); ctx.fill(); ctx.shadowColor = 'transparent';
-  // tabjes: één per kaart, in de kleur van die kaart; de kaart waar je bent steekt verder uit
-  KAARTEN.forEach((K, i) => { const [x, y, w, h] = tabRect(i), hier = i === kaartNr;
-    ctx.globalAlpha = a*(hier ? 1 : 0.85); ctx.fillStyle = K.kleur; ctx.beginPath(); ctx.roundRect(x, y, w, h, 9); ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,0.95)'; ctx.font = `700 ${hier ? 26 : 22}px "Trebuchet MS", system-ui, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(i + 1, x + 10 + (w - 10)/2, y + h/2 + 1); });
   ctx.globalAlpha = a;
   // de bladranden: links de pagina's die je al omgeslagen hebt, rechts de pagina's die nog komen
   const links = Math.min(kaartNr, blad ? blad.van : kaartNr), rechts = KAARTEN.length - 1 - Math.max(kaartNr, blad ? blad.van : kaartNr);
@@ -2047,24 +2200,18 @@ function boek(t){
     ctx.fillStyle = sg; ctx.fillRect(rug - 30, R.y, 60, R.h);
     if(t - blad.t0 >= BLAD_DUUR) blad = null;
   } else {
-    ctx.drawImage(kaartBeeld(kaartNr), R.x, R.y, R.w, R.h);
-    tekenPadEnBolletjes(kaartNr, t, R);
+    const B = BOEKEN[gekozen];
+    if(bereikt(kaartNr) && kaartNr > (B.gezien || 0) && !mistOp) mistOp = { n: kaartNr, t };   // net bereikt: de mist trekt op
+    if(mistOp && mistOp.n !== kaartNr) mistOp = null;
+    if(bereikt(kaartNr)) ctx.drawImage(kaartBeeld(kaartNr), R.x, R.y, R.w, R.h); else ctx.drawImage(kaartWaas(kaartNr), R.x, R.y, R.w, R.h);
+    if(mistOp){ const p = klem((t - mistOp.t - 0.4)/2.2, 0, 1);
+      if(p > 0 && !mistOp.klonk){ mistOp.klonk = true; if(OPTIES.geluid){ toon(784, 0, 0.6, 0.06); toon(988, 0.25, 0.6, 0.06); toon(1319, 0.5, 0.9, 0.06); } }
+      ctx.save(); ctx.globalAlpha *= 1 - glad(p); ctx.drawImage(kaartWaas(kaartNr), R.x, R.y, R.w, R.h); ctx.restore();
+      if(p >= 1){ B.gezien = Math.max(B.gezien || 0, mistOp.n); bewaarBoeken(); mistOp = null; } }
+    tekenPadEnBolletjes(kaartNr, t, R); tekenKaartDingen(kaartNr, t, R); boekVliegers(t, R);
   }
+  tekenRand(R);
   tekenKrijt(t, R); tekenKleurAnim(t, R);
-  // ezelsoortjes: rechtsonder naar de volgende kaart, linksonder terug
-  const es = 54, ey = R.y + R.h - 6;
-  const oor = (ex, dir) => {
-    ctx.fillStyle = '#d9c9a4'; ctx.beginPath(); ctx.moveTo(ex - dir*es, ey); ctx.lineTo(ex, ey - es); ctx.lineTo(ex, ey); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = '#f6edd5'; ctx.beginPath(); ctx.moveTo(ex - dir*es, ey); ctx.lineTo(ex, ey - es); ctx.lineTo(ex - dir*es*0.62, ey - es*0.62); ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = 'rgba(120,90,50,0.4)'; ctx.lineWidth = 1.5; ctx.stroke(); };
-  if(!blad){
-    if(kaartNr < KAARTEN.length - 1) oor(R.x + R.w - 6, 1);
-    if(kaartNr > 0) oor(R.x + 6, -1);
-    ctx.font = '700 15px "Trebuchet MS", system-ui, sans-serif'; ctx.textAlign = 'right'; ctx.textBaseline = 'alphabetic';
-    const lt = KAARTEN[kaartNr].naam + ' · kaart ' + (kaartNr + 1) + ' van ' + KAARTEN.length, lw = ctx.measureText(lt).width, lx = R.x + R.w - 6 - es - 10;
-    ctx.fillStyle = 'rgba(255,248,230,0.85)'; ctx.beginPath(); ctx.roundRect(lx - lw - 8, ey - 30, lw + 16, 24, 8); ctx.fill();
-    ctx.fillStyle = '#7a3d12'; ctx.fillText(lt, lx, ey - 13);
-  }
   ctx.restore();
 }
 
@@ -2158,7 +2305,8 @@ function verwerkUitkomst(){
   let u = null; try{ u = JSON.parse(localStorage.getItem('oelieboelie_uitkomst') || 'null'); localStorage.removeItem('oelieboelie_uitkomst'); }catch(e){}
   if(!u || !u.gehaald || !BOEKEN[u.boek]) return null;
   const B = BOEKEN[u.boek], uit = { nr: u.nr, nieuw: false, krijt: false };
-  if(B.joker === u.nr){ B.joker = null; uit.krijt = true; }
+  const kr = krijtVan(B), kn = kr.indexOf(u.nr);
+  if(kn >= 0){ kr[kn] = null; uit.krijt = true; }
   else if(u.nr === B.gehaald + 1){ B.gehaald = u.nr; uit.nieuw = true; }
   bewaarBoeken(); return uit;
 }

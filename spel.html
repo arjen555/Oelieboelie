@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Oelieboelie v1.68</title>
+<title>Oelieboelie v1.70</title>
 <style>
   :root{ --bg:#16202b; --panel:#1f2b38; --text:#e8eef5; --muted:#93a4b6; --accent:#7fb2ff; }
   *{box-sizing:border-box}
@@ -240,7 +240,7 @@
 // =====================================================================
 const TEKST = {
   titel: 'Oelieboelie',
-  versie: 'v1.68 · de eerste geluiden',
+  versie: 'v1.70 · Rocky krakt hoorbaar',
   uitlegTeller: { getekend: 'Getekend', wolk: nodig => `In de toverwolk · nodig: ${nodig}`, af: 'Af' },
   draaiScherm: 'Draai je scherm een kwartslag',
   gum: 'Uitgummen: wie nog rondloopt wordt uitgegumd en het level stopt (twee keer drukken)',
@@ -1375,11 +1375,14 @@ function laadLevel(d){
 // In het verborgen venstertje waarin de editor duimnagels maakt, blijft het spel altijd stil.
 // Browsers laten pas geluid toe na een klik of toets; tot dan wordt een geluid overgeslagen.
 // =====================================================================
-const GELUID_NAMEN = ['potlood','poof','buildykomt','buildylegt','fungykomt','fungyingrond','fungyuitgrond','fungyuitgrond2'];
+const GELUID_NAMEN = ['potlood','poof','buildykomt','buildylegt','fungykomt','fungyingrond','fungyuitgrond','fungyuitgrond2',
+  'rockkomt2','rotsenbreken','rotsenbreken2','rockykrak'];   // (v1.69) Rocky erbij; (v1.70) zijn stem eruit, KRAK erbij
 const GELUID_MAX_TEGELIJK = 4;   // hetzelfde geluid hoogstens zo vaak tegelijk (anders wordt het een brij)
 const POTLOOD_VOLUMES = [1, 0.7, 0.45, 0.28, 0.15, 0.07];   // de eerste o hard, dan steeds zachter; vanaf de 7e stil
 const POOF_STEM_WACHT = 0.3;     // zo lang na de poof begint de stem van het nieuwe figuur
-const KOMT_STEM = { buildy: 'buildykomt', fungy: 'fungykomt' };   // de stem na de poof (nog niet elk figuur heeft er een)
+// de geluiden na de poof: [naam, seconden na het eerste]; nog niet elk figuur heeft er een
+// (v1.69) Rocky: het rommelen (rockkomt2); (v1.70) zijn stem (rockykomt) is eraf, die paste niet
+const KOMT_STEM = { buildy: [['buildykomt', 0]], fungy: [['fungykomt', 0]], rocky: [['rockkomt2', 0]] };
 const GELUID = { aan: false, ctx: null, uit: null, laden: null, buffers: {}, bezig: {},
   stil: (() => { try { return !!(window.frameElement && window.frameElement.getAttribute('aria-hidden') === 'true'); } catch(e){ return false; } })() };
 function leesGeluid(){
@@ -1421,6 +1424,65 @@ function speel(naam, opt = {}){
 leesGeluid();
 window.addEventListener('storage', e => { if(e.key === 'oelieboelie_opties') leesGeluid(); });
 window.addEventListener('focus', leesGeluid);
+// (v1.69) als het tabblad op de achtergrond staat, staat het spel stil; dan ook het geluid
+document.addEventListener('visibilitychange', () => {
+  if(!GELUID.ctx) return;
+  if(document.hidden) GELUID.ctx.suspend().catch(() => {}); else geluidWakker();
+});
+
+// (v1.69) GRAAFGELUID: zolang Rocky graaft, wisselen 'rotsenbreken' en 'rotsenbreken2' elkaar af, in willekeurige
+// volgorde (hoogstens twee keer hetzelfde stuk achter elkaar) en telkens een heel klein beetje anders van toon.
+// Elk stuk komt zacht op en dooft zacht uit, en loopt een stukje over het volgende heen: zo hoor je geen naad.
+// Stopt Rocky met graven (of pauze, of een nieuw level), dan dooft het meteen uit.
+const GRAAF_STUKKEN = ['rotsenbreken', 'rotsenbreken2'];
+const GRAAF_VOLUME = 0.55;          // graven duurt lang: iets zachter dan de rest
+const GRAAF_OVERLAP = [0.35, 0.7];  // zoveel seconden lopen twee stukken door elkaar (willekeurig daartussen)
+const GRAAF_OVERVLOEI = 0.3;        // zo lang komt een stuk op en dooft het uit
+const GRAAF_MAX = 3;                // hoogstens zoveel gravende Rocky's tegelijk hoorbaar
+GELUID.lussen = new Map();          // gravende Rocky → zijn geluid
+function graafStuk(lus){
+  const ctx = GELUID.ctx;
+  let n = Math.random() < 0.5 ? 0 : 1;
+  if(n === lus.vorige && lus.zelfde) n = 1 - n;
+  lus.zelfde = n === lus.vorige; lus.vorige = n;
+  const buf = GELUID.buffers[GRAAF_STUKKEN[n]];
+  if(!buf){ lus.volgende = ctx.currentTime + 1; return; }
+  const toon = 1 + (Math.random()*2 - 1)*0.04, duur = buf.duration/toon;
+  const op = lus.eerste ? 0.03 : GRAAF_OVERVLOEI; lus.eerste = false;   // het allereerste stuk begint meteen
+  const t0 = Math.max(lus.volgende, ctx.currentTime), bron = ctx.createBufferSource(), g = ctx.createGain();
+  bron.buffer = buf; bron.playbackRate.value = toon;
+  g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(1, t0 + op);
+  g.gain.setValueAtTime(1, t0 + duur - GRAAF_OVERVLOEI); g.gain.linearRampToValueAtTime(0, t0 + duur);
+  bron.connect(g).connect(lus.g);
+  bron.start(t0); bron.stop(t0 + duur + 0.05);
+  lus.bronnen.push(bron);
+  bron.onended = () => { lus.bronnen = lus.bronnen.filter(b => b !== bron); };
+  lus.volgende = t0 + duur - (GRAAF_OVERLAP[0] + Math.random()*(GRAAF_OVERLAP[1] - GRAAF_OVERLAP[0]));
+}
+function stopLus(o, lus){
+  const t = GELUID.ctx.currentTime;
+  lus.g.gain.cancelScheduledValues(t); lus.g.gain.setValueAtTime(lus.g.gain.value, t); lus.g.gain.linearRampToValueAtTime(0, t + 0.15);
+  lus.bronnen.forEach(b => { try { b.stop(t + 0.2); } catch(e){} });
+  GELUID.lussen.delete(o);
+}
+// elk beeldje: wie graaft er, wie niet meer?
+function geluidLussen(){
+  if(!GELUID.ctx || !staat) return;
+  const mag = GELUID.aan && GELUID.ctx.state === 'running' && !staat.pauze && !staat.rondleiding;
+  for(const [o, lus] of GELUID.lussen) if(!mag || o.fase !== 'eten' || !staat.oelies.includes(o)) stopLus(o, lus);
+  if(!mag) return;
+  for(const o of staat.oelies){
+    if(o.type !== 'rocky' || o.fase !== 'eten') continue;
+    let lus = GELUID.lussen.get(o);
+    if(!lus){
+      if(GELUID.lussen.size >= GRAAF_MAX) continue;
+      lus = { g: GELUID.ctx.createGain(), bronnen: [], volgende: GELUID.ctx.currentTime, vorige: -1, zelfde: false, eerste: true };
+      lus.g.gain.value = GRAAF_VOLUME; lus.g.connect(GELUID.uit);
+      GELUID.lussen.set(o, lus);
+    }
+    if(GELUID.ctx.currentTime > lus.volgende - 0.5) graafStuk(lus);
+  }
+}
 
 // =====================================================================
 // HET POTLOOD
@@ -2593,6 +2655,7 @@ function krakStap(o){
       deeltjes(mx, my, 12, { hoek: -Math.PI/2 - o.richting*0.7, spreiding: 2.4, vMin: 60, vMax: 170, zw: 300, leven: 0.3, r: 0.7, fonkel: 1, kleur: () => Math.random() < 0.5 ? 'rgb(255,250,170)' : 'rgb(255,255,255)' });
       deeltjes(o.x, o.y - fh*1.0, 6, { hoek: -Math.PI/2, spreiding: 0.8, vMin: 8, vMax: 22, leven: 0.9, r: 1.8, kleur: 'rgba(110,110,115,.75)', gloed: false, breed: 10 });
     } else {
+    speel('rockykrak', { variatie: 0.04 });   // (v1.70) KRAK: op steen gebeten (bij de printplaat niet: dat is BZZT)
     staat.krakken.push({ x: mx, y: my - fh*0.35, start: staat.tijd });
     deeltjes(mx, my, 9, { hoek: -Math.PI/2 - o.richting*0.9, spreiding: 1.4, vMin: 50, vMax: 140, zw: 600, leven: 0.45, r: 0.9, kleur: 'rgb(150,156,166)', gloed: false });
     deeltjes(mx, my, 1, { hoek: -Math.PI/2 - o.richting*0.6, spreiding: 0.4, vMin: 90, vMax: 120, zw: 600, leven: 0.6, r: 1.8, kleur: 'rgb(205,190,152)', gloed: false });   // een afgebrokkeld steentje van Rocky zelf
@@ -4320,7 +4383,7 @@ function verander(o, type){
   if(o.type !== 'blauwdruk' || o.fase !== 'lopen') return false;
   o.type = type; staat.voorraad[type]--;
   speel('poof', { volume: 0.8, variatie: 0.04 });   // (v1.68) poef, en daarna de stem van het nieuwe figuur
-  if(KOMT_STEM[type]) speel(KOMT_STEM[type], { wacht: POOF_STEM_WACHT });
+  (KOMT_STEM[type] || []).forEach(([n, w]) => speel(n, { wacht: POOF_STEM_WACHT + w }));
   if(type === 'buildy') o.trapId = (staat.trapTeller = (staat.trapTeller || 0) + 1);   // elke Buildy bouwt zijn eigen trap
   deeltjes(o.x, o.y - FIGUUR_HOOGTE/2, 16, { vMin:30, vMax:110, leven:0.4, r:1.2, fonkel:0.5, kleur:() => `hsl(${200+Math.random()*40|0},90%,75%)` });
   if(type === 'buildy'){
@@ -5252,6 +5315,7 @@ function lus(t){
   const m0 = METER.aan ? performance.now() : 0;
   if(staat.rondleiding) rondleidingStap(t/1000);          // eerst rondkijken; het spel staat zolang stil
   else if(!staat.pauze) for(let i = 0; i < tempo; i++) werkBij(dt);
+  geluidLussen();   // (v1.69) graafgeluid van Rocky aan/uit
   // zodra de laatste oelieboelie binnen (of af) is, gaat de snelheid terug naar normaal
   if(tempo !== 1 && staat.eindTijd !== null) zetTempo(1);
   werkSchuifbalkBij(Math.min(echtDt, 0.05));
